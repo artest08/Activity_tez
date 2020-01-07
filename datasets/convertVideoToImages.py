@@ -19,7 +19,9 @@ parser.add_argument('--location', metavar='DIR', default=default_loc,
 def main():
     global args
     videoFolderLocation = args.location
-    imageDirectory = 'smtV2_frames'
+    imageDirectory = './smtV2_frames'
+    if not os.path.isdir(imageDirectory):
+        os.mkdir(imageDirectory)
     files = os.listdir(videoFolderLocation)
     for videoFileName in tqdm(files):
         videoFile = os.path.join(videoFolderLocation,videoFileName)
@@ -38,5 +40,8 @@ def main():
             
         cap.release()
         cv2.destroyAllWindows()    
+        
+if __name__ == '__main__':
+    main()
     
      
