@@ -1,0 +1,870 @@
+results
+UCF101
+RGB= with mean 85.96 with max 84.88
+Flow=86.44
+Flow=86.20 with normal flipping
+Flow=87.10 with normal flipping + softmax
+RGB with soft does not change much
+flow+RGB 92.31  weight RGB 1 and Flow 2
+RGB tsn without soft=86.89
+RGB tsn with soft=86.94
+Flow=86.39 with normal flipping tsn + softmax
+Flow=87.07 tsn with normal flipping without softmax
+flow+RGB 93.10  tsn weight RGB 1 and Flow 2 without softmax
+flow+RGB 92.84  tsn weight RGB 1 and Flow 2 with softmax
+flow+RGB 93.92  tsn weight RGB 1 and Flow 1 without softmax
+
+
+RGB-ResNet152
+Accuracy with mean calculation is 0.8562
+Accuracy with max calculation is 0.8390
+Accuracy with 3-mean calculation is 0.8425
+Accuracy with 5-mean calculation is 0.8456
+Accuracy with 7-mean calculation is 0.8469
+Accuracy with 10-mean calculation is 0.8499
+Accuracy with 30-mean calculation is 0.8533
+Accuracy with 50-mean calculation is 0.8538
+Accuracy with 70-mean calculation is 0.8557
+Accuracy with 100-mean calculation is 0.8554
+
+
+LSTM one-stack deneme 81.79
+
+LSTM two-stack deneme
+Accuracy with mean calculation is 0.8150
+Accuracy with max calculation is 0.8152
+
+
+LSTM two-stack bidirectional deneme
+resized to 224x224
+Accuracy with mean calculation is 0.8308
+Accuracy with max calculation is 0.8282
+Accuracy with 3-mean calculation is 0.8287
+Accuracy with 5-mean calculation is 0.8287
+Accuracy with 7-mean calculation is 0.8287
+Accuracy with 10-mean calculation is 0.8298
+Accuracy with 30-mean calculation is 0.8298
+Accuracy with 50-mean calculation is 0.8292
+Accuracy with 70-mean calculation is 0.8300
+Accuracy with 100-mean calculation is 0.8306
+./checkpoint/ucf101_rgb_resnet152_lstmType3_split1
+
+only center 224x224
+Accuracy with mean calculation is 0.8565
+Accuracy with max calculation is 0.8565
+Accuracy with 3-mean calculation is 0.8567
+Accuracy with 5-mean calculation is 0.8570
+Accuracy with 7-mean calculation is 0.8567
+Accuracy with 10-mean calculation is 0.8573
+Accuracy with 30-mean calculation is 0.8596
+Accuracy with 50-mean calculation is 0.8594
+Accuracy with 70-mean calculation is 0.8610
+Accuracy with 100-mean calculation is 0.8604
+./checkpoint/ucf101_rgb_resnet152_lstmType3_split1
+
+
+10-crops
+Accuracy with mean calculation is 0.8607
+Accuracy with max calculation is 0.8617
+Accuracy with 3-mean calculation is 0.8617
+Accuracy with 5-mean calculation is 0.8610
+Accuracy with 7-mean calculation is 0.8610
+Accuracy with 10-mean calculation is 0.8612
+Accuracy with 30-mean calculation is 0.8610
+Accuracy with 50-mean calculation is 0.8615
+Accuracy with 70-mean calculation is 0.8620
+Accuracy with 100-mean calculation is 0.8625
+Accuracy with package mean calculation is 0.8591
+Total Package Number: 812270
+Average Package Correction: 0.8166
+./checkpoint/ucf101_rgb_resnet152_lstmType3_split1
+
+
+LSTM two-stack bidirectional ama rastgele 16 frame
+kesilmis ile egitilip 224x224 ile resize olmus hali ile olan
+Accuracy with mean calculation is 0.8229
+
+./checkpoint/ucf101_rgb_resnet152_lstmType4_split1
+direk center alinirsa 0.8517
+
+10-crop mean:
+Accuracy with mean calculation is 0.8594
+./checkpoint/ucf101_rgb_resnet152_lstmType4_split1
+
+10-crop mean + Adam + 0.8 Dropout:
+Accuracy with mean calculation is 0.8485
+./checkpoint/ucf101_rgb_resnet152_lstmType4_split1
+
+10-crop mean + Adam + 0.8 Dropout - 150 Epoch:
+Accuracy with mean calculation is 0.8573
+./checkpoint/ucf101_rgb_resnet152_lstmType4_split1
+
+10-crop mean + Swat + 0.8 Dropout - 150 Epoch:
+Accuracy with mean calculation is 0.8575
+./checkpoint/ucf101_rgb_resnet152_lstmType4_split1
+
+10-crop mean + Adam + 0.8 Dropout:
+Accuracy with mean calculation is 0.8652
+./checkpoint/ucf101_rgb_resnet152_lstmType5_split1
+
+
+
+
+
+
+
+
+HMBD51
+RGB with mean: 50.98 max: 48.95 with RGB-ResNet152
+
+RGB-ResNet101 
+Accuracy with mean calculation is 0.5157
+Accuracy with max calculation is 0.4980
+Accuracy with 3-mean calculation is 0.5026
+Accuracy with 5-mean calculation is 0.5020
+Accuracy with 7-mean calculation is 0.5039
+Accuracy with 10-mean calculation is 0.5085
+Accuracy with 30-mean calculation is 0.5092
+Accuracy with 50-mean calculation is 0.5072
+Accuracy with 70-mean calculation is 0.5098
+Accuracy with 100-mean calculation is 0.5072
+
+Accuracy with mean calculation is 0.5098
+Accuracy with max calculation is 0.4895
+Accuracy with 3-mean calculation is 0.4869
+Accuracy with 5-mean calculation is 0.4935
+Accuracy with 7-mean calculation is 0.4954
+Accuracy with 10-mean calculation is 0.4987
+Accuracy with 30-mean calculation is 0.5059
+Accuracy with 50-mean calculation is 0.5150
+Accuracy with 70-mean calculation is 0.5150
+Accuracy with 100-mean calculation is 0.5144
+./checkpoint/hmdb51_rgb_resnet152_split1
+
+
+Accuracy with mean calculation is 0.5268
+Accuracy with max calculation is 0.5085
+Accuracy with 3-mean calculation is 0.5137
+Accuracy with 5-mean calculation is 0.5163
+Accuracy with 7-mean calculation is 0.5137
+Accuracy with 10-mean calculation is 0.5170
+Accuracy with 30-mean calculation is 0.5190
+Accuracy with 50-mean calculation is 0.5235
+Accuracy with 70-mean calculation is 0.5222
+Accuracy with 100-mean calculation is 0.5294
+./checkpoint/hmdb51_rgb_resnet152_split1
+
+
+
+
+Accuracy with mean calculation is 0.5359  ----  baseline 0.5098
+./checkpoint/hmdb51_rgb_resnet152_lstmType4_split1
+
+Accuracy with mean calculation is 0.5412 ---- New baseline 0.5268
+./checkpoint/hmdb51_rgb_resnet152_lstmType4_split1
+
+
+Accuracy with mean calculation is 0.5438
+./checkpoint/hmdb51_rgb_resnet152_lstmType5_split1
+
+
+
+Accuracy with mean calculation is 0.3686
+Accuracy with max calculation is 0.3510
+Accuracy with 3-mean calculation is 0.3503
+Accuracy with 5-mean calculation is 0.3503
+Accuracy with 7-mean calculation is 0.3516
+Accuracy with 10-mean calculation is 0.3516
+Accuracy with 30-mean calculation is 0.3582
+Accuracy with 50-mean calculation is 0.3595
+Accuracy with 70-mean calculation is 0.3575
+Accuracy with 100-mean calculation is 0.3595
+./checkpoint/hmdb51_rgb_resnet18_split1
+
+Accuracy with mean calculation is 0.5314
+Accuracy with max calculation is 0.4706
+Accuracy with 3-mean calculation is 0.4843
+Accuracy with 5-mean calculation is 0.4882
+Accuracy with 7-mean calculation is 0.4941
+Accuracy with 10-mean calculation is 0.5020
+Accuracy with 30-mean calculation is 0.5170
+Accuracy with 50-mean calculation is 0.5261
+Accuracy with 70-mean calculation is 0.5307
+Accuracy with 100-mean calculation is 0.5333
+./checkpoint/hmdb51_flow_resnet18_split1
+Mean Estimated Time 4.6407
+
+
+Accuracy with mean calculation is 0.3882
+./checkpoint/hmdb51_rgb_resnet18_lstmType4_split1
+
+
+Accuracy with mean calculation is 0.3712
+./checkpoint/hmdb51_rgb_resnet18_bert_split1
+
+
+Added MSE loss also
+Accuracy with mean calculation is 0.3837
+./checkpoint/hmdb51_rgb_resnet18_bert_split1
+
+
+Added MSE loss also only masked
+Accuracy with mean calculation is 0.3784
+./checkpoint/hmdb51_rgb_resnet18_bert_split1
+
+
+Added MSE loss - Different Pos. Encode
+Accuracy with mean calculation is 0.3752
+./checkpoint/hmdb51_rgb_resnet18_bert_split1
+
+
+Added MSE loss - Learned Pos. Encode
+Accuracy with mean calculation is 0.3869
+./checkpoint/hmdb51_rgb_resnet18_bert_split1
+
+
+Added MSE loss - Learned Pos. Encode imagenet pretrained
+Accuracy with mean calculation is 0.4386
+./checkpoint/hmdb51_rgb_resnet18_bert_split1
+
+
+Only Classification Loss imagenet pretrained Learned Pos.
+Accuracy with mean calculation is 0.4320
+./checkpoint/hmdb51_rgb_resnet18_bert_split1
+Mean Estimated Time 0.2189
+
+MSE Loss imagenet pretrained Learned Pos.
+Accuracy with mean calculation is 0.4386
+./checkpoint/hmdb51_rgb_resnet18_bert_split1
+Mean Estimated Time 0.2254
+
+
+Only Classification Loss - n_layers=2-attn_heads=16 Learned Pos
+Accuracy with mean calculation is 0.4471
+./checkpoint/hmdb51_rgb_resnet18_bert2_split1
+Mean Estimated Time 0.2122
+
+
+----pos encoding ayikma noktasi
+ImageNet Pretraining
+Accuracy with mean calculation is 0.4712
+./checkpoint/hmdb51_rgb_resnet18_lstmType4_split1
+Mean Estimated Time 0.2043
+
+The same run
+Accuracy with mean calculation is 0.4660
+./checkpoint/hmdb51_rgb_resnet18_lstmType4_split1
+
+
+Accuracy with mean calculation is 0.4503
+./checkpoint/hmdb51_rgb_resnet18_lstmType6_split1
+
+Bert 1 layer cls mean token and 10000 freq positional encoding
+Accuracy with mean calculation is 0.4810
+./checkpoint/hmdb51_rgb_resnet18_bert4_split1
+
+
+------
+freq 10000 pos encode MSE
+Accuracy with mean calculation is 0.4536
+./checkpoint/hmdb51_rgb_resnet18_bert3_split1
+
+Learned with pos Encode MSE
+Accuracy with mean calculation is 0.4268
+./checkpoint/hmdb51_rgb_resnet18_bert6_split1
+
+Accuracy with mean calculation is 0.4477
+./checkpoint/hmdb51_rgb_resnet18_bert5_split1
+
+Multiple Loss Deneme
+Accuracy with mean calculation is 0.4719
+./checkpoint/hmdb51_rgb_resnet18_bert4_split1
+
+Multiple Loss 2 Deneme not batch loss it is meaningless
+Accuracy with mean calculation is 0.4359
+./checkpoint/hmdb51_rgb_resnet18_bert2_split1
+
+Accuracy with mean calculation is 0.4556
+./checkpoint/hmdb51_rgb_resnet18_lstmType5_split1
+
+Accuracy with mean calculation is 0.4850
+./checkpoint/hmdb51_rgb_resnet18_bert4_split1
+
+Accuracy with mean calculation is 0.4752
+./checkpoint/hmdb51_rgb_resnet18_bert7_split1
+
+Accuracy with mean calculation is 0.4556
+./checkpoint/hmdb51_rgb_resnet18_convGRUType1_split1
+
+Accuracy with mean calculation is 0.4725
+./checkpoint/hmdb51_rgb_resnet18_bert8_split1
+
+Accuracy with mean calculation is 0.4386
+./checkpoint/hmdb51_rgb_resnet18_pooling2_split1
+
+Accuracy with mean calculation is 0.4771
+./checkpoint/hmdb51_rgb_resnet18_pooling1_split1
+
+Accuracy with mean calculation is 0.4778
+./checkpoint/hmdb51_rgb_resnet18_pooling3_split1
+
+Tam accuracy almadim ama validation yuzde 16larda kaldi. Feature vektorlerin farki veriliyor.
+./checkpoint/hmdb51_rgb_resnet18_pooling4_split1.
+
+Accuracy with mean calculation is 0.4771
+./checkpoint/hmdb51_rgb_resnet18_pooling5_split1
+
+weights are not frozen
+Accuracy with mean calculation is 0.4784
+./checkpoint/hmdb51_rgb_resnet18_pooling1_split1
+
+Accuracy with mean calculation is 0.4824
+./checkpoint/hmdb51_rgb_resnet18_pooling6_split1
+Mean Estimated Time 0.1816
+
+
+Accuracy with mean calculation is 0.4268
+Accuracy with max calculation is 0.4026
+Accuracy with 3-mean calculation is 0.4039
+Accuracy with 5-mean calculation is 0.4033
+Accuracy with 7-mean calculation is 0.4052
+Accuracy with 10-mean calculation is 0.4052
+Accuracy with 30-mean calculation is 0.4176
+Accuracy with 50-mean calculation is 0.4157
+Accuracy with 70-mean calculation is 0.4176
+Accuracy with 100-mean calculation is 0.4163
+Accuracy with 200-mean calculation is 0.4203
+Accuracy with 500-mean calculation is 0.4281
+Accuracy with 1000-mean calculation is 0.4281
+Accuracy with package mean calculation is 0.4242
+Total Package Number: 155450
+Average Package Correction: 0.3538
+./checkpoint/hmdb51_rgb_resnet18_lstmType3_split1
+
+
+Accuracy with mean calculation is 0.4941
+./checkpoint/hmdb51_flow_resnet18_bert4_split1
+
+Accuracy with mean calculation is 0.6170
+./checkpoint/hmdb51_rgb_resnet18_bert4_split1
+./checkpoint/hmdb51_flow_resnet18_bert4_split1
+
+
+Learning rate 1e-4
+Accuracy with mean calculation is 0.5301
+./checkpoint/hmdb51_rgb_resnet18_bert10_split1
+Mean Estimated Time 0.2781
+
+learning rate 5e-5 - Epoch - 25 Best
+Accuracy with mean calculation is 0.5118
+./checkpoint/hmdb51_rgb_resnet18_bert10_split1
+
+learning rate 5e-5 - Epoch - 66 Best
+Accuracy with mean calculation is 0.5065
+./checkpoint/hmdb51_rgb_resnet18_bert10_split1
+
+Only Classification loss learning rate 1e-4
+Accuracy with mean calculation is 0.5078
+./checkpoint/hmdb51_rgb_resnet18_bert10_split1
+
+Classification + MSE + Frozen weights
+Accuracy with mean calculation is 0.4621
+./checkpoint/hmdb51_rgb_resnet18_bert13_split1
+
+Accuracy with mean calculation is 0.4654
+./checkpoint/hmdb51_rgb_resnet18_lstmType2_split1
+
+Accuracy with mean calculation is 0.5078
+./checkpoint/hmdb51_rgb_resnet18_bert11_split1
+
+Accuracy with mean calculation is 0.4118
+./checkpoint/hmdb51_rgb_resnet18_lstmType1_split1
+
+Accuracy with mean calculation is 0.4673
+./checkpoint/hmdb51_rgb_resnet18_convGRUType2_split1
+
+
+Accuracy with mean calculation is 0.5065
+./checkpoint/hmdb51_rgb_resnet152_bert10_split1
+
+Accuracy with mean calculation is 0.4837
+./checkpoint/hmdb51_rgb_resnet18_lstmType7_split1
+
+lr 1e-4 yaziyor
+Accuracy with mean calculation is 0.5320
+./checkpoint/hmdb51_rgb_resnet152_bert10_split1
+
+lr 1e-4
+Accuracy with mean calculation is 0.5222
+./checkpoint/hmdb51_rgb_resnet152_bert10_split1
+
+
+Accuracy with mean calculation is 0.5294
+./checkpoint/hmdb51_rgb_resnet34_bert10_split1
+
+
+Accuracy with mean calculation is 0.5739
+./checkpoint/hmdb51_flow_resnet18_bert10X_split1
+
+
+
+Accuracy with mean calculation is 0.5477
+./checkpoint/hmdb51_flow_resnet18_bert10_split1
+
+
+
+Accuracy with mean calculation is 0.6758
+./checkpoint/hmdb51_rgb_resnet18_bert10_split1
+./checkpoint/hmdb51_flow_resnet18_bert10_split1
+
+
+Dropout = 0.7 with learning rate reduction at 80 epoch
+Accuracy with mean calculation is 0.5758
+./checkpoint/hmdb51_flow_resnet18_bert10_split1
+
+Dropout = 0.7 with learning rate reduction at 30 epoch
+Accuracy with mean calculation is 0.5582
+./checkpoint/hmdb51_flow_resnet18_bert10_split1
+
+Dropout = 0.7 with learning rate reduction at 30 epoch
+Accuracy with mean calculation is 0.5490
+./checkpoint/hmdb51_flow_resnet18_bert10_split2
+
+Dropout = 0.7 with learning rate reduction at 30 epoch
+Accuracy with mean calculation is 0.5732
+./checkpoint/hmdb51_flow_resnet18_bert10_split3
+
+
+
+
+
+Accuracy with mean calculation is 0.6706
+./checkpoint/hmdb51_rgb_resnet18_bert10_split1
+Dropout = 0.7 with learning rate reduction at 80 epoch
+./checkpoint/hmdb51_flow_resnet18_bert10_split1
+
+Accuracy with mean calculation is 0.6627
+./checkpoint/hmdb51_rgb_resnet18_bert10_split1
+Dropout = 0.7 with learning rate reduction at 30 epoch
+./checkpoint/hmdb51_flow_resnet18_bert10_split1
+
+
+Accuracy with mean calculation is 0.6222
+./checkpoint/hmdb51_rgb_resnet18_bert10_split2
+./checkpoint/hmdb51_flow_resnet18_bert10_split2
+
+Accuracy with mean calculation is 0.6163
+./checkpoint/hmdb51_rgb_resnet18_bert10_split3
+./checkpoint/hmdb51_flow_resnet18_bert10_split3
+
+63.33 ucunun ortalamasi
+
+
+
+
+Accuracy with mean calculation is 0.8303
+./checkpoint/ucf101_rgb_resnet18_bert10_split1
+
+
+Accuracy with mean calculation is 0.8060
+./checkpoint/ucf101_flow_resnet18_bert10_split1
+
+Accuracy with mean calculation is 0.9136
+./checkpoint/ucf101_rgb_resnet18_bert10_split1
+./checkpoint/ucf101_flow_resnet18_bert10_split1
+
+Accuracy with mean calculation is 0.4471
+./checkpoint/hmdb51_pose_resnet18_bert10_split1
+
+
+Accuracy with mean calculation is 0.6850
+./checkpoint/hmdb51_rgb_resnet18_bert10_split1
+./checkpoint/hmdb51_flow_resnet18_bert10_split1
+./checkpoint/hmdb51_pose_resnet18_bert10_split1
+
+Accuracy with mean calculation is 0.5895
+./checkpoint/hmdb51_rgb_resnet3D101_bert10_split1
+
+Accuracy with mean calculation is 0.5967
+./checkpoint/hmdb51_rgb_resnet3D101_bert10_split1
+
+lr 1e-4 then 1e-5
+Accuracy with mean calculation is 0.6026
+./checkpoint/hmdb51_rgb_resnet3D101_bert10_split1
+
+rgb_resnet3D101
+Adamin kendi weightleri split 1'da 61 verdi
+
+Adamin weightleri ile 64 frame
+Accuracy with mean calculation is 0.7242
+./checkpoint/hmdb51_rgb_resneXt3D101_split1
+
+Adamin implementasyonu kendim egittigimde, only center frame
+Accuracy with mean calculation is 0.6856
+./checkpoint/hmdb51_rgb_resneXt3D64f101_split1
+
+Adamin implementasyonu kendim egittigimde, 10 frame
+Accuracy with mean calculation is 0.6987
+./checkpoint/hmdb51_rgb_resneXt3D64f101_split1
+
+
+
+Adamin weightlerine yakin elde ettigim sonuc SGD ile oldu
+Swat egitirken patladi
+Accuracy with mean calculation is 0.6118
+./checkpoint/hmdb51_rgb_resnet3D101_split1
+
+ADAM ise 
+Accuracy with mean calculation is 0.5712
+./checkpoint/hmdb51_rgb_resnet3D101_split1
+
+
+Bert ile improvement - segment number 4 - ADAMW
+Accuracy with mean calculation is 0.6484
+./checkpoint/hmdb51_rgb_resnet3D101_bert10XX_split1
+
+Only Center Frame in Test
+Accuracy with mean calculation is 0.6052
+./checkpoint/hmdb51_rgb_resnet3D101_bert10_split1
+
+Only Center Frame in Test
+Accuracy with mean calculation is 0.5680
+./checkpoint/hmdb51_rgb_resnet3D101_split1
+
+Accuracy with mean calculation is 0.5438
+./checkpoint/hmdb51_rgb_resnet3D18_bert10_split1
+
+
+Only Center Frame in Test
+Accuracy with mean calculation is 0.5542
+./checkpoint/hmdb51_rgb_resnet3D18_bert10_split1
+
+
+Accuracy with mean calculation is 0.6013
+./checkpoint/hmdb51_rgb_resnet3D18_bert10X_split1
+
+N=4 Frame
+Accuracy with mean calculation is 0.5987
+./checkpoint/hmdb51_rgb_resnet3D18_bert10XX_split1
+
+AdamW
+Accuracy with mean calculation is 0.5771
+./checkpoint/hmdb51_rgb_resnet3D18_bert10XX_split1
+
+
+N=16 Frame
+Accuracy with mean calculation is 0.5902
+./checkpoint/hmdb51_rgb_resnet3D18_bert10XX_split1
+
+
+Accuracy with mean calculation is 0.5739
+./checkpoint/hmdb51_flow_resnet18_bert10X_split1
+
+Bi sik olmadi aq
+Accuracy with mean calculation is 0.4980
+./checkpoint/hmdb51_rgb_resnet50_bert10X_split1
+
+
+
+
+Only Center Frame length = 1 training ADAM with scheduler
+Accuracy with mean calculation is 0.6706
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10XX_split1
+
+segment 2
+Accuracy with mean calculation is 0.7203
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10XX_split1
+
+
+Only Center Frame
+Accuracy with mean calculation is 0.7333 veya 73.27 ikinci imp.ile
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10XY_split1
+
+
+Ten frame
+Accuracy with mean calculation is 0.7373
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10XY_split1
+
+Only Center Frame 
+Accuracy with mean calculation is 0.7235 veya 0.7157 ikinci imp.ile
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10XY2_split1
+
+
+Ten Frame 
+Accuracy with mean calculation is 0.7235
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10XY2_split1
+
+
+Ten Frame
+Accuracy with mean calculation is 0.7503 veya 0.7464 ikinci imp ile
+./checkpoint/hmdb51_rgb_I3D64f_bert10_split1
+
+
+Only center frame
+Accuracy with mean calculation is 0.7281
+./checkpoint/hmdb51_rgb_I3D64f_bert10_split1
+
+
+Only Center Frame
+Accuracy with mean calculation is 0.7373
+./checkpoint/hmdb51_rgb_I3D64f_split1
+
+Ten Frame
+Accuracy with mean calculation is 0.7425
+./checkpoint/hmdb51_rgb_I3D64f_split1
+
+
+
+Ten Frame
+Accuracy with mean calculation is 0.7830
+./checkpoint/hmdb51_flow_I3D64f_bert10_split1
+
+Center Frame
+Accuracy with mean calculation is 0.7778
+./checkpoint/hmdb51_flow_I3D64f_bert10_split1
+
+
+
+
+
+Attention Head = 1
+Accuracy with mean calculation is 0.5033
+./checkpoint/hmdb51_rgb_resnet18_bert10_split1
+
+Attention Head = 2
+Accuracy with mean calculation is 0.5275
+./checkpoint/hmdb51_rgb_resnet18_bert10_split1
+
+Attention Head = 4
+Accuracy with mean calculation is 0.5046
+./checkpoint/hmdb51_rgb_resnet18_bert10_split1
+
+Attention Head = 8
+Accuracy with mean calculation is 0.5248
+./checkpoint/hmdb51_rgb_resnet18_bert10_split1
+
+Accuracy with mean calculation is 0.5137
+./checkpoint/hmdb51_rgb_resnet18_bert10_split1
+
+Attention Head = 16
+Accuracy with mean calculation is 0.5072
+./checkpoint/hmdb51_rgb_resnet18_bert10_split1
+
+n=2 stack
+Accuracy with mean calculation is 0.5007
+./checkpoint/hmdb51_rgb_resnet18_bert10_split1
+
+
+Attention Head = 8
+N=4 Frame
+Accuracy with mean calculation is 0.4948
+./checkpoint/hmdb51_rgb_resnet18_bert10_split1
+
+Attention Head = 8
+N=8 Frame
+Accuracy with mean calculation is 0.5052
+./checkpoint/hmdb51_rgb_resnet18_bert10_split1
+
+
+Attention Head = 8
+N=32 Frame
+Accuracy with mean calculation is 0.5092
+./checkpoint/hmdb51_rgb_resnet18_bert10_split1
+
+
+
+
+Accuracy with mean calculation is 0.6693
+./checkpoint/hmdb51_rgb_resnet18_bert10_split1
+./checkpoint/hmdb51_flow_resnet18_bert10X_split1
+
+
+Frozen Weights
+Accuracy with mean calculation is 0.4693
+./checkpoint/hmdb51_rgb_resnet18_bert10_split1
+
+Fully Not Frozen
+Accuracy with mean calculation is 0.5118
+./checkpoint/hmdb51_rgb_resnet18_bert10_split1
+
+
+
+
+Accuracy with mean calculation is 0.4876
+./checkpoint/hmdb51_rgb_resnet18_bert10_split2
+
+
+
+Accuracy with mean calculation is 0.4837
+./checkpoint/hmdb51_rgb_resnet18_bert10_split3
+
+3 Split ortalamasi RGB icin 49.87
+
+
+
+
+Optimization Tests with scheduler
+All of them are half frozen
+Swat
+Accuracy with mean calculation is 0.5111
+Center Frame only: 49.804 
+./checkpoint/hmdb51_rgb_resnet18_bert10_split1
+
+ADAM - Sonradan overfit durumu gozlendi
+Accuracy with mean calculation is 0.5150
+Center Frame only: 49.020 
+./checkpoint/hmdb51_rgb_resnet18_bert10_split1
+
+ADAMW
+Accuracy with mean calculation is 0.5242
+Center Frame Only: 50.196
+./checkpoint/hmdb51_rgb_resnet18_bert10_split1
+
+SGD
+Accuracy with mean calculation is 0.5078
+Only Center Frame: 50.458 
+./checkpoint/hmdb51_rgb_resnet18_bert10_split1
+
+
+only last of resnet not frozen
+Accuracy with mean calculation is 0.4810
+./checkpoint/hmdb51_rgb_resnet18_bert10Y_split1
+
+Ten Frame
+Accuracy with mean calculation is 0.5458
+./checkpoint/hmdb51_rgb_resnet152_bert10_split1
+
+Two Frame
+Accuracy with mean calculation is 0.5464
+./checkpoint/hmdb51_rgb_resnet152_bert10_split1
+
+
+
+
+
+
+Only Center Frame
+Accuracy with mean calculation is 0.8065
+./checkpoint/hmdb51_rgb_I3D64f_bert10_split1
+./checkpoint/hmdb51_flow_I3D64f_bert10_split1
+
+Ten Frame
+Accuracy with mean calculation is 0.8111
+./checkpoint/hmdb51_rgb_I3D64f_bert10_split1
+./checkpoint/hmdb51_flow_I3D64f_bert10_split1
+
+
+
+
+
+Accuracy with mean calculation is 0.5144
+./checkpoint/hmdb51_pose_I3D64f_bert10_split1
+
+
+Accuracy with mean calculation is 0.5882
+./checkpoint/hmdb51_flow_resnet152_bert10_split1
+
+Accuracy with mean calculation is 0.5752
+./checkpoint/hmdb51_flow_resnet152_bert10_split2
+
+Accuracy with mean calculation is 0.5837
+./checkpoint/hmdb51_flow_resnet152_bert10_split3
+
+
+Accuracy with mean calculation is 0.6817
+./checkpoint/hmdb51_rgb_resnet152_bert10_split1
+./checkpoint/hmdb51_flow_resnet152_bert10_split1
+
+
+Accuracy with mean calculation is 0.6810
+./checkpoint/hmdb51_rgb_resnet152_bert10_split2
+./checkpoint/hmdb51_flow_resnet152_bert10_split2
+
+
+Accuracy with mean calculation is 0.6582
+./checkpoint/hmdb51_rgb_resnet152_bert10_split3
+./checkpoint/hmdb51_flow_resnet152_bert10_split3
+
+Accuracy with mean calculation is 0.5471
+./checkpoint/hmdb51_rgb_resnet152_bert10_split1
+
+
+Accuracy with mean calculation is 0.5379
+./checkpoint/hmdb51_rgb_resnet152_bert10_split2
+
+
+Accuracy with mean calculation is 0.5386
+./checkpoint/hmdb51_rgb_resnet152_bert10_split3
+
+
+SGD 1e-2
+Accuracy with mean calculation is 0.4902
+./checkpoint/hmdb51_rgb_resnet18_NLB10_split1
+
+With Addition (like Resnet)
+Accuracy with mean calculation is 0.5170
+./checkpoint/hmdb51_rgb_resnet18_NLB10_split1
+
+Without Addition
+Accuracy with mean calculation is 0.5118
+./checkpoint/hmdb51_rgb_resnet18_NLB10_split1
+
+Fully unfrozen
+Accuracy with mean calculation is 0.5092
+./checkpoint/hmdb51_rgb_resnet18_NLB10_split1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
