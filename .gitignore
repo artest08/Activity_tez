@@ -1,5 +1,10 @@
 /checkpoint
-/datasets
+/datasets/hmdb51_frames
+/datasets/hmdb51_splits
+/datasets/ucf101_splits
+/datasets/__pycache__
+/datasets/smtV2_frames
+/datasets/ucf101_frames
 /old checkpoints
 /runs
 /__pycache__
