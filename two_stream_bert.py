@@ -13,8 +13,8 @@ import shutil
 import numpy as np
 
 
-os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]="1"
+# os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
+# os.environ["CUDA_VISIBLE_DEVICES"]="1"
 
 import torch
 import torch.nn as nn
@@ -49,7 +49,7 @@ parser.add_argument('--settings', metavar='DIR', default='./datasets/settings',
 parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51"],
                     help='dataset: ucf101 | hmdb51')
-parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resnet18_NLB10',
+parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resnet18_bert10',
                     choices=model_names,
                     help='model architecture: ' +
                         ' | '.join(model_names) +
@@ -62,9 +62,9 @@ parser.add_argument('--epochs', default=200, type=int, metavar='N',
                     help='number of total epochs to run')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
                     help='manual epoch number (useful on restarts)')
-parser.add_argument('-b', '--batch-size', default=64, type=int,
+parser.add_argument('-b', '--batch-size', default=16, type=int,
                     metavar='N', help='mini-batch size (default: 50)')
-parser.add_argument('--iter-size', default=2, type=int,
+parser.add_argument('--iter-size', default=8, type=int,
                     metavar='I', help='iter size as in Caffe to reduce memory usage (default: 5)')
 parser.add_argument('--new_width', default=340, type=int,
                     metavar='N', help='resize width (default: 340)')
@@ -363,6 +363,8 @@ def build_model():
         print('model path is: %s' %(model_path))
         model = models.__dict__[args.arch](modelPath=model_path, num_classes=51, length=args.num_seg)
     
+    
+    model=torch.nn.DataParallel(model)
     model = model.cuda()
     
     return model
