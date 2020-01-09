@@ -157,6 +157,9 @@ def main():
     
     scheduler = lr_scheduler.ReduceLROnPlateau(
         optimizer, 'max', patience=5, verbose=True)
+    if args.contine:
+        scheduler.step(best_prec1)
+        print('scheduler step with best prec %f' %(best_prec1))
     #optimizer = swats.SWATS(model.parameters(), args.lr)
 
     print("Saving everything to directory %s." % (saveLocation))

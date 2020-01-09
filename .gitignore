@@ -1,4 +1,5 @@
 /checkpoint
+/datasets
 /datasets/hmdb51_frames
 /datasets/hmdb51_splits
 /datasets/ucf101_splits
