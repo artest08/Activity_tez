@@ -46,12 +46,11 @@ class BERT(nn.Module):
         batch_size=input_vectors.shape[0]
         sample=None
         if self.training:
-            bernolliMatrix=torch.cat((torch.tensor([1]).float(), (torch.tensor([self.mask_prob]).float()).repeat(self.max_len)), 0).unsqueeze(0).repeat([batch_size,1])
+            bernolliMatrix=torch.cat((torch.tensor([1]).float().cuda(), (torch.tensor([self.mask_prob]).float().cuda()).repeat(self.max_len)), 0).unsqueeze(0).repeat([batch_size,1])
             self.bernolliDistributor=torch.distributions.Bernoulli(bernolliMatrix)
             sample=self.bernolliDistributor.sample()
-            mask = (sample > 0).unsqueeze(1).repeat(1, sample.size(1), 1).unsqueeze(1).to(device='cuda')
-        else:
-            mask=torch.ones(batch_size,1,self.max_len+1,self.max_len+1).to(device='cuda')
+            mask = (sample > 0).unsqueeze(1).repeat(1, sample.size(1), 1).unsqueeze(1)
+            mask=torch.ones(batch_size,1,self.max_len+1,self.max_len+1).cuda()
 
         # embedding the indexed sequence to sequence of vectors
         x = self.embedding(input_vectors)
@@ -102,12 +101,12 @@ class BERT2(nn.Module):
         batch_size=input_vectors.shape[0]
         sample=None
         if self.training:
-            bernolliMatrix=torch.cat((torch.tensor([1]).float(), (torch.tensor([self.mask_prob]).float()).repeat(self.max_len)), 0).unsqueeze(0).repeat([batch_size,1])
+            bernolliMatrix=torch.cat((torch.tensor([1]).float().cuda(), (torch.tensor([self.mask_prob]).float().cuda()).repeat(self.max_len)), 0).unsqueeze(0).repeat([batch_size,1])
             self.bernolliDistributor=torch.distributions.Bernoulli(bernolliMatrix)
             sample=self.bernolliDistributor.sample()
-            mask = (sample > 0).unsqueeze(1).repeat(1, sample.size(1), 1).unsqueeze(1).to(device='cuda')
+            mask = (sample > 0).unsqueeze(1).repeat(1, sample.size(1), 1).unsqueeze(1)
         else:
-            mask=torch.ones(batch_size,1,self.max_len+1,self.max_len+1).to(device='cuda')
+            mask=torch.ones(batch_size,1,self.max_len+1,self.max_len+1).cuda()
 
         # embedding the indexed sequence to sequence of vectors        
         x = torch.cat((torch.zeros(batch_size,1,self.input_dim).to(device='cuda'),input_vectors),1)
@@ -158,12 +157,12 @@ class BERT3(nn.Module):
         batch_size=input_vectors.shape[0]
         sample=None
         if self.training:
-            bernolliMatrix=torch.cat((torch.tensor([1]).float(), (torch.tensor([self.mask_prob]).float()).repeat(self.max_len)), 0).unsqueeze(0).repeat([batch_size,1])
+            bernolliMatrix=torch.cat((torch.tensor([1]).float().cuda(), (torch.tensor([self.mask_prob]).float().cuda()).repeat(self.max_len)), 0).unsqueeze(0).repeat([batch_size,1])
             self.bernolliDistributor=torch.distributions.Bernoulli(bernolliMatrix)
             sample=self.bernolliDistributor.sample()
-            mask = (sample > 0).unsqueeze(1).repeat(1, sample.size(1), 1).unsqueeze(1).to(device='cuda')
+            mask = (sample > 0).unsqueeze(1).repeat(1, sample.size(1), 1).unsqueeze(1)
         else:
-            mask=torch.ones(batch_size,1,self.max_len+1,self.max_len+1).to(device='cuda')
+            mask=torch.ones(batch_size,1,self.max_len+1,self.max_len+1).cuda()
 
         # embedding the indexed sequence to sequence of vectors
         x = torch.cat((torch.mean(input_vectors,1).unsqueeze(1),input_vectors),1)
@@ -216,12 +215,12 @@ class BERT4(nn.Module):
         batch_size=difference_vectors.shape[0]
         sample=None
         if self.training:
-            bernolliMatrix=torch.cat((torch.tensor([1]).float(), (torch.tensor([self.mask_prob]).float()).repeat(self.max_len)), 0).unsqueeze(0).repeat([batch_size,1])
+            bernolliMatrix=torch.cat((torch.tensor([1]).float().cuda(), (torch.tensor([self.mask_prob]).float().cuda()).repeat(self.max_len)), 0).unsqueeze(0).repeat([batch_size,1])
             self.bernolliDistributor=torch.distributions.Bernoulli(bernolliMatrix)
             sample=self.bernolliDistributor.sample()
-            mask = (sample > 0).unsqueeze(1).repeat(1, sample.size(1), 1).unsqueeze(1).to(device='cuda')
+            mask = (sample > 0).unsqueeze(1).repeat(1, sample.size(1), 1).unsqueeze(1)
         else:
-            mask=torch.ones(batch_size,1,self.max_len+1,self.max_len+1).to(device='cuda')
+            mask=torch.ones(batch_size,1,self.max_len+1,self.max_len+1).cuda()
 
         # embedding the indexed sequence to sequence of vectors
         x = torch.cat((mean_vectors,difference_vectors),1)
@@ -256,7 +255,7 @@ class BERT5(nn.Module):
         self.mask_prob=mask_prob
         
         
-        clsToken = torch.zeros(1,1,self.input_dim).float().to(device='cuda')
+        clsToken = torch.zeros(1,1,self.input_dim).float().cuda()
         clsToken.require_grad = True
         self.clsToken= nn.Parameter(clsToken)
         torch.nn.init.normal_(clsToken,std=0.02)
@@ -279,12 +278,12 @@ class BERT5(nn.Module):
         batch_size=input_vectors.shape[0]
         sample=None
         if self.training:
-            bernolliMatrix=torch.cat((torch.tensor([1]).float(), (torch.tensor([self.mask_prob]).float()).repeat(self.max_len)), 0).unsqueeze(0).repeat([batch_size,1])
+            bernolliMatrix=torch.cat((torch.tensor([1]).float().cuda(), (torch.tensor([self.mask_prob]).float().cuda()).repeat(self.max_len)), 0).unsqueeze(0).repeat([batch_size,1])
             self.bernolliDistributor=torch.distributions.Bernoulli(bernolliMatrix)
             sample=self.bernolliDistributor.sample()
-            mask = (sample > 0).unsqueeze(1).repeat(1, sample.size(1), 1).unsqueeze(1).to(device='cuda')
+            mask = (sample > 0).unsqueeze(1).repeat(1, sample.size(1), 1).unsqueeze(1)
         else:
-            mask=torch.ones(batch_size,1,self.max_len+1,self.max_len+1).to(device='cuda')
+            mask=torch.ones(batch_size,1,self.max_len+1,self.max_len+1).cuda()
 
         # embedding the indexed sequence to sequence of vectors
         x = torch.cat((self.clsToken.repeat(batch_size,1,1),input_vectors),1)
@@ -338,12 +337,12 @@ class BERT6(nn.Module):
         batch_size=input_vectors.shape[0]
         sample=None
         if self.training:
-            bernolliMatrix=torch.cat((torch.tensor([1]).float(), (torch.tensor([self.mask_prob]).float()).repeat(self.max_len)), 0).unsqueeze(0).repeat([batch_size,1])
+            bernolliMatrix=torch.cat((torch.tensor([1]).float().cuda(), (torch.tensor([self.mask_prob]).float().cuda()).repeat(self.max_len)), 0).unsqueeze(0).repeat([batch_size,1])
             self.bernolliDistributor=torch.distributions.Bernoulli(bernolliMatrix)
             sample=self.bernolliDistributor.sample()
-            mask = (sample > 0).unsqueeze(1).repeat(1, sample.size(1), 1).unsqueeze(1).to(device='cuda')
+            mask = (sample > 0).unsqueeze(1).repeat(1, sample.size(1), 1).unsqueeze(1)
         else:
-            mask=torch.ones(batch_size,1,self.max_len+1,self.max_len+1).to(device='cuda')
+            mask=torch.ones(batch_size,1,self.max_len+1,self.max_len+1).cuda()
 
         # embedding the indexed sequence to sequence of vectors
         x = torch.cat((summary_vector,input_vectors),1)
