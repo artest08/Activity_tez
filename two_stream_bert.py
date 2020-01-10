@@ -62,9 +62,9 @@ parser.add_argument('--epochs', default=200, type=int, metavar='N',
                     help='number of total epochs to run')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
                     help='manual epoch number (useful on restarts)')
-parser.add_argument('-b', '--batch-size', default=16, type=int,
+parser.add_argument('-b', '--batch-size', default=64, type=int,
                     metavar='N', help='mini-batch size (default: 50)')
-parser.add_argument('--iter-size', default=8, type=int,
+parser.add_argument('--iter-size', default=1, type=int,
                     metavar='I', help='iter size as in Caffe to reduce memory usage (default: 5)')
 parser.add_argument('--new_width', default=340, type=int,
                     metavar='N', help='resize width (default: 340)')
@@ -507,6 +507,9 @@ def train(train_loader, model, criterion, criterion2, optimizer, epoch,setMseCoe
             acc_mini_batch = 0
             acc_mini_batch_top3 = 0.0
             totalSamplePerIter = 0.0
+            
+        if (i+1) % args.print_freq == 0:
+            print('[%d] time: %.3f loss: %.4f' %(i,batch_time.avg,lossesClassification.avg))
 #        if (i+1) % args.print_freq == 0:
 #
 #            print('Epoch: [{0}][{1}/{2}]\t'

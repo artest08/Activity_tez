@@ -492,7 +492,6 @@ def train(train_loader, model, criterion, criterion2, optimizer, epoch,modality)
             acc_mini_batch = 0
             acc_mini_batch_top3 = 0.0
             totalSamplePerIter = 0.0
-            print('girdi2')
             
         if (i+1) % args.print_freq == 0:
             print('[%d] time: %.3f loss: %.4f' %(i,batch_time.avg,lossesClassification.avg))
