@@ -14,7 +14,7 @@ import numpy as np
 
 
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]="0"
+os.environ["CUDA_VISIBLE_DEVICES"]="0,1"
 
 import torch
 import torch.nn as nn
@@ -46,7 +46,7 @@ parser.add_argument('--settings', metavar='DIR', default='./datasets/settings',
 #parser.add_argument('--modality', '-m', metavar='MODALITY', default='rgb',
 #                    choices=["rgb", "flow"],
 #                    help='modality: rgb | flow')
-parser.add_argument('--dataset', '-d', default='smtV2',
+parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51", "smtV2"],
                     help='dataset: ucf101 | hmdb51 | smtV2')
 parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resneXt3D64f101_bert10XY',
@@ -377,6 +377,7 @@ def build_model():
         print('model path is: %s' %(model_path))
         model = models.__dict__[args.arch](modelPath=model_path, num_classes=174, length=args.num_seg)
     
+    model=torch.nn.DataParallel(model)
     model = model.cuda()
     
     return model
@@ -491,6 +492,10 @@ def train(train_loader, model, criterion, criterion2, optimizer, epoch,modality)
             acc_mini_batch = 0
             acc_mini_batch_top3 = 0.0
             totalSamplePerIter = 0.0
+            print('girdi2')
+            
+        if (i+1) % args.print_freq == 0:
+            print('[%d] time: %.3f loss: %.4f' %(i,batch_time.avg,lossesClassification.avg))
           
     print(' * Epoch: {epoch} Prec@1 {top1.avg:.3f} Prec@3 {top3.avg:.3f} Classification Loss {lossClassification.avg:.4f}\n'
           .format(epoch = epoch, top1=top1, top3=top3, lossClassification=lossesClassification))
