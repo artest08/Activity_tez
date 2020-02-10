@@ -89,12 +89,12 @@ def VideoSpatialPrediction_bert(
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         img_flip = img[:,::-1,:].copy()
         #img_flip2 = img2[:,::-1,:].copy()
-        imageList1.append(img[16:240, 60:284, :])
+        imageList1.append(img[16:240, 58:282, :])
         imageList2.append(img[:224, :224, :])
         imageList3.append(img[:224, -224:, :])
         imageList4.append(img[-224:, :224, :])
         imageList5.append(img[-224:, -224:, :])
-        imageList6.append(img_flip[16:240, 60:284, :])
+        imageList6.append(img_flip[16:240, 58:282, :])
         imageList7.append(img_flip[:224, :224, :])
         imageList8.append(img_flip[:224, -224:, :])
         imageList9.append(img_flip[-224:, :224, :])
@@ -104,7 +104,7 @@ def VideoSpatialPrediction_bert(
 
 
     imageList=imageList1+imageList2+imageList3+imageList4+imageList5+imageList6+imageList7+imageList8+imageList9+imageList10
-    
+    #imageList=imageList1+imageList2+imageList3+imageList4+imageList5
     #imageList=imageList1+imageList6
     
     #imageList=imageList11+imageList12
@@ -119,8 +119,9 @@ def VideoSpatialPrediction_bert(
     input_data=np.concatenate(rgb_list,axis=0)   
     with torch.no_grad():
         imgDataTensor = torch.from_numpy(input_data).type(torch.FloatTensor).cuda()
-        #output, input_vectors, sequenceOut, maskSample = net(imgDataTensor)
-        output = net(imgDataTensor)
+        output, _, _, _ = net(imgDataTensor)
+        #output, _ , _ = net(imgDataTensor)
+#        output = net(imgDataTensor)
 #        outputSoftmax=soft(output)
         result = output.data.cpu().numpy()
         mean_result=np.mean(result,0)

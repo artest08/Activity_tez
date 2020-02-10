@@ -814,6 +814,53 @@ Accuracy with mean calculation is 0.5092
 ./checkpoint/hmdb51_rgb_resnet18_NLB10_split1
 
 
+ranking jointly
+Accuracy with mean calculation is 0.5013
+./checkpoint/hmdb51_rgb_resnet18_RankingBert10_split1
+
+Constant Embedding
+Accuracy with mean calculation is 0.5065
+./checkpoint/hmdb51_rgb_resnet18_bert9_split1
+
+No embedding
+Accuracy with mean calculation is 0.5059
+./checkpoint/hmdb51_rgb_resnet18_bert8_split1
+
+Learned Embedding dusuk cikti, niye bole oldu
+Accuracy with mean calculation is 0.4961
+./checkpoint/hmdb51_rgb_resnet18_bert10_split1
+
+Validation 10 frame ile secilirse
+Accuracy with mean calculation is 0.5654
+./checkpoint/hmdb51_rgb_resnet152_bert10_split1
+
+Validation 10 frame ile secilirse
+Accuracy with mean calculation is 0.5856
+./checkpoint/hmdb51_flow_resnet152_bert10_split1
+Mean Estimated Time 0.7034
+
+Validation 10 frame ile secilirse
+Accuracy with mean calculation is 0.6889
+./checkpoint/hmdb51_rgb_resnet152_bert10_split1
+./checkpoint/hmdb51_flow_resnet152_bert10_split1
+
+Validation 10 frame ile secilirse
+Accuracy with mean calculation is 0.5523
+./checkpoint/hmdb51_rgb_resnet152_bert10_split2
+
+Validation 10 frame ile secilirse
+Accuracy with mean calculation is 0.5967
+./checkpoint/hmdb51_flow_resnet152_bert10_split2
+
+Validation 10 frame ile secilirse
+Accuracy with mean calculation is 0.6837
+./checkpoint/hmdb51_rgb_resnet152_bert10_split2
+./checkpoint/hmdb51_flow_resnet152_bert10_split2
+
+Validation 10 frame ile secilirse
+Accuracy with mean calculation is 0.5660
+./checkpoint/hmdb51_rgb_resnet152_bert10_split3
+
 
 
 

@@ -38,10 +38,10 @@ parser.add_argument('--settings', metavar='DIR', default='./datasets/settings',
 #parser.add_argument('--modality', '-m', metavar='MODALITY', default='rgb',
 #                    choices=["rgb", "flow"],
 #                    help='modality: rgb | flow')
-parser.add_argument('--dataset', '-d', default='hmdb51',
-                    choices=["ucf101", "hmdb51"],
+parser.add_argument('--dataset', '-d', default='window',
+                    choices=["ucf101", "hmdb51", "window"],
                     help='dataset: ucf101 | hmdb51')
-parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resnet18_NLB10',
+parser.add_argument('--arch', '-a', metavar='ARCH', default='flow_resnet18',
                     choices=model_names,
                     help='model architecture: ' +
                         ' | '.join(model_names) +
@@ -51,13 +51,13 @@ parser.add_argument('-s', '--split', default=1, type=int, metavar='S',
                     help='which split of data to work on (default: 1)')
 parser.add_argument('-j', '--workers', default=8, type=int, metavar='N',
                     help='number of data loading workers (default: 4)')
-parser.add_argument('--epochs', default=250, type=int, metavar='N',
+parser.add_argument('--epochs', default=50, type=int, metavar='N',
                     help='number of total epochs to run')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
                     help='manual epoch number (useful on restarts)')
-parser.add_argument('-b', '--batch-size', default=64, type=int,
+parser.add_argument('-b', '--batch-size', default=8, type=int,
                     metavar='N', help='mini-batch size (default: 50)')
-parser.add_argument('--iter-size', default=2, type=int,
+parser.add_argument('--iter-size', default=1, type=int,
                     metavar='I', help='iter size as in Caffe to reduce memory usage (default: 5)')
 parser.add_argument('--new_length', default=10, type=int,
                     metavar='N', help='length of sampled video frames (default: 1)')
@@ -75,10 +75,10 @@ parser.add_argument('--weight-decay', '--wd', default=1e-3, type=float,
                     metavar='W', help='weight decay (default: 5e-4)')
 parser.add_argument('--print-freq', default=50, type=int,
                     metavar='N', help='print frequency (default: 50)')
-parser.add_argument('--save-freq', default=15, type=int,
+parser.add_argument('--save-freq', default=1, type=int,
                     metavar='N', help='save frequency (default: 25)')
-parser.add_argument('--num-seg', default=4, type=int,
-                    metavar='N', help='Number of segments for validation (default: 4)')
+# parser.add_argument('--num-seg', default=4, type=int,
+#                     metavar='N', help='Number of segments for validation (default: 4)')
 #parser.add_argument('--resume', default='./deneme', type=str, metavar='PATH',
 #                    help='path to latest checkpoint (default: none)')
 parser.add_argument('-e', '--evaluate', dest='evaluate', action='store_true',
@@ -132,6 +132,8 @@ def main():
         dataset='./datasets/ucf101_frames'
     elif args.dataset=='hmdb51':
         dataset='./datasets/hmdb51_frames'
+    elif args.dataset=='window':
+        dataset='./datasets/window_frames'
     else:
         print("No convenient dataset entered, exiting....")
         return 0
@@ -250,6 +252,8 @@ def build_model():
         model = models.__dict__[args.arch](pretrained=True, num_classes=101)
     elif args.dataset=='hmdb51':
         model = models.__dict__[args.arch](pretrained=True, num_classes=51)
+    elif args.dataset=='window':
+        model = models.__dict__[args.arch](pretrained=True, num_classes=3)
     model = model.cuda()
     return model
 

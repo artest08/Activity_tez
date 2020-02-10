@@ -14,7 +14,7 @@ import numpy as np
 
 
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]="0"
+os.environ["CUDA_VISIBLE_DEVICES"]="1"
 
 import torch
 import torch.nn as nn
@@ -47,24 +47,24 @@ parser.add_argument('--settings', metavar='DIR', default='./datasets/settings',
 #                    choices=["rgb", "flow"],
 #                    help='modality: rgb | flow')
 parser.add_argument('--dataset', '-d', default='hmdb51',
-                    choices=["ucf101", "hmdb51", "smtV2", "window"],
+                    choices=["ucf101", "hmdb51", "smtV2"],
                     help='dataset: ucf101 | hmdb51')
-parser.add_argument('--arch', '-a', metavar='ARCH', default='flow_resnet152_bert10',
+parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resnet18_bert10',
                     choices=model_names,
                     help='model architecture: ' +
                         ' | '.join(model_names) +
                         ' (default: rgb_vgg16)')
-parser.add_argument('-s', '--split', default=3, type=int, metavar='S',
+parser.add_argument('-s', '--split', default=1, type=int, metavar='S',
                     help='which split of data to work on (default: 1)')
-parser.add_argument('-j', '--workers', default=0, type=int, metavar='N',
+parser.add_argument('-j', '--workers', default=4, type=int, metavar='N',
                     help='number of data loading workers (default: 4)')
-parser.add_argument('--epochs', default=100, type=int, metavar='N',
+parser.add_argument('--epochs', default=200, type=int, metavar='N',
                     help='number of total epochs to run')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
                     help='manual epoch number (useful on restarts)')
-parser.add_argument('-b', '--batch-size', default=2, type=int,
+parser.add_argument('-b', '--batch-size', default=16, type=int,
                     metavar='N', help='mini-batch size (default: 50)')
-parser.add_argument('--iter-size', default=64, type=int,
+parser.add_argument('--iter-size', default=8, type=int,
                     metavar='I', help='iter size as in Caffe to reduce memory usage (default: 5)')
 parser.add_argument('--new_width', default=340, type=int,
                     metavar='N', help='resize width (default: 340)')
@@ -78,11 +78,11 @@ parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
                     help='momentum')
 parser.add_argument('--weight-decay', '--wd', default=1e-3, type=float,
                     metavar='W', help='weight decay (default: 5e-4)')
-parser.add_argument('--print-freq', default=1000, type=int,
+parser.add_argument('--print-freq', default=50, type=int,
                     metavar='N', help='print frequency (default: 50)')
 parser.add_argument('--save-freq', default=1, type=int,
                     metavar='N', help='save frequency (default: 25)')
-parser.add_argument('--num-seg', default=16, type=int,
+parser.add_argument('--num-seg', default=1, type=int,
                     metavar='N', help='Number of segments for temporal LSTM (default: 16)')
 #parser.add_argument('--resume', default='./dene4', type=str, metavar='PATH',
 #                    help='path to latest checkpoint (default: none)')
@@ -93,9 +93,6 @@ parser.add_argument('-c', '--continue', dest='contine', action='store_true',
                     help='evaluate model on validation set')
 
 parser.add_argument('-r', '--ranking', dest='ranking', action='store_true',
-                    help='enable ranking mode')
-
-parser.add_argument('-more', '--more-cropping', dest='more_cropping', action='store_true',
                     help='enable ranking mode')
 
 
@@ -153,6 +150,11 @@ def main():
    
     # create model
 
+    if "3D" in args.arch:
+        length=16
+    else:
+        length=16
+        
     if args.evaluate:
         print("Building validation model ... ")
         model = build_model_validate()
@@ -180,7 +182,6 @@ def main():
     criterion = nn.CrossEntropyLoss().cuda()
     criterion2 = nn.MSELoss().cuda()
     
-    
 
 #    optimizer = torch.optim.SGD(model.parameters(), args.lr,
 #                                momentum=args.momentum,
@@ -195,20 +196,13 @@ def main():
         dataset='./datasets/ucf101_frames'
     elif args.dataset=='hmdb51':
         dataset='./datasets/hmdb51_frames'
-    elif args.dataset=='smtV2':
-        dataset='./datasets/smtV2_frames'
-    elif args.dataset=='window':
-        dataset='./datasets/window_frames'
     else:
         print("No convenient dataset entered, exiting....")
         return 0
     
     cudnn.benchmark = True
     modality=args.arch.split('_')[0]
-    if "3D" in args.arch:
-        length=16
-    else:
-        length=1
+
     # Data transforming
     if modality == "rgb":
         is_color = True
@@ -235,33 +229,23 @@ def main():
         print("No such modality. Only rgb and flow supported.")
 
     
-    normalize = video_transforms.Normalize3(mean=clip_mean,
+    normalize = video_transforms.Normalize(mean=clip_mean,
                                            std=clip_std)
     train_transform = video_transforms.Compose([
             # video_transforms.Scale((256)),
-            #video_transforms.CenterCrop((224)),
             video_transforms.MultiScaleCrop((224, 224), scale_ratios),
             video_transforms.RandomHorizontalFlip(),
             video_transforms.ToTensor(),
             normalize,
         ])
 
+    val_transform = video_transforms.Compose([
+            # video_transforms.Scale((256)),
+            video_transforms.CenterCrop((224)),
+            video_transforms.ToTensor(),
+            normalize,
+        ])
 
-    if args.more_cropping:  
-        print('more cropping is enabled')
-        val_transform = video_transforms.Compose([
-                # video_transforms.Scale((256)),
-                video_transforms.MultiScaleFixedCrop((224, 224)),
-                video_transforms.ToTensor3(),
-                normalize,
-            ])
-    else:
-        val_transform = video_transforms.Compose([
-                # video_transforms.Scale((256)),
-                video_transforms.CenterCrop((224)),
-                video_transforms.ToTensor(),
-                normalize,
-            ])
     # data loading
     train_setting_file = "train_%s_split%d.txt" % (modality, args.split)
     train_split_file = os.path.join(args.settings, args.dataset, train_setting_file)
@@ -326,7 +310,7 @@ def main():
             scheduler.step(prec1)
         # remember best prec@1 and save checkpoint
         
-        is_best = prec1 >= best_prec1
+        is_best = prec1 > best_prec1
         best_prec1 = max(prec1, best_prec1)
         
 #        is_best = lossClassification < best_loss
@@ -383,16 +367,13 @@ def build_model():
         
     if args.dataset=='ucf101':
         print('model path is: %s' %(model_path))
-        model = models.__dict__[args.arch](modelPath=model_path, num_classes=101,length=args.num_seg)
+        model = models.__dict__[args.arch](modelPath=model_path, num_classes=101,length=length)
     elif args.dataset=='hmdb51':
         print('model path is: %s' %(model_path))
-        model = models.__dict__[args.arch](modelPath=model_path, num_classes=51, length=args.num_seg)
+        model = models.__dict__[args.arch](modelPath=model_path, num_classes=51, length=length)
     elif args.dataset=='smtV2':
         print('model path is: %s' %(model_path))
-        model = models.__dict__[args.arch](modelPath=model_path, num_classes=174, length=args.num_seg)  
-    elif args.dataset=='window':
-        print('model path is: %s' %(model_path))
-        model = models.__dict__[args.arch](modelPath=model_path, num_classes=3, length=args.num_seg)  
+        model = models.__dict__[args.arch](modelPath=model_path, num_classes=174, length=length)   
         
     if torch.cuda.device_count() > 1:
         print('Multi-GPU test enabled...')
@@ -415,9 +396,6 @@ def build_model_validate():
     elif args.dataset=='smtV2':
         print('model path is: %s' %(model_path))
         model = models.__dict__[args.arch](modelPath=model_path, num_classes=174, length=args.num_seg)
-    elif args.dataset=='window':
-        print('model path is: %s' %(model_path))
-        model = models.__dict__[args.arch](modelPath=model_path, num_classes=3, length=args.num_seg)  
    
     model.load_state_dict(params['state_dict'])
     model.cuda()
@@ -454,7 +432,7 @@ def train(train_loader, model, criterion, criterion2, optimizer, epoch,setMseCoe
     lossesRanking=AverageMeter()
     top1 = AverageMeter()
     top3 = AverageMeter()
-    criterion3 = torch.nn.CosineSimilarity(dim = 2)
+    
     msecoeff=torch.tensor(setMseCoeff).cuda()
 
     # switch to train mode
@@ -475,7 +453,7 @@ def train(train_loader, model, criterion, criterion2, optimizer, epoch,setMseCoe
             if "3D" in args.arch:
                 inputs=inputs.view(-1,length,3,224,224).transpose(1,2)
             else:
-                inputs=inputs.view(-1,3*length,224,224)
+                inputs=inputs.view(-1,3,224,224)
         elif modality == "flow":
             inputs=inputs.view(-1,2*length,224,224)            
         elif modality == "both":
@@ -506,8 +484,7 @@ def train(train_loader, model, criterion, criterion2, optimizer, epoch,setMseCoe
         #lossRanking = criterion(out_rank, targetRank)
         lossRanking=torch.tensor([0]).cuda()
         lossClassification = criterion(output, targets)
-        #lossMSE = criterion2(input_vectors, sequenceOut)
-        lossMSE = torch.mean(1 - criterion3(input_vectors,sequenceOut))
+        lossMSE = criterion2(input_vectors, sequenceOut)
         lossBatchSimilarity=BatchSimilarityLossFunction(sequenceOut,input_vectors)
         lossSequenceSimilarity=SequenceSimilarityLossFunction(input_vectors,input_vectors)
         
@@ -519,7 +496,7 @@ def train(train_loader, model, criterion, criterion2, optimizer, epoch,setMseCoe
         
         #totalLoss=lossMSE
         totalLoss=lossClassification 
-        #totalLoss = lossMSE * torch.tensor(20).cuda() + lossClassification 
+        #totalLoss = lossMSE + lossClassification 
         loss_mini_batch_classification += lossClassification.data.item()
         loss_mini_batch_MSE += lossMSE.data.item()
         loss_mini_batch_batchSimilarity += lossBatchSimilarity.data.item()
@@ -548,10 +525,9 @@ def train(train_loader, model, criterion, criterion2, optimizer, epoch,setMseCoe
             acc_mini_batch = 0
             acc_mini_batch_top3 = 0.0
             totalSamplePerIter = 0.0
-    
             
         if (i+1) % args.print_freq == 0:
-            print('[%d] time: %.3f loss: %.4f' %(i,batch_time.avg,lossesMSE.avg))
+            print('[%d] time: %.3f loss: %.4f' %(i,batch_time.avg,lossesClassification.avg))
 #        if (i+1) % args.print_freq == 0:
 #
 #            print('Epoch: [{0}][{1}/{2}]\t'
@@ -594,7 +570,6 @@ def validate(val_loader, model, criterion,criterion2,modality):
     lossesRanking=AverageMeter()
     top1 = AverageMeter()
     top3 = AverageMeter()
-    criterion3 = torch.nn.CosineSimilarity(dim = 2)
     # switch to evaluate mode
     model.eval()
 
@@ -619,18 +594,8 @@ def validate(val_loader, model, criterion,criterion2,modality):
     
             # compute output
             output, input_vectors, sequenceOut, maskSample = model(inputs)
-            if args.more_cropping:
-                
-                if args.dataset=='ucf101':
-                    output = output.view(-1,10,101)
-                elif args.dataset=='hmdb51':
-                    output = output.view(-1,10,51)
-                elif args.dataset=='smtV2':
-                    output = output.view(-1,10,174)
-                elif args.dataset=='window':
-                    output = output.view(-1,10,3) 
-                
-                output = torch.mean(output, dim = 1)
+
+            
 #            input_vectors_rank=input_vectors.view(-1,input_vectors.shape[-1])
 #            targetRank=torch.tensor(range(args.num_seg)).repeat(input_vectors.shape[0]).cuda()
 #            rankingFC = nn.Linear(input_vectors.shape[-1], args.num_seg).cuda()
@@ -641,8 +606,7 @@ def validate(val_loader, model, criterion,criterion2,modality):
             lossRanking=torch.tensor([0]).cuda()
             
             lossClassification = criterion(output, targets)
-            #lossMSE = criterion2(input_vectors, sequenceOut)
-            lossMSE = torch.mean(1 - criterion3(input_vectors,sequenceOut))
+            lossMSE = criterion2(input_vectors, sequenceOut)
             lossBatchSimilarity=BatchSimilarityLossFunction(sequenceOut,input_vectors)
             lossSequenceSimilarity=SequenceSimilarityLossFunction(input_vectors,input_vectors)
     

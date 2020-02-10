@@ -51,10 +51,19 @@ class ToTensor(object):
             # backward compatibility
             return clips.float().div(255.0)
         
-class ToTensor2(object):
+class ToTensor3(object):
     """Converts a numpy.ndarray (H x W x C) in the range
     [0, 255] to a torch.FloatTensor of shape (C x H x W) in the range [0.0, 1.0].
     """
+
+    def __call__(self, clips):
+        if isinstance(clips, np.ndarray):
+            # handle numpy array
+            clips = torch.from_numpy(clips.transpose((3, 2, 0, 1)))
+            # backward compatibility
+            return clips.float().div(255.0)
+        
+class ToTensor2(object):
 
     def __call__(self, clips):
         if isinstance(clips, np.ndarray):
@@ -87,9 +96,31 @@ class Normalize(object):
 
     def __call__(self, tensor):
         # TODO: make efficient
-        for t, m, s in zip(tensor, self.mean, self.std):
-            t.sub_(m).div_(s)
-        return tensor
+        torch_mean = torch.tensor([[self.mean]]).view(-1,1,1).float()
+        torch_std = torch.tensor([[self.std]]).view(-1,1,1).float()
+        tensor2 = (tensor - torch_mean) / torch_std
+        # for t, m, s in zip(tensor, self.mean, self.std):
+        #     t.sub_(m).div_(s)
+        return tensor2
+    
+class Normalize3(object):
+    """Given mean: (R, G, B) and std: (R, G, B),
+    will normalize each channel of the torch.*Tensor, i.e.
+    channel = (channel - mean) / std
+    Here, the input is a clip, not a single image. (multi-channel data)
+    The dimension of mean and std depends on parameter: new_length
+    If new_length = 1, it falls back to single image case (3 channel)
+    """
+
+    def __init__(self, mean, std):
+        self.mean = mean
+        self.std = std
+
+    def __call__(self, tensor):
+        torch_mean = torch.tensor([[self.mean]]).view(1,-1,1,1)
+        torch_std = torch.tensor([[self.std]]).view(1,-1,1,1)
+        tensor2 = (tensor - torch_mean) / torch_std
+        return tensor2
 
 class Normalize2(object):
 
@@ -377,7 +408,61 @@ class MultiScaleCrop(object):
                 return scaled_clips, off_sel
 
 
+class MultiScaleFixedCrop(object):
+
+    def __init__(self, size, interpolation=cv2.INTER_LINEAR):
+        self.height = size[0]
+        self.width = size[1]
+        self.interpolation = interpolation
+
+    def fillFixOffset(self, datum_height, datum_width):
+        h_off = int((datum_height - self.height) / 4)
+        w_off = int((datum_width - self.width) / 4)
+
+        offsets = []
+        offsets.append((0, 0))          # upper left
+        offsets.append((0, 4*w_off))    # upper right
+        offsets.append((4*h_off, 0))    # lower left
+        offsets.append((4*h_off, 4*w_off))  # lower right
+        offsets.append((2*h_off, 2*w_off))  # center
+
+        return offsets
 
 
+    def __call__(self, clips, selectedRegionOutput=False):
+        h, w, c = clips.shape
+        is_color = False
+        if c % 3 == 0:
+            is_color = True
+
+        crop_height = 224
+        crop_width = 224
 
 
+        offsets = self.fillFixOffset(h, w)
+        scaled_clips_list = []
+        for offset in offsets:
+            h_off = offset[0]
+            w_off = offset[1]
+    
+    
+            scaled_clips = np.zeros((self.height,self.width,c))
+            scaled_clips_flips = np.zeros((self.height,self.width,c))
+            if is_color:
+                num_imgs = int(c / 3)
+                for frame_id in range(num_imgs):
+                    cur_img = clips[:,:,frame_id*3:frame_id*3+3]
+                    crop_img = cur_img[h_off:h_off+crop_height, w_off:w_off+crop_width, :]
+                    scaled_clips[:,:,frame_id*3:frame_id*3+3] = cv2.resize(crop_img, (self.width, self.height), self.interpolation)
+                    scaled_clips_flips = scaled_clips[:,::-1,:].copy()
+            else:
+                num_imgs = int(c / 1)
+                for frame_id in range(num_imgs):
+                    cur_img = clips[:,:,frame_id:frame_id+1]
+                    crop_img = cur_img[h_off:h_off+crop_height, w_off:w_off+crop_width, :]
+                    scaled_clips[:,:,frame_id:frame_id+1] = np.expand_dims(cv2.resize(crop_img, (self.width, self.height), self.interpolation), axis=2)
+                    scaled_clips_flips = scaled_clips[:,::-1,:].copy()
+                    
+            scaled_clips_list.append(np.expand_dims(scaled_clips,-1))
+            scaled_clips_list.append(np.expand_dims(scaled_clips_flips,-1))
+        return np.concatenate(scaled_clips_list,axis=-1)

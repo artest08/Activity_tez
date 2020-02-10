@@ -5,11 +5,13 @@ import sys
 from time import time
 from models.poseNet import openPoseL2Part
 from models.convGRU import ConvGRU
-from .BERT.bert import BERT, BERT2, BERT3, BERT4, BERT5, BERT6
+from .BERT.bert import BERT3, BERT4, BERT5, BERT6, BERT7
 from .NLB.NLBlockND import NLBlockND
 from .BERT.embedding import BERTEmbedding
 import torch
 import numpy as np
+import itertools as it
+import math
 
 __all__ = ['ResNet', 'rgb_resnet18', 'rgb_resnet34', 'rgb_resnet50', 'rgb_resnet101',
            'rgb_resnet152','rgb_openpose_resnet152_type1','rgb_openpose_resnet152_type2'
@@ -18,15 +20,14 @@ __all__ = ['ResNet', 'rgb_resnet18', 'rgb_resnet34', 'rgb_resnet50', 'rgb_resnet
            ,'rgb_resnet152_lstmType5',
            'rgb_resnet152_convGRUType1','rgb_resnet18_convGRUType1','rgb_resnet18_convGRUType2'
            ,'rgb_resnet152_pooling1','rgb_resnet18_lstmType6', 'rgb_resnet18_lstmType5','rgb_resnet18_lstmType2','rgb_resnet18_lstmType1',
-           'rgb_resnet18_lstmType7',
-           'rgb_resnet18_lstmType4','rgb_resnet18_bert','rgb_resnet18_bert2','rgb_resnet18_bert3','rgb_resnet18_bert4','rgb_resnet18_bert5'
-           ,'rgb_resnet18_bert6','rgb_resnet18_bert7','rgb_resnet18_bert8','rgb_resnet18_bert10','rgb_resnet18_bert11'
+           'rgb_resnet18_lstmType7', 'rgb_resnet18_bert8', 'rgb_resnet18_bert9',
+           'rgb_resnet18_lstmType4','rgb_resnet18_bert10','rgb_resnet18_bert11'
            , 'rgb_resnet18_bert12','rgb_resnet18_bert13','rgb_resnet18_bert14','rgb_resnet18_bert15', 'rgb_resnet18_bert16' 
            ,'rgb_resnet18_pooling1','rgb_resnet18_pooling2','rgb_resnet18_pooling3','rgb_resnet18_pooling4','rgb_resnet18_pooling5','rgb_resnet18_pooling6'
-           ,'rgb_resnet18_lstmType3','rgb_resnet18_bert9','rgb_resnet152_bert4','rgb_resnet152_bert10','rgb_resnet152_lstmType6',
+           ,'rgb_resnet18_lstmType3','rgb_resnet152_bert10','rgb_resnet152_lstmType6',
            'rgb_resnet18_bert17','rgb_resnet18_bert10Y',
            'rgb_resnet34_bert10','rgb_resnet50_bert10X','rgb_resnet152_bert10X','rgb_resnet152_bert10XX',
-           'rgb_resnet18_NLB10']
+           'rgb_resnet18_NLB10','rgb_resnet18_RankingBert10','rgb_resnet18_RankingBert8','rgb_resnet18_RankingBert8Seg3']
 
 
 model_urls = {
@@ -779,462 +780,130 @@ class rgb_resnet18_lstmType6(nn.Module):
         output=self.dp(output)
         x = self.fc_action(output)
         return x
-    
 
-class rgb_resnet18_bert(nn.Module):
+class rgb_resnet18_RankingBert8(nn.Module):
     def __init__(self, num_classes , length, modelPath=''):
-        super(rgb_resnet18_bert, self).__init__()
-        self.frozenFeatureWeights=True
-        self.hidden_size=512
-        self.n_layers=12
-        self.attn_heads=8
-        self.num_classes=num_classes
-        self.length=length
-        self.dp = nn.Dropout(p=0.8)
-        
-        if modelPath=='':
-            self.features=nn.Sequential(*list(rgb_resnet18(pretrained=True).children())[:-3])
-        else:
-            self.features=nn.Sequential(*list(_trained_rgb_resnet18(modelPath,num_classes=num_classes).children())[:-3])
-        
-        self.avgpool = nn.AvgPool2d(7)
-        self.bert = BERT2(512,length, hidden=self.hidden_size, n_layers=self.n_layers, attn_heads=self.attn_heads)
-        print(sum(p.numel() for p in self.bert.parameters() if p.requires_grad))
-        self.fc_action = nn.Linear(512, num_classes)
-            
-        if self.frozenFeatureWeights:
-            for param in self.features.parameters():
-                param.requires_grad = False
-                
-        torch.nn.init.xavier_uniform_(self.fc_action.weight)
-        self.fc_action.bias.data.zero_()
-        
-    def forward(self, x):
-        x = self.features(x)
-        x = self.avgpool(x)
-        x = x.view(x.size(0), -1)
-        x = x.view(-1,self.length,512)
-        input_vectors=x
-        output , maskSample = self.bert(x)
-        classificationOut = output[:,0,:]
-        sequenceOut=output[:,1:,:]
-        output=self.dp(classificationOut)
-        x = self.fc_action(output)
-        return x, input_vectors, sequenceOut, maskSample
-    
-    
-class rgb_resnet18_bert2(nn.Module):
-    def __init__(self, num_classes , length, modelPath=''):
-        super(rgb_resnet18_bert2, self).__init__()
-        self.frozenFeatureWeights=True
+        super(rgb_resnet18_RankingBert8, self).__init__()
         self.hidden_size=512
         self.n_layers=1
-        self.attn_heads=8
+        self.attn_heads = 8
         self.num_classes=num_classes
         self.length=length
         self.dp = nn.Dropout(p=0.8)
+        self.pertutation_matrix, self.possibility_count = self.__create_ordering_matrix()
         
         if modelPath=='':
-            self.features=nn.Sequential(*list(rgb_resnet18(pretrained=True).children())[:-3])
+            self.features1=nn.Sequential(*list(rgb_resnet18(pretrained=True).children())[:-5])
+            self.features2=nn.Sequential(*list(rgb_resnet18(pretrained=True).children())[-5:-3])
         else:
-            self.features=nn.Sequential(*list(_trained_rgb_resnet18(modelPath,num_classes=num_classes).children())[:-3])
-        
+            self.features1=nn.Sequential(*list(_trained_rgb_resnet18(modelPath,num_classes=num_classes).children())[:-5])
+            self.features2=nn.Sequential(*list(_trained_rgb_resnet18(modelPath,num_classes=num_classes).children())[-5:-3])        
         self.avgpool = nn.AvgPool2d(7)
         self.bert = BERT3(512,length, hidden=self.hidden_size, n_layers=self.n_layers, attn_heads=self.attn_heads)
         print(sum(p.numel() for p in self.bert.parameters() if p.requires_grad))
-        self.mapper=nn.Sequential(nn.Linear(512,512),nn.PReLU(),nn.Linear(512,512),nn.PReLU(),nn.Linear(512,512)) 
         self.fc_action = nn.Linear(512, num_classes)
+        self.ranker = nn.Linear(512 * self.length, self.possibility_count)
             
-        if self.frozenFeatureWeights:
-            for param in self.features.parameters():
-                param.requires_grad = False
+        for param in self.features1.parameters():
+            param.requires_grad = False
+        for param in self.features2.parameters():
+            param.requires_grad = True
                 
         torch.nn.init.xavier_uniform_(self.fc_action.weight)
         self.fc_action.bias.data.zero_()
-        
-#        torch.nn.init.xavier_uniform_(self.mapper.weight)
-#        self.mapper.bias.data.zero_()
-        
+    def __create_ordering_matrix(self):
+        possibility_count = math.factorial(self.length)
+        pertutation_matrix=np.empty((self.length,possibility_count))
+        for i,perm in enumerate(it.permutations(range(self.length))):
+          pertutation_matrix[:,i] = perm
+        return pertutation_matrix, possibility_count
+               
     def forward(self, x):
-        x = self.features(x)
+        x = self.features1(x)
+        x = self.features2(x)
         x = self.avgpool(x)
         x = x.view(x.size(0), -1)
         x = x.view(-1,self.length,512)
-        x=self.mapper(x)
-        input_vectors=x
+#        input_vectors=x
+        batch_size = x.shape[0]
+        random_selection_vector_numpy = np.random.randint(self.possibility_count, size = batch_size)
+        x = x[np.array(range(batch_size)), 
+              self.pertutation_matrix[:,random_selection_vector_numpy],:].permute([1,0,2])
+        random_selection_vector_tensor = torch.from_numpy(random_selection_vector_numpy).cuda()
         output , maskSample = self.bert(x)
+        output=self.dp(output)
         classificationOut = output[:,0,:]
         sequenceOut=output[:,1:,:]
-        output=self.dp(classificationOut)
-        x = self.fc_action(output)
-        return x, input_vectors, sequenceOut, maskSample
+        sequence_tobe_ranked = sequenceOut.view(-1,512 * self.length)
+        sequenceRanked = self.ranker(sequence_tobe_ranked)
+        x = self.fc_action(classificationOut)
+        return x, sequenceRanked, sequenceOut, random_selection_vector_tensor
     
-class rgb_resnet18_bert3(nn.Module):
+class rgb_resnet18_RankingBert8Seg3(nn.Module):
     def __init__(self, num_classes , length, modelPath=''):
-        super(rgb_resnet18_bert3, self).__init__()
-        self.frozenFeatureWeights=True
+        super(rgb_resnet18_RankingBert8Seg3, self).__init__()
         self.hidden_size=512
         self.n_layers=1
-        self.attn_heads=16
+        self.attn_heads = 8
         self.num_classes=num_classes
         self.length=length
         self.dp = nn.Dropout(p=0.8)
+#        self.pertutation_matrix = np.array([[1,0,2],[0,1,2],[0,2,1]])
+        self.pertutation_matrix, self.possibility_count = self.__create_ordering_matrix()
         
         if modelPath=='':
-            self.features=nn.Sequential(*list(rgb_resnet18(pretrained=True).children())[:-3])
+            self.features1=nn.Sequential(*list(rgb_resnet18(pretrained=False).children())[:-5])
+            self.features2=nn.Sequential(*list(rgb_resnet18(pretrained=False).children())[-5:-3])
         else:
-            self.features=nn.Sequential(*list(_trained_rgb_resnet18(modelPath,num_classes=num_classes).children())[:-3])
-        
-        self.avgpool = nn.AvgPool2d(7)
-        self.bert = BERT(512,length, hidden=self.hidden_size, n_layers=self.n_layers, attn_heads=self.attn_heads)
-        print(sum(p.numel() for p in self.bert.parameters() if p.requires_grad))
-        self.fc_action = nn.Linear(512, num_classes)
-            
-        if self.frozenFeatureWeights:
-            for param in self.features.parameters():
-                param.requires_grad = False
-                
-        torch.nn.init.xavier_uniform_(self.fc_action.weight)
-        self.fc_action.bias.data.zero_()
-        
-    def forward(self, x):
-        x = self.features(x)
-        x = self.avgpool(x)
-        x = x.view(x.size(0), -1)
-        x = x.view(-1,self.length,512)
-        input_vectors=x
-        output , maskSample = self.bert(x)
-        classificationOut = output[:,0,:]
-        sequenceOut=output[:,1:,:]
-        output=self.dp(classificationOut)
-        x = self.fc_action(output)
-        return x, input_vectors, sequenceOut, maskSample
-    
-class rgb_resnet18_bert4(nn.Module):
-    def __init__(self, num_classes , length, modelPath=''):
-        super(rgb_resnet18_bert4, self).__init__()
-        self.frozenFeatureWeights=False
-        self.hidden_size=512
-        self.n_layers=1
-        self.attn_heads=8
-        self.num_classes=num_classes
-        self.length=length
-        self.dp = nn.Dropout(p=0.8)
-        
-        if modelPath=='':
-            self.features=nn.Sequential(*list(rgb_resnet18(pretrained=True).children())[:-3])
-        else:
-            self.features=nn.Sequential(*list(_trained_rgb_resnet18(modelPath,num_classes=num_classes).children())[:-3])
-        
+            self.features1=nn.Sequential(*list(_trained_rgb_resnet18(modelPath,num_classes=num_classes).children())[:-5])
+            self.features2=nn.Sequential(*list(_trained_rgb_resnet18(modelPath,num_classes=num_classes).children())[-5:-3])        
         self.avgpool = nn.AvgPool2d(7)
         self.bert = BERT3(512,length, hidden=self.hidden_size, n_layers=self.n_layers, attn_heads=self.attn_heads)
         print(sum(p.numel() for p in self.bert.parameters() if p.requires_grad))
-        self.mapper=nn.Linear(512,512)
         self.fc_action = nn.Linear(512, num_classes)
+        self.ranker = nn.Linear(512 * self.length, self.possibility_count)
             
-        if self.frozenFeatureWeights:
-            for param in self.features.parameters():
-                param.requires_grad = False
+        for param in self.features1.parameters():
+            param.requires_grad = True
+        for param in self.features2.parameters():
+            param.requires_grad = True
                 
         torch.nn.init.xavier_uniform_(self.fc_action.weight)
         self.fc_action.bias.data.zero_()
         
-        torch.nn.init.xavier_uniform_(self.mapper.weight)
-        self.mapper.bias.data.zero_()
-        
+    def __create_ordering_matrix(self):
+        possibility_count = math.factorial(self.length)
+        pertutation_matrix=np.empty((self.length,possibility_count))
+        for i,perm in enumerate(it.permutations(range(self.length))):
+          pertutation_matrix[:,i] = perm
+        return pertutation_matrix, possibility_count    
+           
     def forward(self, x):
-        x = self.features(x)
+        x = self.features1(x)
+        x = self.features2(x)
         x = self.avgpool(x)
         x = x.view(x.size(0), -1)
         x = x.view(-1,self.length,512)
-        x=self.mapper(x)
-        input_vectors=x
+#        input_vectors=x
+        batch_size = x.shape[0]
+        random_selection_vector_numpy = np.random.randint(self.possibility_count, size = batch_size)
+        x = x[np.array(range(batch_size)), 
+              self.pertutation_matrix[:,random_selection_vector_numpy],:].permute([1,0,2])
+        random_selection_vector_tensor = torch.from_numpy(random_selection_vector_numpy).cuda()
         output , maskSample = self.bert(x)
+        output=self.dp(output)
         classificationOut = output[:,0,:]
-        sequenceOut=output[:,1:,:]
-        output=self.dp(classificationOut)
-        x = self.fc_action(output)
-        return x, input_vectors, sequenceOut, maskSample
-    
-    
-class rgb_resnet152_bert4(nn.Module):
-    def __init__(self, num_classes , length, modelPath=''):
-        super(rgb_resnet152_bert4, self).__init__()
-        self.frozenFeatureWeights=True
-        self.hidden_size=2048
-        self.n_layers=1
-        self.attn_heads=8
-        self.num_classes=num_classes
-        self.length=length
-        self.dp = nn.Dropout(p=0.8)
-        
-        if modelPath=='':
-            self.features=nn.Sequential(*list(rgb_resnet152(pretrained=True).children())[:-3])
-        else:
-            self.features=nn.Sequential(*list(_trained_rgb_resnet152(modelPath,num_classes=num_classes).children())[:-3])
-        
-        self.avgpool = nn.AvgPool2d(7)
-        self.bert = BERT3(2048,length, hidden=self.hidden_size, n_layers=self.n_layers, attn_heads=self.attn_heads)
-        print(sum(p.numel() for p in self.bert.parameters() if p.requires_grad))
-        self.mapper=nn.Linear(2048,2048)
-        self.fc_action = nn.Linear(2048, num_classes)
-            
-        if self.frozenFeatureWeights:
-            for param in self.features.parameters():
-                param.requires_grad = False
-                
-        torch.nn.init.xavier_uniform_(self.fc_action.weight)
-        self.fc_action.bias.data.zero_()
-        
-        torch.nn.init.xavier_uniform_(self.mapper.weight)
-        self.mapper.bias.data.zero_()
-        
-    def forward(self, x):
-        x = self.features(x)
-        x = self.avgpool(x)
-        x = x.view(x.size(0), -1)
-        x = x.view(-1,self.length,2048)
-        x=self.mapper(x)
-        input_vectors=x
-        output , maskSample = self.bert(x)
-        classificationOut = output[:,0,:]
-        sequenceOut=output[:,1:,:]
-        output=self.dp(classificationOut)
-        x = self.fc_action(output)
-        return x, input_vectors, sequenceOut, maskSample
-
-class rgb_resnet18_bert5(nn.Module):
-    def __init__(self, num_classes , length, modelPath=''):
-        super(rgb_resnet18_bert5, self).__init__()
-        self.frozenFeatureWeights=True
-        self.hidden_size=512
-        self.n_layers=3
-        self.attn_heads=8
-        self.num_classes=num_classes
-        self.length=length
-        self.dp = nn.Dropout(p=0.8)
-        
-        if modelPath=='':
-            self.features=nn.Sequential(*list(rgb_resnet18(pretrained=True).children())[:-3])
-        else:
-            self.features=nn.Sequential(*list(_trained_rgb_resnet18(modelPath,num_classes=num_classes).children())[:-3])
-        
-        self.avgpool = nn.AvgPool2d(7)
-        self.bert = BERT3(512,length, hidden=self.hidden_size, n_layers=self.n_layers, attn_heads=self.attn_heads)
-        print(sum(p.numel() for p in self.bert.parameters() if p.requires_grad))
-        self.mapper=nn.Linear(512,512)
-        self.fc_action = nn.Linear(512, num_classes)
-            
-        if self.frozenFeatureWeights:
-            for param in self.features.parameters():
-                param.requires_grad = False
-                
-        torch.nn.init.xavier_uniform_(self.fc_action.weight)
-        self.fc_action.bias.data.zero_()
-        
-        torch.nn.init.xavier_uniform_(self.mapper.weight)
-        self.mapper.bias.data.zero_()
-        
-    def forward(self, x):
-        x = self.features(x)
-        x = self.avgpool(x)
-        x = x.view(x.size(0), -1)
-        x = x.view(-1,self.length,512)
-        x=self.mapper(x)
-        input_vectors=x
-        output , maskSample = self.bert(x)
-        classificationOut = output[:,0,:]
-        sequenceOut=output[:,1:,:]
-        output=self.dp(classificationOut)
-        x = self.fc_action(output)
-        return x, input_vectors, sequenceOut, maskSample
-    
-class rgb_resnet18_bert6(nn.Module):
-    def __init__(self, num_classes , length, modelPath=''):
-        super(rgb_resnet18_bert6, self).__init__()
-        self.frozenFeatureWeights=True
-        self.hidden_size=512
-        self.n_layers=1
-        self.attn_heads=16
-        self.num_classes=num_classes
-        self.length=length
-        self.dp = nn.Dropout(p=0.8)
-        
-        if modelPath=='':
-            self.features=nn.Sequential(*list(rgb_resnet18(pretrained=True).children())[:-3])
-        else:
-            self.features=nn.Sequential(*list(_trained_rgb_resnet18(modelPath,num_classes=num_classes).children())[:-3])
-        
-        self.avgpool = nn.AvgPool2d(7)
-        self.bert = BERT2(512,length, hidden=self.hidden_size, n_layers=self.n_layers, attn_heads=self.attn_heads)
-        print(sum(p.numel() for p in self.bert.parameters() if p.requires_grad))
-        self.fc_action = nn.Linear(512, num_classes)
-            
-        if self.frozenFeatureWeights:
-            for param in self.features.parameters():
-                param.requires_grad = False
-                
-        torch.nn.init.xavier_uniform_(self.fc_action.weight)
-        self.fc_action.bias.data.zero_()
-        
-    def forward(self, x):
-        x = self.features(x)
-        x = self.avgpool(x)
-        x = x.view(x.size(0), -1)
-        x = x.view(-1,self.length,512)
-        input_vectors=x
-        output , maskSample = self.bert(x)
-        classificationOut = output[:,0,:]
-        sequenceOut=output[:,1:,:]
-        output=self.dp(classificationOut)
-        x = self.fc_action(output)
-        return x, input_vectors, sequenceOut, maskSample
-    
-class rgb_resnet18_bert7(nn.Module):
-    def __init__(self, num_classes , length, modelPath=''):
-        super(rgb_resnet18_bert7, self).__init__()
-        self.frozenFeatureWeights=True
-        self.hidden_size=512
-        self.n_layers=1
-        self.attn_heads=8
-        self.num_classes=num_classes
-        self.length=length
-        self.dp = nn.Dropout(p=0.8)
-        
-        if modelPath=='':
-            self.features=nn.Sequential(*list(rgb_resnet18(pretrained=True).children())[:-3])
-        else:
-            self.features=nn.Sequential(*list(_trained_rgb_resnet18(modelPath,num_classes=num_classes).children())[:-3])
-        
-        self.avgpool = nn.AvgPool2d(7)
-        self.bert = BERT3(512,length, hidden=self.hidden_size, n_layers=self.n_layers, attn_heads=self.attn_heads)
-        print(sum(p.numel() for p in self.bert.parameters() if p.requires_grad))
-
-        self.fc_action = nn.Linear(512, num_classes)
-            
-        if self.frozenFeatureWeights:
-            for param in self.features.parameters():
-                param.requires_grad = False
-                
-        torch.nn.init.xavier_uniform_(self.fc_action.weight)
-        self.fc_action.bias.data.zero_()
-        
-        
-    def forward(self, x):
-        x = self.features(x)
-        x = self.avgpool(x)
-        x = x.view(x.size(0), -1)
-        x = x.view(-1,self.length,512)
-        input_vectors=x
-        output , maskSample = self.bert(x)
-        classificationOut = output[:,0,:]
-        sequenceOut=output[:,1:,:]
-        output=self.dp(classificationOut)
-        x = self.fc_action(output)
-        return x, input_vectors, sequenceOut, maskSample
-    
+#        sequenceOut=output[:,1:,:]
+        sequenceOut = x
+        sequenceOut = sequenceOut.contiguous()
+        sequence_tobe_ranked = sequenceOut.view(-1,512 * self.length)
+        sequenceRanked = self.ranker(sequence_tobe_ranked)
+        x_out = self.fc_action(classificationOut)
+        return x_out, sequenceRanked, sequenceOut, random_selection_vector_tensor
     
 class rgb_resnet18_bert8(nn.Module):
     def __init__(self, num_classes , length, modelPath=''):
         super(rgb_resnet18_bert8, self).__init__()
-        self.frozenFeatureWeights=True
-        self.hidden_size=512
-        self.n_layers=1
-        self.attn_heads=8
-        self.num_classes=num_classes
-        self.length=length
-        self.dp = nn.Dropout(p=0.8)
-        
-        if modelPath=='':
-            self.features=nn.Sequential(*list(rgb_resnet18(pretrained=True).children())[:-3])
-        else:
-            self.features=nn.Sequential(*list(_trained_rgb_resnet18(modelPath,num_classes=num_classes).children())[:-3])
-        
-        self.avgpool = nn.AvgPool2d(7)
-        self.bert = BERT4(512,length-1, hidden=self.hidden_size, n_layers=self.n_layers, attn_heads=self.attn_heads)
-        print(sum(p.numel() for p in self.bert.parameters() if p.requires_grad))
-
-        self.fc_action = nn.Linear(512, num_classes)
-            
-        if self.frozenFeatureWeights:
-            for param in self.features.parameters():
-                param.requires_grad = False
-                
-        torch.nn.init.xavier_uniform_(self.fc_action.weight)
-        self.fc_action.bias.data.zero_()
-        
-        
-    def forward(self, x):
-        x = self.features(x)
-        x = self.avgpool(x)
-        x = x.view(x.size(0), -1)
-        x = x.view(-1,self.length,512)
-        
-        mean_vectors=torch.mean(x,1).unsqueeze(1)
-        x=x[:,1:,:]-x[:,:-1,:]
-        input_vectors=x
-        output , maskSample = self.bert(x,mean_vectors)
-        classificationOut = output[:,0,:]
-        sequenceOut=output[:,1:,:]
-        output=self.dp(classificationOut)
-        x = self.fc_action(output)
-        return x, input_vectors, sequenceOut, maskSample
-    
-    
-class rgb_resnet18_bert9(nn.Module):
-    def __init__(self, num_classes , length, modelPath=''):
-        super(rgb_resnet18_bert9, self).__init__()
-        self.frozenFeatureWeights=False
-        self.hidden_size=512
-        self.n_layers=1
-        self.attn_heads=8
-        self.num_classes=num_classes
-        self.length=length
-        self.dp = nn.Dropout(p=0.8)
-        
-        if modelPath=='':
-            self.features=nn.Sequential(*list(rgb_resnet18(pretrained=True).children())[:-3])
-        else:
-            self.features=nn.Sequential(*list(_trained_rgb_resnet18(modelPath,num_classes=num_classes).children())[:-3])
-        
-        self.bert_feature = BERT5(512,49, hidden=self.hidden_size, n_layers=self.n_layers, attn_heads=self.attn_heads)
-        
-        self.bert = BERT5(512,length, hidden=self.hidden_size, n_layers=self.n_layers, attn_heads=self.attn_heads)
-        
-        print(sum(p.numel() for p in self.bert.parameters() if p.requires_grad))
-
-        self.fc_action = nn.Linear(512, num_classes)
-            
-        if self.frozenFeatureWeights:
-            for param in self.features.parameters():
-                param.requires_grad = False
-                
-        if not self.frozenFeatureWeights:
-            for param in self.features.parameters():
-                param.requires_grad = True
-                
-        torch.nn.init.xavier_uniform_(self.fc_action.weight)
-        self.fc_action.bias.data.zero_()
-        
-        
-    def forward(self, x):
-        x = self.features(x)
-        x=x.view(x.size(0),512,-1)
-        x=x.transpose(1,2)
-        extracted_spatial_attention_features , _ = self.bert_feature(x)
-        feature_out = extracted_spatial_attention_features[:,0,:]
-        x = feature_out.view(-1,self.length,512)
-        input_vectors=x
-        output , maskSample = self.bert(x)
-        classificationOut = output[:,0,:]
-        sequenceOut=output[:,1:,:]
-        output=self.dp(classificationOut)
-        x = self.fc_action(output)
-        return x, input_vectors, sequenceOut, maskSample
-    
-class rgb_resnet18_bert10(nn.Module):
-    def __init__(self, num_classes , length, modelPath=''):
-        super(rgb_resnet18_bert10, self).__init__()
         self.hidden_size=512
         self.n_layers=1
         self.attn_heads = 8
@@ -1249,7 +918,51 @@ class rgb_resnet18_bert10(nn.Module):
             self.features1=nn.Sequential(*list(_trained_rgb_resnet18(modelPath,num_classes=num_classes).children())[:-5])
             self.features2=nn.Sequential(*list(_trained_rgb_resnet18(modelPath,num_classes=num_classes).children())[-5:-3])        
         self.avgpool = nn.AvgPool2d(7)
-        self.bert = BERT5(512,length, hidden=self.hidden_size, n_layers=self.n_layers, attn_heads=self.attn_heads)
+        self.bert = BERT3(512,length, hidden=self.hidden_size, n_layers=self.n_layers, attn_heads=self.attn_heads)
+        print(sum(p.numel() for p in self.bert.parameters() if p.requires_grad))
+        self.fc_action = nn.Linear(512, num_classes)
+            
+        for param in self.features1.parameters():
+            param.requires_grad = False
+        for param in self.features2.parameters():
+            param.requires_grad = True
+                
+        torch.nn.init.xavier_uniform_(self.fc_action.weight)
+        self.fc_action.bias.data.zero_()
+        
+    def forward(self, x):
+        x = self.features1(x)
+        x = self.features2(x)
+        x = self.avgpool(x)
+        x = x.view(x.size(0), -1)
+        x = x.view(-1,self.length,512)
+        input_vectors=x
+        output , maskSample = self.bert(x)
+        classificationOut = output[:,0,:]
+        sequenceOut=output[:,1:,:]
+        output=self.dp(classificationOut)
+        x = self.fc_action(output)
+        return x, input_vectors, sequenceOut, maskSample   
+    
+    
+class rgb_resnet18_bert9(nn.Module):
+    def __init__(self, num_classes , length, modelPath=''):
+        super(rgb_resnet18_bert9, self).__init__()
+        self.hidden_size=512
+        self.n_layers=1
+        self.attn_heads = 8
+        self.num_classes=num_classes
+        self.length=length
+        self.dp = nn.Dropout(p=0.8)
+        
+        if modelPath=='':
+            self.features1=nn.Sequential(*list(rgb_resnet18(pretrained=True).children())[:-5])
+            self.features2=nn.Sequential(*list(rgb_resnet18(pretrained=True).children())[-5:-3])
+        else:
+            self.features1=nn.Sequential(*list(_trained_rgb_resnet18(modelPath,num_classes=num_classes).children())[:-5])
+            self.features2=nn.Sequential(*list(_trained_rgb_resnet18(modelPath,num_classes=num_classes).children())[-5:-3])        
+        self.avgpool = nn.AvgPool2d(7)
+        self.bert = BERT4(512,length, hidden=self.hidden_size, n_layers=self.n_layers, attn_heads=self.attn_heads)
         print(sum(p.numel() for p in self.bert.parameters() if p.requires_grad))
         self.fc_action = nn.Linear(512, num_classes)
             
@@ -1274,6 +987,96 @@ class rgb_resnet18_bert10(nn.Module):
         output=self.dp(classificationOut)
         x = self.fc_action(output)
         return x, input_vectors, sequenceOut, maskSample
+
+    
+class rgb_resnet18_RankingBert10(nn.Module):
+    def __init__(self, num_classes , length, modelPath=''):
+        super(rgb_resnet18_RankingBert10, self).__init__()
+        self.hidden_size=512
+        self.n_layers=1
+        self.attn_heads = 8
+        self.num_classes=num_classes
+        self.length=length
+        self.dp = nn.Dropout(p=0.8)
+        
+        if modelPath=='':
+            self.features1=nn.Sequential(*list(rgb_resnet18(pretrained=True).children())[:-5])
+            self.features2=nn.Sequential(*list(rgb_resnet18(pretrained=True).children())[-5:-3])
+        else:
+            self.features1=nn.Sequential(*list(_trained_rgb_resnet18(modelPath,num_classes=num_classes).children())[:-5])
+            self.features2=nn.Sequential(*list(_trained_rgb_resnet18(modelPath,num_classes=num_classes).children())[-5:-3])        
+        self.avgpool = nn.AvgPool2d(7)
+        self.bert = BERT5(512,length, hidden=self.hidden_size, n_layers=self.n_layers, attn_heads=self.attn_heads)
+        print(sum(p.numel() for p in self.bert.parameters() if p.requires_grad))
+        self.fc_action = nn.Linear(512, num_classes)
+        self.ranker = nn.Linear(512, self.length)
+            
+        for param in self.features1.parameters():
+            param.requires_grad = False
+        for param in self.features2.parameters():
+            param.requires_grad = True
+                
+        torch.nn.init.xavier_uniform_(self.fc_action.weight)
+        self.fc_action.bias.data.zero_()
+        
+    def forward(self, x):
+        x = self.features1(x)
+        x = self.features2(x)
+        x = self.avgpool(x)
+        x = x.view(x.size(0), -1)
+        x = x.view(-1,self.length,512)
+#        input_vectors=x
+        output , maskSample = self.bert(x)
+        output=self.dp(output)
+        classificationOut = output[:,0,:]
+        sequenceOut=output[:,1:,:]
+        sequenceRanked = self.ranker(sequenceOut)
+        x = self.fc_action(classificationOut)
+        return x, sequenceRanked, sequenceOut
+    
+class rgb_resnet18_bert10(nn.Module):
+    def __init__(self, num_classes , length, modelPath=''):
+        super(rgb_resnet18_bert10, self).__init__()
+        self.hidden_size=512
+        self.n_layers=1
+        self.attn_heads = 8
+        self.num_classes=num_classes
+        self.length=length
+        self.dp = nn.Dropout(p=0.8)
+        
+        if modelPath=='':
+            self.features1=nn.Sequential(*list(rgb_resnet18(pretrained=True).children())[:-5])
+            self.features2=nn.Sequential(*list(rgb_resnet18(pretrained=True).children())[-5:-3])
+        else:
+            self.features1=nn.Sequential(*list(_trained_rgb_resnet18(modelPath,num_classes=num_classes).children())[:-5])
+            self.features2=nn.Sequential(*list(_trained_rgb_resnet18(modelPath,num_classes=num_classes).children())[-5:-3])        
+        self.avgpool = nn.AvgPool2d(7)
+        self.bert = BERT5(512,length, hidden=self.hidden_size, n_layers=self.n_layers, attn_heads=self.attn_heads, mask_prob = 0.75)
+        print(sum(p.numel() for p in self.bert.parameters() if p.requires_grad))
+        self.fc_action = nn.Linear(512, num_classes)
+            
+        for param in self.features1.parameters():
+            param.requires_grad = False
+        for param in self.features2.parameters():
+            param.requires_grad = True
+                
+        torch.nn.init.xavier_uniform_(self.fc_action.weight)
+        self.fc_action.bias.data.zero_()
+        
+    def forward(self, x):
+        x = self.features1(x)
+        x = self.features2(x)
+        x = self.avgpool(x)
+        x = x.view(x.size(0), -1)
+        x = x.view(-1,self.length,512)
+        input_vectors=x
+        output , maskSample = self.bert(x)
+        classificationOut = output[:,0,:]
+        sequenceOut=output[:,1:,:]
+        output=self.dp(classificationOut)
+        x = self.fc_action(output)
+        return x, input_vectors, sequenceOut, maskSample
+
     
 class rgb_resnet18_NLB10(nn.Module):
     def __init__(self, num_classes , length, modelPath=''):

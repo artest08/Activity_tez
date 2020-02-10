@@ -89,7 +89,7 @@ def VideoTemporalPrediction_bert(
     interpolation = cv2.INTER_LINEAR
     
     for index in offsets:
-        if 'ucf101' in vid_name:
+        if 'ucf101' in vid_name or 'window' in vid_name:
             flow_x_file = os.path.join(vid_name, 'flow_x_{0:05d}.jpg'.format(index))
             flow_y_file = os.path.join(vid_name, 'flow_y_{0:05d}.jpg'.format(index))
         elif 'hmdb51' in vid_name:

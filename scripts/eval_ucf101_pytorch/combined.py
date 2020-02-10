@@ -7,14 +7,14 @@ Created on Mon Oct 15 12:46:46 2018
 """
 
 
-import os
-import sys
+import os, sys
 import collections
 import numpy as np
 import cv2
 import math
 import random
 import time
+import argparse
 
 import torch
 import torch.nn as nn
@@ -24,72 +24,144 @@ import torch.optim
 import torch.utils.data
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
+from numpy import linalg as LA
 
+from sklearn.metrics import confusion_matrix
+
+datasetFolder="../../datasets"
 sys.path.insert(0, "../../")
 import models
-
-from VideoTemporalPrediction import VideoTemporalPrediction
 from VideoSpatialPrediction import VideoSpatialPrediction
+from VideoTemporalPrediction import VideoTemporalPrediction
+
 
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   
-os.environ["CUDA_VISIBLE_DEVICES"]="0"
+os.environ["CUDA_VISIBLE_DEVICES"]="1"
+
+model_names = sorted(name for name in models.__dict__
+    if name.islower() and not name.startswith("__")
+    and callable(models.__dict__[name]))
+
+dataset_names = sorted(name for name in datasets.__all__)
+
+parser = argparse.ArgumentParser(description='PyTorch Two-Stream Action Recognition RGB Test Case')
+
+parser.add_argument('--dataset', '-d', default='window',
+                    choices=["ucf101", "hmdb51", "window"],
+                    help='dataset: ucf101 | hmdb51')
+parser.add_argument('--arch_rgb', metavar='ARCH', default='rgb_resnet18',
+                    choices=model_names)
+parser.add_argument('--arch_flow', metavar='ARCH', default='flow_resnet18',
+                    choices=model_names)
+parser.add_argument('-s', '--split', default=12, type=int, metavar='S',
+                    help='which split of data to work on (default: 1)')
+parser.add_argument('-w', '--window', default=3, type=int, metavar='V',
+                    help='validation file index (default: 3)')
+
+parser.add_argument('-t', '--tsn', dest='tsn', action='store_true',
+                    help='TSN Mode')
+
+parser.add_argument('-v', '--val', dest='window_val', action='store_true',
+                    help='Window Validation Selection')
+multiGPUTest=False
+def buildModel(model_path,num_categories, arch):
+    model = models.__dict__[arch](pretrained=False, num_classes=num_categories)
+    params = torch.load(model_path)
+    if args.tsn:
+        new_dict = {k[7:]: v for k, v in params['state_dict'].items()} 
+        model_dict=model.state_dict() 
+        model_dict.update(new_dict)
+        model.load_state_dict(model_dict)
+    elif multiGPUTest:
+        model=torch.nn.DataParallel(model)
+        new_dict={"module."+k: v for k, v in params['state_dict'].items()} 
+        model.load_state_dict(new_dict)
+    else:
+        model.load_state_dict(params['state_dict'])
+    model.cuda()
+    model.eval()   
+    return model
 
 
 def main():
-
-    model_path_temporal = '../../checkpoints_split2-tsn-flow/model_best.pth.tar'
-    model_path_spatial = '../../checkpoints_split2-tsn-rgb/model_best.pth.tar'
-    data_dir = "../../datasets/ucf101_frames"
-    start_frame = 0
-    num_categories = 101
-
-    model_start_time = time.time()
-    params = torch.load(model_path_temporal)
-    temporal_net = models.flow_resnet152(pretrained=False, num_classes=101)
-    new_dict = {k[7:]: v for k, v in params['state_dict'].items()} 
-    model_dict=temporal_net.state_dict() 
-    model_dict.update(new_dict)
-    temporal_net.load_state_dict(model_dict)
-    temporal_net.cuda()
-    temporal_net.eval()
-    model_end_time = time.time()
-    model_time = model_end_time - model_start_time
-    print("Action recognition temporal model is loaded in %4.4f seconds." % (model_time))
+    global args
+    args = parser.parse_args()
     
+        
+
+    modelLocation_rgb="./checkpoint/"+args.dataset+"_"+args.arch_rgb+"_split"+str(args.split)
+    modelLocation_flow="./checkpoint/"+args.dataset+"_"+args.arch_flow+"_split"+str(args.split)
+
+    model_path_rgb = os.path.join('../../',modelLocation_rgb,'model_best.pth.tar') 
+    model_path_flow = os.path.join('../../',modelLocation_flow,'model_best.pth.tar') 
+    
+    if args.dataset=='ucf101':
+        frameFolderName = "ucf101_frames"
+    elif args.dataset=='hmdb51':
+        frameFolderName = "hmdb51_frames"
+    elif args.dataset=='window':
+        frameFolderName = "window_frames"
+    data_dir=os.path.join(datasetFolder,frameFolderName)
+    
+    if args.window_val:
+        val_fileName = "window%d.txt" %(args.window)
+    else:
+        val_fileName = "val_rgb_split%d.txt" %(args.split)
+    
+
+    val_file = os.path.join(datasetFolder,'settings',args.dataset,val_fileName)
+    
+    start_frame = 0
+    if args.dataset=='ucf101':
+        num_categories = 101
+    elif args.dataset=='hmdb51':
+        num_categories = 51
+    elif args.dataset=='window':
+        num_categories = 3
+
     model_start_time = time.time()
-    params = torch.load(model_path_spatial)
-    spatial_net = models.rgb_resnet152(pretrained=False, num_classes=101)
-    new_dict = {k[7:]: v for k, v in params['state_dict'].items()} 
-    model_dict=spatial_net.state_dict() 
-    model_dict.update(new_dict)
-    spatial_net.load_state_dict(model_dict)
-    spatial_net.cuda()
-    spatial_net.eval()
+    spatial_net=buildModel(model_path_rgb,num_categories, args.arch_rgb)
+    temporal_net=buildModel(model_path_flow,num_categories, args.arch_flow)
     model_end_time = time.time()
     model_time = model_end_time - model_start_time
-    print("Action recognition RGB model is loaded in %4.4f seconds." % (model_time))
+    print("Action recognition model is loaded in %4.4f seconds." % (model_time))
 
-    val_file = "val_rgb_split2.txt"
+    
     f_val = open(val_file, "r")
     val_list = f_val.readlines()
     print("we got %d test videos" % len(val_list))
 
     line_id = 1
-    match_count = 0
-    result_list = []
-
+    match_count_mean = 0
+    match_count_max = 0
+    match_count_3_mean = 0
+    match_count_5_mean = 0
+    match_count_7_mean = 0
+    match_count_10_mean = 0
+    match_count_30_mean = 0
+    match_count_50_mean = 0
+    match_count_70_mean = 0
+    match_count_100_mean = 0
+    y_true=[]
+    y_pred_mean=[]
+    y_pred_3_mean=[]
+    y_pred_5_mean=[]
+    y_pred_7_mean=[]
+    y_pred_10_mean=[]
+    y_pred_30_mean=[]
+    y_pred_50_mean=[]
+    y_pred_70_mean=[]
+    y_pred_100_mean=[]
+    y_pred_max=[]
+    timeList=[]
+    #result_list = []
     for line in val_list:
         line_info = line.split(" ")
         clip_path = os.path.join(data_dir,line_info[0])
         duration = int(line_info[1])
         input_video_label = int(line_info[2]) 
-
-        temporal_prediction = VideoTemporalPrediction(
-                clip_path,
-                temporal_net,
-                num_categories,
-                start_frame,
-                duration)
+        
+        start = time.time()
         
         spatial_prediction = VideoSpatialPrediction(
                 clip_path,
@@ -97,23 +169,110 @@ def main():
                 num_categories,
                 start_frame,
                 duration)
+        
+        temporal_prediction = VideoTemporalPrediction(
+                clip_path,
+                temporal_net,
+                num_categories,
+                start_frame,
+                duration)
 
-        avg_spatial_pred = np.mean(spatial_prediction, axis=1)
-        avg_temporal_pred = np.mean(temporal_prediction, axis=1)
-        avg_total_pred=avg_spatial_pred+avg_temporal_pred
-        result_list.append(avg_total_pred)
+        spatial_result = spatial_prediction / LA.norm(spatial_prediction)
+        temporal_result = temporal_prediction / LA.norm(temporal_prediction)
+        result = spatial_result + temporal_result
+        
+        end = time.time()
+        estimatedTime=end-start
+        timeList.append(estimatedTime)
+        avg_spatial_pred_mean = np.mean(result, axis=1)
+        avg_spatial_pred_max = np.max(result, axis=1)
+        spatial_sorted = np.sort(result, axis=1)
+        avg_spatial_sorted_three=np.mean(spatial_sorted[:,-3:],axis=1)
+        avg_spatial_sorted_five=np.mean(spatial_sorted[:,-5:],axis=1)
+        avg_spatial_sorted_seven=np.mean(spatial_sorted[:,-7:],axis=1)
+        avg_spatial_sorted_ten=np.mean(spatial_sorted[:,-10:],axis=1)
+        avg_spatial_sorted_thirty=np.mean(spatial_sorted[:,-30:],axis=1)
+        avg_spatial_sorted_fifty=np.mean(spatial_sorted[:,-50:],axis=1)
+        avg_spatial_sorted_seventy=np.mean(spatial_sorted[:,-70:],axis=1)
+        avg_spatial_sorted_hundred=np.mean(spatial_sorted[:,-100:],axis=1)
 
-        pred_index = np.argmax(avg_total_pred)
-        print("Sample %d/%d: GT: %d, Prediction: %d" % (line_id, len(val_list), input_video_label, pred_index))
-
-        if pred_index == input_video_label:
-            match_count += 1
+        pred_index_mean = np.argmax(avg_spatial_pred_mean)
+        pred_index_max = np.argmax(avg_spatial_pred_max)
+        pred_index_three = np.argmax(avg_spatial_sorted_three)
+        pred_index_five = np.argmax(avg_spatial_sorted_five)
+        pred_index_seven = np.argmax(avg_spatial_sorted_seven)
+        pred_index_ten = np.argmax(avg_spatial_sorted_ten)
+        pred_index_thirty = np.argmax(avg_spatial_sorted_thirty)
+        pred_index_fifty = np.argmax(avg_spatial_sorted_fifty)
+        pred_index_seventy = np.argmax(avg_spatial_sorted_seventy)
+        pred_index_hundred = np.argmax(avg_spatial_sorted_hundred)
+        
+        # print("Estimated Time  %0.4f" % estimatedTime)
+        # print("Sample %d/%d: GT: %d, Prediction with mean: %d" % (line_id, len(val_list), input_video_label, pred_index_mean))
+        # print("Sample %d/%d: GT: %d, Prediction with max: %d" % (line_id, len(val_list), input_video_label, pred_index_max))
+        # print("Sample %d/%d: GT: %d, Prediction with 3-mean: %d" % (line_id, len(val_list), input_video_label, pred_index_three))
+        # print("Sample %d/%d: GT: %d, Prediction with 5-mean: %d" % (line_id, len(val_list), input_video_label, pred_index_five))
+        # print("Sample %d/%d: GT: %d, Prediction with 7-mean: %d" % (line_id, len(val_list), input_video_label, pred_index_seven))
+        # print("Sample %d/%d: GT: %d, Prediction with 10-mean: %d" % (line_id, len(val_list), input_video_label, pred_index_ten))
+        # print("Sample %d/%d: GT: %d, Prediction with 30-mean: %d" % (line_id, len(val_list), input_video_label, pred_index_thirty))
+        # print("Sample %d/%d: GT: %d, Prediction with 50-mean: %d" % (line_id, len(val_list), input_video_label, pred_index_fifty))
+        # print("Sample %d/%d: GT: %d, Prediction with 50-mean: %d" % (line_id, len(val_list), input_video_label, pred_index_seventy))
+        # print("Sample %d/%d: GT: %d, Prediction with 100-mean: %d" % (line_id, len(val_list), input_video_label, pred_index_hundred))
+        # print("------------------")
+        if pred_index_mean == input_video_label:
+            match_count_mean += 1
+        if pred_index_max == input_video_label:
+            match_count_max += 1
+        if pred_index_three == input_video_label:
+            match_count_3_mean += 1
+        if pred_index_five == input_video_label:
+            match_count_5_mean += 1
+        if pred_index_seven == input_video_label:
+            match_count_7_mean += 1
+        if pred_index_ten == input_video_label:
+            match_count_10_mean += 1
+        if pred_index_thirty == input_video_label:
+            match_count_30_mean += 1
+        if pred_index_fifty == input_video_label:
+            match_count_50_mean += 1
+        if pred_index_seventy == input_video_label:
+            match_count_70_mean += 1
+        if pred_index_hundred == input_video_label:
+            match_count_100_mean += 1
         line_id += 1
+        y_true.append(input_video_label)
+        y_pred_mean.append(pred_index_mean)
+        y_pred_max.append(pred_index_max)
+        y_pred_3_mean.append(pred_index_three)
+        y_pred_5_mean.append(pred_index_five)
+        y_pred_7_mean.append(pred_index_seven)
+        y_pred_10_mean.append(pred_index_ten)
+        y_pred_30_mean.append(pred_index_thirty)
+        y_pred_50_mean.append(pred_index_fifty)
+        y_pred_70_mean.append(pred_index_seventy)
+        y_pred_100_mean.append(pred_index_hundred)
+        
+    print(confusion_matrix(y_true,y_pred_mean))
 
-    print(match_count)
-    print(len(val_list))
-    print("Accuracy is %4.4f" % (float(match_count)/len(val_list)))
-    np.save("ucf101_s1_combined_resnet152_tsn_withoutSoft_w1-1.npy", np.array(result_list))
+    print("Accuracy with mean calculation is %4.4f" % (float(match_count_mean)/len(val_list)))
+    # print("Accuracy with max calculation is %4.4f" % (float(match_count_max)/len(val_list)))
+    # print("Accuracy with 3-mean calculation is %4.4f" % (float(match_count_3_mean)/len(val_list)))
+    # print("Accuracy with 5-mean calculation is %4.4f" % (float(match_count_5_mean)/len(val_list)))
+    # print("Accuracy with 7-mean calculation is %4.4f" % (float(match_count_7_mean)/len(val_list)))
+    # print("Accuracy with 10-mean calculation is %4.4f" % (float(match_count_10_mean)/len(val_list)))
+    # print("Accuracy with 30-mean calculation is %4.4f" % (float(match_count_30_mean)/len(val_list)))
+    # print("Accuracy with 50-mean calculation is %4.4f" % (float(match_count_50_mean)/len(val_list)))
+    # print("Accuracy with 70-mean calculation is %4.4f" % (float(match_count_70_mean)/len(val_list)))
+    # print("Accuracy with 100-mean calculation is %4.4f" % (float(match_count_100_mean)/len(val_list)))
+    print(modelLocation_rgb)
+    print(modelLocation_flow)
+    print("Mean Estimated Time %0.4f" % (np.mean(timeList)))
+    # resultDict={'y_true':y_true,'y_pred_mean':y_pred_mean,'y_pred_max':y_pred_max,'y_pred_3_mean':y_pred_3_mean,
+    #             'y_pred_5_mean':y_pred_5_mean,'y_pred_7_mean':y_pred_7_mean,'y_pred_10_mean':y_pred_10_mean,
+    #             'y_pred_30_mean':y_pred_30_mean,'y_pred_50_mean':y_pred_50_mean,'y_pred_70_mean':y_pred_70_mean,
+    #             'y_pred_100_mean':y_pred_100_mean}
+    
+    #np.save('results/%s.npy' %(args.dataset+"_tsn_"+args.arch+"_split"+str(args.split)), resultDict) 
 
 if __name__ == "__main__":
     main()

@@ -6476,3 +6476,195 @@
 2018-10-04 21:08:16,373 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/src/dense_flow_gpu.cpp:19]
 2018-10-04 21:08:16,417 FATAL [default] Check failed: [video_stream.isOpened()] Cannot open video stream "true" for optical flow extraction.
 2018-10-04 21:08:16,417 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/src/dense_flow_gpu.cpp:19]
+2020-02-05 16:23:10,427 FATAL [default] CRASH HANDLED; Application has crashed due to [SIGINT] signal
+2020-02-05 16:23:10,427 FATAL [default] CRASH HANDLED; Application has crashed due to [SIGINT] signal
+2020-02-05 16:23:10,427 FATAL [default] CRASH HANDLED; Application has crashed due to [SIGINT] signal
+2020-02-05 16:23:10,440 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/include/easylogging++/src/easylogging++.h:5583]
+2020-02-05 16:23:10,440 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/include/easylogging++/src/easylogging++.h:5583]
+2020-02-05 16:23:10,440 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/include/easylogging++/src/easylogging++.h:5583]
+2020-02-05 16:23:10,427 FATAL [default] CRASH HANDLED; Application has crashed due to [SIGINT] signal
+2020-02-05 16:23:10,440 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/include/easylogging++/src/easylogging++.h:5583]
+2020-02-05 16:23:10,427 FATAL [default] CRASH HANDLED; Application has crashed due to [SIGINT] signal
+2020-02-05 16:23:10,427 FATAL [default] CRASH HANDLED; Application has crashed due to [SIGINT] signal
+2020-02-05 16:23:10,427 FATAL [default] CRASH HANDLED; Application has crashed due to [SIGINT] signal
+2020-02-05 16:23:10,440 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/include/easylogging++/src/easylogging++.h:5583]
+2020-02-05 16:23:10,440 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/include/easylogging++/src/easylogging++.h:5583]
+2020-02-05 16:23:10,440 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/include/easylogging++/src/easylogging++.h:5583]
+2020-02-05 16:23:57,011 FATAL [default] CRASH HANDLED; Application has crashed due to [SIGSEGV] signal
+2020-02-05 16:23:57,011 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/include/easylogging++/src/easylogging++.h:5583]
+2020-02-05 16:24:46,538 FATAL [default] CRASH HANDLED; Application has crashed due to [SIGSEGV] signal
+2020-02-05 16:24:46,538 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/include/easylogging++/src/easylogging++.h:5583]
+2020-02-05 16:32:09,802 FATAL [default] CRASH HANDLED; Application has crashed due to [SIGINT] signal
+2020-02-05 16:32:09,802 FATAL [default] CRASH HANDLED; Application has crashed due to [SIGINT] signal
+2020-02-05 16:32:09,802 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/include/easylogging++/src/easylogging++.h:5583]
+2020-02-05 16:32:09,802 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/include/easylogging++/src/easylogging++.h:5583]
+2020-02-05 16:32:09,802 FATAL [default] CRASH HANDLED; Application has crashed due to [SIGINT] signal
+2020-02-05 16:32:09,802 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/include/easylogging++/src/easylogging++.h:5583]
+2020-02-05 16:32:09,802 FATAL [default] CRASH HANDLED; Application has crashed due to [SIGINT] signal
+2020-02-05 16:32:09,802 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/include/easylogging++/src/easylogging++.h:5583]
+2020-02-05 16:32:09,802 FATAL [default] CRASH HANDLED; Application has crashed due to [SIGINT] signal
+2020-02-05 16:32:09,803 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/include/easylogging++/src/easylogging++.h:5583]
+2020-02-05 16:32:09,803 FATAL [default] CRASH HANDLED; Application has crashed due to [SIGINT] signal
+2020-02-05 16:32:09,803 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/include/easylogging++/src/easylogging++.h:5583]
+2020-02-05 16:32:09,803 FATAL [default] CRASH HANDLED; Application has crashed due to [SIGINT] signal
+2020-02-05 16:32:09,803 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/include/easylogging++/src/easylogging++.h:5583]
+2020-02-05 16:32:09,803 FATAL [default] CRASH HANDLED; Application has crashed due to [SIGINT] signal
+2020-02-05 16:32:09,803 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/include/easylogging++/src/easylogging++.h:5583]
+2020-02-05 16:35:48,062 FATAL [default] Check failed: [video_stream.isOpened()] Cannot open video stream "/tmp/190719_8519_179992973" for optical flow extraction.
+2020-02-05 16:35:48,062 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/src/dense_flow_gpu.cpp:19]
+2020-02-05 16:35:48,314 FATAL [default] Check failed: [video_stream.isOpened()] Cannot open video stream "/tmp/190719_8519_179992973" for optical flow extraction.
+2020-02-05 16:35:48,314 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/src/dense_flow_gpu.cpp:19]
+2020-02-05 16:35:48,556 FATAL [default] Check failed: [video_stream.isOpened()] Cannot open video stream "/tmp/190719_8519_179992973" for optical flow extraction.
+2020-02-05 16:35:48,556 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/src/dense_flow_gpu.cpp:19]
+2020-02-05 16:35:48,789 FATAL [default] Check failed: [video_stream.isOpened()] Cannot open video stream "/tmp/190719_8519_179992973" for optical flow extraction.
+2020-02-05 16:35:48,789 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/src/dense_flow_gpu.cpp:19]
+2020-02-05 16:35:49,072 FATAL [default] Check failed: [video_stream.isOpened()] Cannot open video stream "/tmp/190719_8519_179992973" for optical flow extraction.
+2020-02-05 16:35:49,072 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/src/dense_flow_gpu.cpp:19]
+2020-02-05 16:35:49,310 FATAL [default] Check failed: [video_stream.isOpened()] Cannot open video stream "/tmp/190719_8519_179992973" for optical flow extraction.
+2020-02-05 16:35:49,310 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/src/dense_flow_gpu.cpp:19]
+2020-02-05 16:35:49,549 FATAL [default] Check failed: [video_stream.isOpened()] Cannot open video stream "/tmp/190719_8519_179992973" for optical flow extraction.
+2020-02-05 16:35:49,549 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/src/dense_flow_gpu.cpp:19]
+2020-02-05 16:35:49,817 FATAL [default] Check failed: [video_stream.isOpened()] Cannot open video stream "/tmp/190719_8519_179992973" for optical flow extraction.
+2020-02-05 16:35:49,817 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/src/dense_flow_gpu.cpp:19]
+2020-02-05 16:35:50,069 FATAL [default] Check failed: [video_stream.isOpened()] Cannot open video stream "/tmp/190719_8519_179992973" for optical flow extraction.
+2020-02-05 16:35:50,069 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/src/dense_flow_gpu.cpp:19]
+2020-02-05 16:35:50,314 FATAL [default] Check failed: [video_stream.isOpened()] Cannot open video stream "/tmp/190719_8519_179992973" for optical flow extraction.
+2020-02-05 16:35:50,314 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/src/dense_flow_gpu.cpp:19]
+2020-02-05 16:35:50,570 FATAL [default] Check failed: [video_stream.isOpened()] Cannot open video stream "/tmp/190719_8519_179992973" for optical flow extraction.
+2020-02-05 16:35:50,570 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/src/dense_flow_gpu.cpp:19]
+2020-02-05 16:35:50,865 FATAL [default] Check failed: [video_stream.isOpened()] Cannot open video stream "/tmp/190717_8519_179992973" for optical flow extraction.
+2020-02-05 16:35:50,865 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/src/dense_flow_gpu.cpp:19]
+2020-02-05 16:35:51,083 FATAL [default] Check failed: [video_stream.isOpened()] Cannot open video stream "/tmp/190717_8519_179992973" for optical flow extraction.
+2020-02-05 16:35:51,083 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/src/dense_flow_gpu.cpp:19]
+2020-02-05 16:35:51,330 FATAL [default] Check failed: [video_stream.isOpened()] Cannot open video stream "/tmp/190717_8519_179992973" for optical flow extraction.
+2020-02-05 16:35:51,330 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/src/dense_flow_gpu.cpp:19]
+2020-02-05 16:35:51,569 FATAL [default] Check failed: [video_stream.isOpened()] Cannot open video stream "/tmp/190717_8519_179992973" for optical flow extraction.
+2020-02-05 16:35:51,569 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/src/dense_flow_gpu.cpp:19]
+2020-02-05 16:35:51,852 FATAL [default] Check failed: [video_stream.isOpened()] Cannot open video stream "/tmp/190717_8519_179992973" for optical flow extraction.
+2020-02-05 16:35:51,852 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/src/dense_flow_gpu.cpp:19]
+2020-02-05 16:35:52,091 FATAL [default] Check failed: [video_stream.isOpened()] Cannot open video stream "/tmp/190719_8519_179992973" for optical flow extraction.
+2020-02-05 16:35:52,091 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/src/dense_flow_gpu.cpp:19]
+2020-02-05 16:35:52,326 FATAL [default] Check failed: [video_stream.isOpened()] Cannot open video stream "/tmp/190719_8519_179992973" for optical flow extraction.
+2020-02-05 16:35:52,326 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/src/dense_flow_gpu.cpp:19]
+2020-02-05 16:35:52,576 FATAL [default] Check failed: [video_stream.isOpened()] Cannot open video stream "/tmp/190719_8519_179992973" for optical flow extraction.
+2020-02-05 16:35:52,576 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/src/dense_flow_gpu.cpp:19]
+2020-02-05 16:35:52,835 FATAL [default] Check failed: [video_stream.isOpened()] Cannot open video stream "/tmp/190719_8519_179992973" for optical flow extraction.
+2020-02-05 16:35:52,835 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/src/dense_flow_gpu.cpp:19]
+2020-02-05 16:35:53,082 FATAL [default] Check failed: [video_stream.isOpened()] Cannot open video stream "/tmp/190719_8519_179992973" for optical flow extraction.
+2020-02-05 16:35:53,083 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/src/dense_flow_gpu.cpp:19]
+2020-02-05 16:35:53,325 FATAL [default] Check failed: [video_stream.isOpened()] Cannot open video stream "/tmp/190719_8519_179992973" for optical flow extraction.
+2020-02-05 16:35:53,325 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/src/dense_flow_gpu.cpp:19]
+2020-02-05 16:35:53,560 FATAL [default] Check failed: [video_stream.isOpened()] Cannot open video stream "/tmp/190719_8519_179992973" for optical flow extraction.
+2020-02-05 16:35:53,560 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/src/dense_flow_gpu.cpp:19]
+2020-02-05 16:35:53,809 FATAL [default] Check failed: [video_stream.isOpened()] Cannot open video stream "/tmp/190719_8519_179992973" for optical flow extraction.
+2020-02-05 16:35:53,809 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/src/dense_flow_gpu.cpp:19]
+2020-02-05 16:35:54,023 FATAL [default] Check failed: [video_stream.isOpened()] Cannot open video stream "/tmp/190719_8519_179992973" for optical flow extraction.
+2020-02-05 16:35:54,024 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/src/dense_flow_gpu.cpp:19]
+2020-02-05 16:35:54,284 FATAL [default] Check failed: [video_stream.isOpened()] Cannot open video stream "/tmp/190719_8519_179992973" for optical flow extraction.
+2020-02-05 16:35:54,285 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/src/dense_flow_gpu.cpp:19]
+2020-02-05 16:35:54,563 FATAL [default] Check failed: [video_stream.isOpened()] Cannot open video stream "/tmp/190719_8519_179992973" for optical flow extraction.
+2020-02-05 16:35:54,563 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/src/dense_flow_gpu.cpp:19]
+2020-02-05 16:35:54,877 FATAL [default] Check failed: [video_stream.isOpened()] Cannot open video stream "/tmp/190719_8519_179992973" for optical flow extraction.
+2020-02-05 16:35:54,877 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/src/dense_flow_gpu.cpp:19]
+2020-02-05 16:35:55,191 FATAL [default] Check failed: [video_stream.isOpened()] Cannot open video stream "/tmp/190719_8519_179992973" for optical flow extraction.
+2020-02-05 16:35:55,191 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/src/dense_flow_gpu.cpp:19]
+2020-02-05 16:35:55,466 FATAL [default] Check failed: [video_stream.isOpened()] Cannot open video stream "/tmp/190719_8519_179992973" for optical flow extraction.
+2020-02-05 16:35:55,466 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/src/dense_flow_gpu.cpp:19]
+2020-02-05 16:35:55,730 FATAL [default] Check failed: [video_stream.isOpened()] Cannot open video stream "/tmp/190719_8519_179992973" for optical flow extraction.
+2020-02-05 16:35:55,730 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/src/dense_flow_gpu.cpp:19]
+2020-02-05 16:35:56,003 FATAL [default] Check failed: [video_stream.isOpened()] Cannot open video stream "/tmp/190719_8519_179992973" for optical flow extraction.
+2020-02-05 16:35:56,003 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/src/dense_flow_gpu.cpp:19]
+2020-02-05 16:35:56,286 FATAL [default] Check failed: [video_stream.isOpened()] Cannot open video stream "/tmp/190719_8519_179992973" for optical flow extraction.
+2020-02-05 16:35:56,286 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/src/dense_flow_gpu.cpp:19]
+2020-02-05 16:35:56,557 FATAL [default] Check failed: [video_stream.isOpened()] Cannot open video stream "/tmp/190719_8519_179992973" for optical flow extraction.
+2020-02-05 16:35:56,558 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/src/dense_flow_gpu.cpp:19]
+2020-02-05 16:35:56,818 FATAL [default] Check failed: [video_stream.isOpened()] Cannot open video stream "/tmp/190717_8519_179992973" for optical flow extraction.
+2020-02-05 16:35:56,818 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/src/dense_flow_gpu.cpp:19]
+2020-02-05 16:35:57,071 FATAL [default] Check failed: [video_stream.isOpened()] Cannot open video stream "/tmp/190717_8519_179992973" for optical flow extraction.
+2020-02-05 16:35:57,071 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/src/dense_flow_gpu.cpp:19]
+2020-02-05 16:35:57,321 FATAL [default] Check failed: [video_stream.isOpened()] Cannot open video stream "/tmp/190717_8519_179992973" for optical flow extraction.
+2020-02-05 16:35:57,321 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/src/dense_flow_gpu.cpp:19]
+2020-02-05 16:35:57,566 FATAL [default] Check failed: [video_stream.isOpened()] Cannot open video stream "/tmp/190717_8519_179992973" for optical flow extraction.
+2020-02-05 16:35:57,566 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/src/dense_flow_gpu.cpp:19]
+2020-02-05 16:35:57,844 FATAL [default] Check failed: [video_stream.isOpened()] Cannot open video stream "/tmp/190717_8519_179992973" for optical flow extraction.
+2020-02-05 16:35:57,845 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/src/dense_flow_gpu.cpp:19]
+2020-02-05 16:35:58,129 FATAL [default] Check failed: [video_stream.isOpened()] Cannot open video stream "/tmp/190717_8519_179992973" for optical flow extraction.
+2020-02-05 16:35:58,129 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/src/dense_flow_gpu.cpp:19]
+2020-02-05 16:35:58,366 FATAL [default] Check failed: [video_stream.isOpened()] Cannot open video stream "/tmp/190717_8519_179992973" for optical flow extraction.
+2020-02-05 16:35:58,366 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/src/dense_flow_gpu.cpp:19]
+2020-02-05 16:35:58,588 FATAL [default] Check failed: [video_stream.isOpened()] Cannot open video stream "/tmp/190717_8519_179992973" for optical flow extraction.
+2020-02-05 16:35:58,588 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/src/dense_flow_gpu.cpp:19]
+2020-02-05 16:35:58,837 FATAL [default] Check failed: [video_stream.isOpened()] Cannot open video stream "/tmp/190717_8519_179992973" for optical flow extraction.
+2020-02-05 16:35:58,837 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/src/dense_flow_gpu.cpp:19]
+2020-02-05 16:35:59,065 FATAL [default] Check failed: [video_stream.isOpened()] Cannot open video stream "/tmp/190717_8519_179992973" for optical flow extraction.
+2020-02-05 16:35:59,065 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/src/dense_flow_gpu.cpp:19]
+2020-02-05 16:35:59,452 FATAL [default] Check failed: [video_stream.isOpened()] Cannot open video stream "/tmp/190717_8519_179992973" for optical flow extraction.
+2020-02-05 16:35:59,453 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/src/dense_flow_gpu.cpp:19]
+2020-02-05 16:35:59,701 FATAL [default] Check failed: [video_stream.isOpened()] Cannot open video stream "/tmp/190717_8519_179992973" for optical flow extraction.
+2020-02-05 16:35:59,701 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/src/dense_flow_gpu.cpp:19]
+2020-02-05 16:35:59,874 FATAL [default] Check failed: [video_stream.isOpened()] Cannot open video stream "/tmp/190717_8519_179992973" for optical flow extraction.
+2020-02-05 16:35:59,875 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/src/dense_flow_gpu.cpp:19]
+2020-02-05 16:36:00,035 FATAL [default] Check failed: [video_stream.isOpened()] Cannot open video stream "/tmp/190717_8519_179992973" for optical flow extraction.
+2020-02-05 16:36:00,036 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/src/dense_flow_gpu.cpp:19]
+2020-02-05 16:36:00,285 FATAL [default] Check failed: [video_stream.isOpened()] Cannot open video stream "/tmp/190717_8519_179992973" for optical flow extraction.
+2020-02-05 16:36:00,285 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/src/dense_flow_gpu.cpp:19]
+2020-02-05 16:36:00,562 FATAL [default] Check failed: [video_stream.isOpened()] Cannot open video stream "/tmp/190717_8519_179992973" for optical flow extraction.
+2020-02-05 16:36:00,562 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/src/dense_flow_gpu.cpp:19]
+2020-02-05 16:36:00,807 FATAL [default] Check failed: [video_stream.isOpened()] Cannot open video stream "/tmp/190717_8519_179992973" for optical flow extraction.
+2020-02-05 16:36:00,807 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/src/dense_flow_gpu.cpp:19]
+2020-02-05 16:36:01,072 FATAL [default] Check failed: [video_stream.isOpened()] Cannot open video stream "/tmp/190717_8519_179992973" for optical flow extraction.
+2020-02-05 16:36:01,072 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/src/dense_flow_gpu.cpp:19]
+2020-02-05 16:36:01,322 FATAL [default] Check failed: [video_stream.isOpened()] Cannot open video stream "/tmp/190717_8519_179992973" for optical flow extraction.
+2020-02-05 16:36:01,322 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/src/dense_flow_gpu.cpp:19]
+2020-02-05 16:36:01,591 FATAL [default] Check failed: [video_stream.isOpened()] Cannot open video stream "/tmp/190717_8519_179992973" for optical flow extraction.
+2020-02-05 16:36:01,591 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/src/dense_flow_gpu.cpp:19]
+2020-02-05 16:36:01,840 FATAL [default] Check failed: [video_stream.isOpened()] Cannot open video stream "/tmp/190717_8519_179992973" for optical flow extraction.
+2020-02-05 16:36:01,840 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/src/dense_flow_gpu.cpp:19]
+2020-02-05 16:39:29,087 FATAL [default] CRASH HANDLED; Application has crashed due to [SIGINT] signal
+2020-02-05 16:39:29,087 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/include/easylogging++/src/easylogging++.h:5583]
+2020-02-05 16:50:39,285 FATAL [default] CRASH HANDLED; Application has crashed due to [SIGINT] signal
+2020-02-05 16:50:39,285 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/include/easylogging++/src/easylogging++.h:5583]
+2020-02-05 16:50:39,286 FATAL [default] CRASH HANDLED; Application has crashed due to [SIGINT] signal
+2020-02-05 16:50:39,286 FATAL [default] CRASH HANDLED; Application has crashed due to [SIGINT] signal
+2020-02-05 16:50:39,286 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/include/easylogging++/src/easylogging++.h:5583]
+2020-02-05 16:50:39,286 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/include/easylogging++/src/easylogging++.h:5583]
+2020-02-05 16:50:39,286 FATAL [default] CRASH HANDLED; Application has crashed due to [SIGINT] signal
+2020-02-05 16:50:39,286 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/include/easylogging++/src/easylogging++.h:5583]
+2020-02-05 16:50:39,296 FATAL [default] CRASH HANDLED; Application has crashed due to [SIGINT] signal
+2020-02-05 16:50:39,296 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/include/easylogging++/src/easylogging++.h:5583]
+2020-02-05 16:50:39,296 FATAL [default] CRASH HANDLED; Application has crashed due to [SIGINT] signal
+2020-02-05 16:50:39,296 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/include/easylogging++/src/easylogging++.h:5583]
+2020-02-05 16:50:39,296 FATAL [default] CRASH HANDLED; Application has crashed due to [SIGINT] signal
+2020-02-05 16:50:39,296 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/include/easylogging++/src/easylogging++.h:5583]
+2020-02-05 16:50:39,297 FATAL [default] CRASH HANDLED; Application has crashed due to [SIGINT] signal
+2020-02-05 16:50:39,297 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/include/easylogging++/src/easylogging++.h:5583]
+2020-02-05 16:54:06,979 FATAL [default] CRASH HANDLED; Application has crashed due to [SIGINT] signal
+2020-02-05 16:54:06,979 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/include/easylogging++/src/easylogging++.h:5583]
+2020-02-05 16:54:13,868 FATAL [default] CRASH HANDLED; Application has crashed due to [SIGINT] signal
+2020-02-05 16:54:13,868 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/include/easylogging++/src/easylogging++.h:5583]
+2020-02-05 16:54:14,201 FATAL [default] CRASH HANDLED; Application has crashed due to [SIGINT] signal
+2020-02-05 16:54:14,201 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/include/easylogging++/src/easylogging++.h:5583]
+2020-02-05 16:54:54,809 FATAL [default] CRASH HANDLED; Application has crashed due to [SIGINT] signal
+2020-02-05 16:54:54,809 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/include/easylogging++/src/easylogging++.h:5583]
+2020-02-05 16:55:30,803 FATAL [default] CRASH HANDLED; Application has crashed due to [SIGINT] signal
+2020-02-05 16:55:30,803 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/include/easylogging++/src/easylogging++.h:5583]
+2020-02-05 16:55:33,758 FATAL [default] CRASH HANDLED; Application has crashed due to [SIGINT] signal
+2020-02-05 16:55:33,758 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/include/easylogging++/src/easylogging++.h:5583]
+2020-02-05 16:58:53,059 FATAL [default] CRASH HANDLED; Application has crashed due to [SIGINT] signal
+2020-02-05 16:58:53,059 FATAL [default] CRASH HANDLED; Application has crashed due to [SIGINT] signal
+2020-02-05 16:58:53,059 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/include/easylogging++/src/easylogging++.h:5583]
+2020-02-05 16:58:53,059 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/include/easylogging++/src/easylogging++.h:5583]
+2020-02-05 16:58:53,060 FATAL [default] CRASH HANDLED; Application has crashed due to [SIGINT] signal
+2020-02-05 16:58:53,060 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/include/easylogging++/src/easylogging++.h:5583]
+2020-02-05 16:58:53,060 FATAL [default] CRASH HANDLED; Application has crashed due to [SIGINT] signal
+2020-02-05 16:58:53,060 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/include/easylogging++/src/easylogging++.h:5583]
+2020-02-05 16:58:53,060 FATAL [default] CRASH HANDLED; Application has crashed due to [SIGINT] signal
+2020-02-05 16:58:53,060 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/include/easylogging++/src/easylogging++.h:5583]
+2020-02-05 16:58:53,060 FATAL [default] CRASH HANDLED; Application has crashed due to [SIGINT] signal
+2020-02-05 16:58:53,060 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/include/easylogging++/src/easylogging++.h:5583]
+2020-02-05 16:58:53,060 FATAL [default] CRASH HANDLED; Application has crashed due to [SIGINT] signal
+2020-02-05 16:58:53,060 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/include/easylogging++/src/easylogging++.h:5583]
+2020-02-05 16:58:53,060 FATAL [default] CRASH HANDLED; Application has crashed due to [SIGINT] signal
+2020-02-05 16:58:53,060 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/include/easylogging++/src/easylogging++.h:5583]
+2020-02-07 11:10:17,941 FATAL [default] CRASH HANDLED; Application has crashed due to [SIGINT] signal
+2020-02-07 11:10:17,957 WARN  [default] Aborting application. Reason: Fatal log at [/media/esat/8234cf14-fc0e-441d-b606-0b7906d5d9c9/tsnCoffe/dense_flow/include/easylogging++/src/easylogging++.h:5583]

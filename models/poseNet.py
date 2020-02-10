@@ -3,9 +3,9 @@ import collections, torch, torchvision, numpy, h5py
 import math
 import torch.utils.model_zoo as model_zoo
 from collections import OrderedDict 
-from .BERT.bert import BERT
+#from .BERT.bert import BERT
 
-__all__ = ['openPoseL2Part', 'rgb_poseNet_bert','openPose','rgb_poseNet_bert2']
+__all__ = ['openPoseL2Part','openPose']
 
 config = {
     'A': [64, 'M', 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
@@ -28,68 +28,68 @@ class OpenPose(nn.Module):
         L1Out=self.L1Part(features,L2Out)
         return L1Out,L2Out
         
-class rgb_poseNet_bert(nn.Module):
-    def __init__(self, num_classes , length):
-        super(rgb_poseNet_bert, self).__init__()
-        self.hidden_size=1225
-        self.n_layers=4
-        self.attn_heads=25
-        self.num_classes=num_classes
-        self.length=length
-        self.dp = nn.Dropout(p=0.8)
+# class rgb_poseNet_bert(nn.Module):
+#     def __init__(self, num_classes , length):
+#         super(rgb_poseNet_bert, self).__init__()
+#         self.hidden_size=1225
+#         self.n_layers=4
+#         self.attn_heads=25
+#         self.num_classes=num_classes
+#         self.length=length
+#         self.dp = nn.Dropout(p=0.8)
         
-        self.bert = BERT(self.hidden_size,length, hidden=self.hidden_size, n_layers=self.n_layers, attn_heads=self.attn_heads)
-        self.fc_action = nn.Linear(self.hidden_size, num_classes)
-        self.openPose=openPose()
-        self.avgpool = nn.AvgPool2d(4)
+#         self.bert = BERT(self.hidden_size,length, hidden=self.hidden_size, n_layers=self.n_layers, attn_heads=self.attn_heads)
+#         self.fc_action = nn.Linear(self.hidden_size, num_classes)
+#         self.openPose=openPose()
+#         self.avgpool = nn.AvgPool2d(4)
         
-        for param in self.openPose.parameters():
-            param.requires_grad = False
+#         for param in self.openPose.parameters():
+#             param.requires_grad = False
         
         
-    def forward(self, x):        
-        x,_=self.openPose(x)
-        x=self.avgpool(x[:,:25,:,:])
-        x=x.view(-1,self.length,self.hidden_size)
-        input_vectors=x
-        output , maskSample = self.bert(x)
-        classificationOut = output[:,0,:]
-        sequenceOut=output[:,1:,:]
-        output=self.dp(classificationOut)
-        x = self.fc_action(output)
-        return x, input_vectors, sequenceOut, maskSample
+#     def forward(self, x):        
+#         x,_=self.openPose(x)
+#         x=self.avgpool(x[:,:25,:,:])
+#         x=x.view(-1,self.length,self.hidden_size)
+#         input_vectors=x
+#         output , maskSample = self.bert(x)
+#         classificationOut = output[:,0,:]
+#         sequenceOut=output[:,1:,:]
+#         output=self.dp(classificationOut)
+#         x = self.fc_action(output)
+#         return x, input_vectors, sequenceOut, maskSample
     
     
-class rgb_poseNet_bert2(nn.Module):
-    def __init__(self, num_classes , length):
-        super(rgb_poseNet_bert2, self).__init__()
-        self.hidden_size=49
-        self.n_layers=4
-        self.attn_heads=7
-        self.num_classes=num_classes
-        self.length=length*25
-        self.dp = nn.Dropout(p=0.8)
+# class rgb_poseNet_bert2(nn.Module):
+#     def __init__(self, num_classes , length):
+#         super(rgb_poseNet_bert2, self).__init__()
+#         self.hidden_size=49
+#         self.n_layers=4
+#         self.attn_heads=7
+#         self.num_classes=num_classes
+#         self.length=length*25
+#         self.dp = nn.Dropout(p=0.8)
         
-        self.bert = BERT(self.hidden_size,self.length, hidden=self.hidden_size, n_layers=self.n_layers, attn_heads=self.attn_heads)
-        self.fc_action = nn.Linear(self.hidden_size, num_classes)
-        self.openPose=openPose()
-        self.avgpool = nn.AvgPool2d(4)
+#         self.bert = BERT(self.hidden_size,self.length, hidden=self.hidden_size, n_layers=self.n_layers, attn_heads=self.attn_heads)
+#         self.fc_action = nn.Linear(self.hidden_size, num_classes)
+#         self.openPose=openPose()
+#         self.avgpool = nn.AvgPool2d(4)
         
-        for param in self.openPose.parameters():
-            param.requires_grad = False
+#         for param in self.openPose.parameters():
+#             param.requires_grad = False
         
         
-    def forward(self, x):        
-        x,_=self.openPose(x)
-        x=self.avgpool(x[:,:25,:,:])
-        x=x.view(-1,self.length,self.hidden_size)
-        input_vectors=x
-        output , maskSample = self.bert(x)
-        classificationOut = output[:,0,:]
-        sequenceOut=output[:,1:,:]
-        output=self.dp(classificationOut)
-        x = self.fc_action(output)
-        return x, input_vectors, sequenceOut, maskSample
+#     def forward(self, x):        
+#         x,_=self.openPose(x)
+#         x=self.avgpool(x[:,:25,:,:])
+#         x=x.view(-1,self.length,self.hidden_size)
+#         input_vectors=x
+#         output , maskSample = self.bert(x)
+#         classificationOut = output[:,0,:]
+#         sequenceOut=output[:,1:,:]
+#         output=self.dp(classificationOut)
+#         x = self.fc_action(output)
+#         return x, input_vectors, sequenceOut, maskSample
 
         
 class L2Part(nn.Module):

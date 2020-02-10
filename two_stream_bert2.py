@@ -14,7 +14,7 @@ import numpy as np
 
 
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]="0,1"
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 import torch
 import torch.nn as nn
@@ -33,7 +33,7 @@ from opt.AdamW import AdamW
 
 
 model_names = sorted(name for name in models.__dict__
-    if name.islower() and not name.startswith("__")
+    if not name.startswith("__")
     and callable(models.__dict__[name]))
 
 dataset_names = sorted(name for name in datasets.__all__)
@@ -46,24 +46,25 @@ parser.add_argument('--settings', metavar='DIR', default='./datasets/settings',
 #parser.add_argument('--modality', '-m', metavar='MODALITY', default='rgb',
 #                    choices=["rgb", "flow"],
 #                    help='modality: rgb | flow')
-parser.add_argument('--dataset', '-d', default='hmdb51',
-                    choices=["ucf101", "hmdb51", "smtV2"],
+parser.add_argument('--dataset', '-d', default='window',
+                    choices=["ucf101", "hmdb51", "smtV2", "window"],
                     help='dataset: ucf101 | hmdb51 | smtV2')
-parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resneXt3D64f101_bert10XY',
+
+parser.add_argument('--arch', '-a', default='flow_I3D64f_bert10',
                     choices=model_names,
                     help='model architecture: ' +
                         ' | '.join(model_names) +
                         ' (default: rgb_vgg16)')
 
-parser.add_argument('-s', '--split', default=1, type=int, metavar='S',
+parser.add_argument('-s', '--split', default=12, type=int, metavar='S',
                     help='which split of data to work on (default: 1)')
 parser.add_argument('-j', '--workers', default=4, type=int, metavar='N',
                     help='number of data loading workers (default: 4)')
-parser.add_argument('--epochs', default=150, type=int, metavar='N',
+parser.add_argument('--epochs', default=20, type=int, metavar='N',
                     help='number of total epochs to run')
-parser.add_argument('-b', '--batch-size', default=8, type=int,
+parser.add_argument('-b', '--batch-size', default=4, type=int,
                     metavar='N', help='mini-batch size (default: 50)')
-parser.add_argument('--iter-size', default=16, type=int,
+parser.add_argument('--iter-size', default=1, type=int,
                     metavar='I', help='iter size as in Caffe to reduce memory usage (default: 5)')
 parser.add_argument('--lr', '--learning-rate', default=1e-4, type=float,
                     metavar='LR', help='initial learning rate')
@@ -156,7 +157,7 @@ def main():
     #optimizer = torch.optim.Adam(model.parameters(), args.lr)
     
     scheduler = lr_scheduler.ReduceLROnPlateau(
-        optimizer, 'max', patience=5, verbose=True)
+        optimizer, 'max', patience=2, verbose=True)
     if args.contine:
         scheduler.step(best_prec1)
         print('scheduler step with best prec %f' %(best_prec1))
@@ -169,6 +170,8 @@ def main():
         dataset='./datasets/hmdb51_frames'
     elif args.dataset=='smtV2':
         dataset='./datasets/smtV2_frames'
+    elif args.dataset=='window':
+        dataset='./datasets/window_frames'
     else:
         print("No convenient dataset entered, exiting....")
         return 0
@@ -309,7 +312,7 @@ def main():
             scheduler.step(prec1)
         # remember best prec@1 and save checkpoint
         
-        is_best = prec1 > best_prec1
+        is_best = prec1 >= best_prec1
         best_prec1 = max(prec1, best_prec1)
 #        best_in_existing_learning_rate = max(prec1, best_in_existing_learning_rate)
 #        
@@ -376,6 +379,9 @@ def build_model():
     elif args.dataset=='smtV2':
         print('model path is: %s' %(model_path))
         model = models.__dict__[args.arch](modelPath=model_path, num_classes=174, length=args.num_seg)
+    elif args.dataset=='window':
+        print('model path is: %s' %(model_path))
+        model = models.__dict__[args.arch](modelPath=model_path, num_classes=3, length=args.num_seg)
     
     model=torch.nn.DataParallel(model)
     model = model.cuda()
@@ -396,6 +402,9 @@ def build_model_validate():
     elif args.dataset=='smtV2':
         print('model path is: %s' %(model_path))
         model = models.__dict__[args.arch](modelPath=model_path, num_classes=174, length=args.num_seg)
+    elif args.dataset=='window':
+        print('model path is: %s' %(model_path))
+        model = models.__dict__[args.arch](modelPath=model_path, num_classes=3, length=args.num_seg)
    
     model.load_state_dict(params['state_dict'])
     model.cuda()

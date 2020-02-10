@@ -1,14 +1,16 @@
 /checkpoint
-/datasets
+/datasets/settings
 /datasets/hmdb51_frames
 /datasets/hmdb51_splits
 /datasets/ucf101_splits
 /datasets/__pycache__
 /datasets/smtV2_frames
 /datasets/ucf101_frames
+/datasets/settings
+/datasets/window_frames
 /old checkpoints
+/scripts/eval_ucf101_pytorch/results
 /runs
 /__pycache__
 /weights
-/datasets/ucf101_frames.zip
-
+/cercop

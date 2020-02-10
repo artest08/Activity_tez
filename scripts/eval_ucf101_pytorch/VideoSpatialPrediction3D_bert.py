@@ -49,7 +49,7 @@ def VideoSpatialPrediction3D_bert(
     else:
         duration = num_frames
     
-    scale=0.5
+    scale=1
     if scale == 1:
         clip_mean = [0.5, 0.5, 0.5]
         clip_std = [0.5, 0.5, 0.5]

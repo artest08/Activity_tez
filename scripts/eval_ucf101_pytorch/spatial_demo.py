@@ -28,7 +28,7 @@ from VideoTemporalPrediction import VideoTemporalPrediction
 
 
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   
-os.environ["CUDA_VISIBLE_DEVICES"]="0"
+os.environ["CUDA_VISIBLE_DEVICES"]="1"
 
 model_names = sorted(name for name in models.__dict__
     if name.islower() and not name.startswith("__")
@@ -38,15 +38,21 @@ dataset_names = sorted(name for name in datasets.__all__)
 
 parser = argparse.ArgumentParser(description='PyTorch Two-Stream Action Recognition RGB Test Case')
 
-parser.add_argument('--dataset', '-d', default='hmdb51',
-                    choices=["ucf101", "hmdb51"],
+parser.add_argument('--dataset', '-d', default='window',
+                    choices=["ucf101", "hmdb51", "window"],
                     help='dataset: ucf101 | hmdb51')
 parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resnet18',
                     choices=model_names)
-parser.add_argument('-s', '--split', default=1, type=int, metavar='S',
+parser.add_argument('-s', '--split', default=6, type=int, metavar='S',
                     help='which split of data to work on (default: 1)')
+parser.add_argument('-w', '--window', default=3, type=int, metavar='V',
+                    help='validation file index (default: 3)')
+
 parser.add_argument('-t', '--tsn', dest='tsn', action='store_true',
                     help='TSN Mode')
+
+parser.add_argument('-v', '--val', dest='window_val', action='store_true',
+                    help='Window Validation Selection')
 multiGPUTest=False
 def buildModel(model_path,num_categories):
     model = models.__dict__[args.arch](pretrained=False, num_classes=num_categories)
@@ -82,13 +88,19 @@ def main():
         frameFolderName = "ucf101_frames"
     elif args.dataset=='hmdb51':
         frameFolderName = "hmdb51_frames"
+    elif args.dataset=='window':
+        frameFolderName = "window_frames"
     data_dir=os.path.join(datasetFolder,frameFolderName)
     
 
-    if 'rgb' in args.arch:
-        val_fileName = "val_rgb_split%d.txt" %(args.split)
+
+    if args.window_val:
+        val_fileName = "window%d.txt" %(args.window)
     else:
-        val_fileName = "val_flow_split%d.txt" %(args.split)
+        if 'rgb' in args.arch:
+            val_fileName = "val_rgb_split%d.txt" %(args.split)
+        else:
+            val_fileName = "val_flow_split%d.txt" %(args.split)
 
     val_file=os.path.join(datasetFolder,'settings',args.dataset,val_fileName)
     
@@ -97,6 +109,8 @@ def main():
         num_categories = 101
     elif args.dataset=='hmdb51':
         num_categories = 51
+    elif args.dataset=='window':
+        num_categories = 3
 
     model_start_time = time.time()
     spatial_net=buildModel(model_path,num_categories)
@@ -182,18 +196,18 @@ def main():
         pred_index_seventy = np.argmax(avg_spatial_sorted_seventy)
         pred_index_hundred = np.argmax(avg_spatial_sorted_hundred)
         
-        print("Estimated Time  %0.4f" % estimatedTime)
-        print("Sample %d/%d: GT: %d, Prediction with mean: %d" % (line_id, len(val_list), input_video_label, pred_index_mean))
-        print("Sample %d/%d: GT: %d, Prediction with max: %d" % (line_id, len(val_list), input_video_label, pred_index_max))
-        print("Sample %d/%d: GT: %d, Prediction with 3-mean: %d" % (line_id, len(val_list), input_video_label, pred_index_three))
-        print("Sample %d/%d: GT: %d, Prediction with 5-mean: %d" % (line_id, len(val_list), input_video_label, pred_index_five))
-        print("Sample %d/%d: GT: %d, Prediction with 7-mean: %d" % (line_id, len(val_list), input_video_label, pred_index_seven))
-        print("Sample %d/%d: GT: %d, Prediction with 10-mean: %d" % (line_id, len(val_list), input_video_label, pred_index_ten))
-        print("Sample %d/%d: GT: %d, Prediction with 30-mean: %d" % (line_id, len(val_list), input_video_label, pred_index_thirty))
-        print("Sample %d/%d: GT: %d, Prediction with 50-mean: %d" % (line_id, len(val_list), input_video_label, pred_index_fifty))
-        print("Sample %d/%d: GT: %d, Prediction with 50-mean: %d" % (line_id, len(val_list), input_video_label, pred_index_seventy))
-        print("Sample %d/%d: GT: %d, Prediction with 100-mean: %d" % (line_id, len(val_list), input_video_label, pred_index_hundred))
-        print("------------------")
+        # print("Estimated Time  %0.4f" % estimatedTime)
+        # print("Sample %d/%d: GT: %d, Prediction with mean: %d" % (line_id, len(val_list), input_video_label, pred_index_mean))
+        # print("Sample %d/%d: GT: %d, Prediction with max: %d" % (line_id, len(val_list), input_video_label, pred_index_max))
+        # print("Sample %d/%d: GT: %d, Prediction with 3-mean: %d" % (line_id, len(val_list), input_video_label, pred_index_three))
+        # print("Sample %d/%d: GT: %d, Prediction with 5-mean: %d" % (line_id, len(val_list), input_video_label, pred_index_five))
+        # print("Sample %d/%d: GT: %d, Prediction with 7-mean: %d" % (line_id, len(val_list), input_video_label, pred_index_seven))
+        # print("Sample %d/%d: GT: %d, Prediction with 10-mean: %d" % (line_id, len(val_list), input_video_label, pred_index_ten))
+        # print("Sample %d/%d: GT: %d, Prediction with 30-mean: %d" % (line_id, len(val_list), input_video_label, pred_index_thirty))
+        # print("Sample %d/%d: GT: %d, Prediction with 50-mean: %d" % (line_id, len(val_list), input_video_label, pred_index_fifty))
+        # print("Sample %d/%d: GT: %d, Prediction with 50-mean: %d" % (line_id, len(val_list), input_video_label, pred_index_seventy))
+        # print("Sample %d/%d: GT: %d, Prediction with 100-mean: %d" % (line_id, len(val_list), input_video_label, pred_index_hundred))
+        # print("------------------")
         if pred_index_mean == input_video_label:
             match_count_mean += 1
         if pred_index_max == input_video_label:
@@ -230,15 +244,15 @@ def main():
     print(confusion_matrix(y_true,y_pred_mean))
 
     print("Accuracy with mean calculation is %4.4f" % (float(match_count_mean)/len(val_list)))
-    print("Accuracy with max calculation is %4.4f" % (float(match_count_max)/len(val_list)))
-    print("Accuracy with 3-mean calculation is %4.4f" % (float(match_count_3_mean)/len(val_list)))
-    print("Accuracy with 5-mean calculation is %4.4f" % (float(match_count_5_mean)/len(val_list)))
-    print("Accuracy with 7-mean calculation is %4.4f" % (float(match_count_7_mean)/len(val_list)))
-    print("Accuracy with 10-mean calculation is %4.4f" % (float(match_count_10_mean)/len(val_list)))
-    print("Accuracy with 30-mean calculation is %4.4f" % (float(match_count_30_mean)/len(val_list)))
-    print("Accuracy with 50-mean calculation is %4.4f" % (float(match_count_50_mean)/len(val_list)))
-    print("Accuracy with 70-mean calculation is %4.4f" % (float(match_count_70_mean)/len(val_list)))
-    print("Accuracy with 100-mean calculation is %4.4f" % (float(match_count_100_mean)/len(val_list)))
+    # print("Accuracy with max calculation is %4.4f" % (float(match_count_max)/len(val_list)))
+    # print("Accuracy with 3-mean calculation is %4.4f" % (float(match_count_3_mean)/len(val_list)))
+    # print("Accuracy with 5-mean calculation is %4.4f" % (float(match_count_5_mean)/len(val_list)))
+    # print("Accuracy with 7-mean calculation is %4.4f" % (float(match_count_7_mean)/len(val_list)))
+    # print("Accuracy with 10-mean calculation is %4.4f" % (float(match_count_10_mean)/len(val_list)))
+    # print("Accuracy with 30-mean calculation is %4.4f" % (float(match_count_30_mean)/len(val_list)))
+    # print("Accuracy with 50-mean calculation is %4.4f" % (float(match_count_50_mean)/len(val_list)))
+    # print("Accuracy with 70-mean calculation is %4.4f" % (float(match_count_70_mean)/len(val_list)))
+    # print("Accuracy with 100-mean calculation is %4.4f" % (float(match_count_100_mean)/len(val_list)))
     print(modelLocation)
     print("Mean Estimated Time %0.4f" % (np.mean(timeList)))
     resultDict={'y_true':y_true,'y_pred_mean':y_pred_mean,'y_pred_max':y_pred_max,'y_pred_3_mean':y_pred_3_mean,

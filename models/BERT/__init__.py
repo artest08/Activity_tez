@@ -1,2 +1,2 @@
-from .bert import BERT
-from .language_model import BERTLM
+from .bert import *
+#from .language_model import BERTLM

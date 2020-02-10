@@ -35,29 +35,39 @@ from VideoTemporalPrediction3D import VideoTemporalPrediction3D
 
 
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   
-os.environ["CUDA_VISIBLE_DEVICES"]="0"
+os.environ["CUDA_VISIBLE_DEVICES"]="1"
 
 model_names = sorted(name for name in models.__dict__
-    if name.islower() and not name.startswith("__")
+    if not name.startswith("__")
     and callable(models.__dict__[name]))
 
 dataset_names = sorted(name for name in datasets.__all__)
 
 parser = argparse.ArgumentParser(description='PyTorch Two-Stream Action Recognition RGB Test Case')
 
-parser.add_argument('--dataset', '-d', default='hmdb51',
-                    choices=["ucf101", "hmdb51"],
+parser.add_argument('--dataset', '-d', default='window',
+                    choices=["ucf101", "hmdb51", 'window'],
                     help='dataset: ucf101 | hmdb51')
-parser.add_argument('--arch', '-a', metavar='ARCH', default='flow_resnet152_bert10',
+parser.add_argument('--arch', '-a', metavar='ARCH', default='flow_resnet18_bert10',
                     choices=model_names)
-parser.add_argument('-s', '--split', default=3, type=int, metavar='S',
+parser.add_argument('-s', '--split', default=6, type=int, metavar='S',
                     help='which split of data to work on (default: 1)')
+
+parser.add_argument('-w', '--window', default=3, type=int, metavar='V',
+                    help='validation file index (default: 3)')
+
 parser.add_argument('-t', '--tsn', dest='tsn', action='store_true',
                     help='TSN Mode')
+
+parser.add_argument('-v', '--val', dest='window_val', action='store_true',
+                    help='Window Validation Selection')
 multiGPUTest=False
+multiGPUTrain=False
 
 num_seg=16
 length = 1
+num_seg_3D=1
+
 def buildModel(model_path,num_categories):
     model=models.__dict__[args.arch](modelPath='', num_classes=num_categories, length = num_seg)
     params = torch.load(model_path)
@@ -70,6 +80,11 @@ def buildModel(model_path,num_categories):
         model=torch.nn.DataParallel(model)
         new_dict={"module."+k: v for k, v in params['state_dict'].items()} 
         model.load_state_dict(new_dict)
+    elif multiGPUTrain:
+        new_dict = {k[7:]: v for k, v in params['state_dict'].items()} 
+        model_dict=model.state_dict() 
+        model_dict.update(new_dict)
+        model.load_state_dict(model_dict)
     else:
         model.load_state_dict(params['state_dict'])
     model.cuda()
@@ -92,10 +107,14 @@ def main():
         frameFolderName = "ucf101_frames"
     elif args.dataset=='hmdb51':
         frameFolderName = "hmdb51_frames"
+    elif args.dataset=='window':
+        frameFolderName = "window_frames"
     data_dir=os.path.join(datasetFolder,frameFolderName)
     
-
-    val_fileName = "val_flow_split%d.txt" %(args.split)
+    if args.window_val:
+        val_fileName = "window%d.txt" %(args.window)
+    else:
+        val_fileName = "test_flow_split%d.txt" %(args.split)
 
     val_file=os.path.join(datasetFolder,'settings',args.dataset,val_fileName)
     
@@ -104,6 +123,8 @@ def main():
         num_categories = 101
     elif args.dataset=='hmdb51':
         num_categories = 51
+    elif args.dataset=='window':
+        num_categories = 3
 
     model_start_time = time.time()
     spatial_net=buildModel(model_path,num_categories)
@@ -147,6 +168,7 @@ def main():
                 num_categories,
                 start_frame,
                 duration,
+                num_seg = num_seg_3D,
                 length = 64)        
         
         
@@ -156,9 +178,9 @@ def main():
         
         pred_index = spatial_prediction
         
-        print("Sample %d/%d: GT: %d, Prediction: %d" % (line_id, len(val_list), input_video_label, pred_index))
-        print("Estimated Time  %0.4f" % estimatedTime)
-        print("------------------")
+        # print("Sample %d/%d: GT: %d, Prediction: %d" % (line_id, len(val_list), input_video_label, pred_index))
+        # print("Estimated Time  %0.4f" % estimatedTime)
+        # print("------------------")
         if pred_index == input_video_label:
             match_count += 1
 

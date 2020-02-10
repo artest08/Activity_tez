@@ -41,6 +41,7 @@ def VideoTemporalPrediction3D(
         num_categories,
         start_frame=0,
         num_frames=0,
+        num_seg=4,
         length = 16,
         ):
 
@@ -69,16 +70,25 @@ def VideoTemporalPrediction3D(
     imageSize=int(224 * scale)
     dims = (int(256 * scale),int(340 * scale),3,duration)
     duration = duration - 1
-    
+    average_duration = int(duration / num_seg)
+    offsetMainIndexes = []
     offsets = []
-    
-    offsetMainIndexes = list(range(1,duration-length,length))
-    if len(offsetMainIndexes) == 0:
-        offsets = list(range(1,duration+2))*int(np.floor(length/(duration+1))) + list(range(1,length%(duration+1)+1))
-    else:
-        for mainOffsetValue in offsetMainIndexes:
-            for lengthID in range(1, length+1):
-                 offsets.append(lengthID + mainOffsetValue)
+    for seg_id in range(num_seg):
+        if average_duration >= length:
+            offsetMainIndexes.append(int((average_duration - length + 1)/2 + seg_id * average_duration))
+        elif duration >=length:
+            average_part_length = int(np.floor((duration-length)/num_seg))
+            offsetMainIndexes.append(int((average_part_length*(seg_id) + average_part_length*(seg_id+1))/2))
+        else:
+            increase = int(duration / num_seg)
+            offsetMainIndexes.append(0 + seg_id * increase)
+    for mainOffsetValue in offsetMainIndexes:
+        for lengthID in range(1, length+1):
+            loaded_frame_index = lengthID + mainOffsetValue
+            moded_loaded_frame_index = loaded_frame_index % (duration + 1)
+            if moded_loaded_frame_index == 0:
+                moded_loaded_frame_index = (duration + 1)
+            offsets.append(moded_loaded_frame_index)
     imageList=[]
     imageList1=[]
     imageList2=[]
@@ -93,7 +103,7 @@ def VideoTemporalPrediction3D(
     interpolation = cv2.INTER_LINEAR
     
     for index in offsets:
-        if 'ucf101' in vid_name:
+        if 'ucf101' or 'window' in vid_name:
             flow_x_file = os.path.join(vid_name, 'flow_x_{0:05d}.jpg'.format(index))
             flow_y_file = os.path.join(vid_name, 'flow_y_{0:05d}.jpg'.format(index))
         elif 'hmdb51' in vid_name:

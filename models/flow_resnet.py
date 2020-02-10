@@ -491,7 +491,7 @@ def flow_resnet18(pretrained=False, **kwargs):
     """
     model = ResNet(BasicBlock, [2, 2, 2, 2], **kwargs)
     if pretrained:
-        _load_state_dict(model,model_urls['resnet18'],**kwargs)
+        _load_state_dict(model,model_urls['resnet18'], **kwargs)
     return model
 
 

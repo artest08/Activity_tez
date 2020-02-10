@@ -36,24 +36,33 @@ os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"]="1"
 
 model_names = sorted(name for name in models.__dict__
-    if name.islower() and not name.startswith("__")
+    if not name.startswith("__")
     and callable(models.__dict__[name]))
 
 dataset_names = sorted(name for name in datasets.__all__)
 
 parser = argparse.ArgumentParser(description='PyTorch Two-Stream Action Recognition RGB Test Case')
 
-parser.add_argument('--dataset', '-d', default='smtV2',
+parser.add_argument('--dataset', '-d', default='window',
                     choices=["ucf101", "hmdb51"],
                     help='dataset: ucf101 | hmdb51')
-parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resneXt3D64f101_bert10XY',
+parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resnet18_bert10',
                     choices=model_names)
 
 parser.add_argument('-s', '--split', default=1, type=int, metavar='S',
                     help='which split of data to work on (default: 1)')
+
+parser.add_argument('-w', '--window', default=3, type=int, metavar='V',
+                    help='validation file index (default: 3)')
+
 parser.add_argument('-t', '--tsn', dest='tsn', action='store_true',
                     help='TSN Mode')
-multiGPUTest=False
+
+parser.add_argument('-v', '--val', dest='window_val', action='store_true',
+                    help='Window Validation Selection')
+
+multiGPUTest = False
+multiGPUTrain=False
 num_seg=16
 num_seg_3D=1
 
@@ -74,6 +83,12 @@ def buildModel(model_path,num_categories):
         model=torch.nn.DataParallel(model)
         new_dict={"module."+k: v for k, v in params['state_dict'].items()} 
         model.load_state_dict(new_dict)
+        
+    elif multiGPUTrain:
+        new_dict = {k[7:]: v for k, v in params['state_dict'].items()} 
+        model_dict=model.state_dict() 
+        model_dict.update(new_dict)
+        model.load_state_dict(model_dict)
     else:
         model.load_state_dict(params['state_dict'])
     model.cuda()
@@ -102,10 +117,15 @@ def main():
         frameFolderName = "hmdb51_frames"
     elif args.dataset=='smtV2':
         frameFolderName = "smtV2_frames"
+    elif args.dataset=='window':
+        frameFolderName = "window_frames"
     data_dir=os.path.join(datasetFolder,frameFolderName)
     
+    if args.window_val:
+        val_fileName = "window%d.txt" %(args.window)
+    else:
+        val_fileName = "test_rgb_split%d.txt" %(args.split)
 
-    val_fileName = "test_rgb_split%d.txt" %(args.split)
     if 'rgb' in args.arch:
         extension = 'img_{0:05d}.jpg'
     elif 'pose' in args.arch:
@@ -120,6 +140,8 @@ def main():
         num_categories = 51
     elif args.dataset=='smtV2':
         num_categories = 174
+    elif args.dataset=='window':
+        num_categories = 3
         
 
     model_start_time = time.time()
@@ -179,9 +201,9 @@ def main():
                 top5 = np.argsort(mean_result)[::-1][:5]                   
                 employee_writer.writerow([line_info[0], str(top5[0]), str(top5[1]),str(top5[2]),str(top5[3]),str(top5[4])])
                 
-            print("Sample %d/%d: GT: %d, Prediction: %d" % (line_id, len(val_list), input_video_label, pred_index))
-            print("Estimated Time  %0.4f" % estimatedTime)
-            print("------------------")
+            # print("Sample %d/%d: GT: %d, Prediction: %d" % (line_id, len(val_list), input_video_label, pred_index))
+            # print("Estimated Time  %0.4f" % estimatedTime)
+            # print("------------------")
             if pred_index == input_video_label:
                 match_count += 1
     
