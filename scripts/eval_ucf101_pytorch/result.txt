@@ -861,7 +861,32 @@ Validation 10 frame ile secilirse
 Accuracy with mean calculation is 0.5660
 ./checkpoint/hmdb51_rgb_resnet152_bert10_split3
 
+Validation 10 frame ile secilirse
+Accuracy with mean calculation is 0.5824
+./checkpoint/hmdb51_flow_resnet152_bert10_split3
 
+Accuracy with mean calculation is 0.6712
+./checkpoint/hmdb51_rgb_resnet152_bert10_split3
+./checkpoint/hmdb51_flow_resnet152_bert10_split3
+
+Three splits 68.12
+
+SMTV2 Pretrained
+Accuracy with mean calculation is 0.6523
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10XY_split1
+Mean Estimated Time 0.7108
+
+
+64 frame test
+Accuracy with mean calculation is 0.7183
+./checkpoint/hmdb51_rgb_resnet50I3D32fNL_split1
+
+32 frame test
+Accuracy with mean calculation is 0.7013
+./checkpoint/hmdb51_rgb_resnet50I3D32fNL_split1
+
+Accuracy with mean calculation is 0.6693
+./checkpoint/hmdb51_rgb_resnet50I3D32fNL_bert10_split1
 
 
 

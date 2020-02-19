@@ -23,3 +23,17 @@ class Attention(nn.Module):
             p_attn = dropout(p_attn)
 
         return torch.matmul(p_attn, value), p_attn
+    
+
+    
+class Attention2(nn.Module):
+    """
+    Compute 'Scaled Dot Product Attention
+    """
+
+    def forward(self, value, p_attn, dropout=None):
+
+        if dropout is not None:
+            p_attn = dropout(p_attn)
+
+        return torch.matmul(p_attn, value), p_attn

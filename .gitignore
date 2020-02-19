@@ -9,8 +9,11 @@
 /datasets/settings
 /datasets/window_frames
 /old checkpoints
+models/__pycache__/
+models/BERT/__pycache__/
 /scripts/eval_ucf101_pytorch/results
 /runs
 /__pycache__
 /weights
 /cercop
+__pycache__/

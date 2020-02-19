@@ -31,6 +31,7 @@ def VideoSpatialPrediction3D(
         vid_name,
         net,
         num_categories,
+        architecture_name,
         start_frame=0,
         num_frames=0,
         length = 16,
@@ -47,7 +48,11 @@ def VideoSpatialPrediction3D(
     else:
         duration = num_frames
     
-    scale = 1
+    if 'I3D' in architecture_name:
+        scale = 1
+    else:
+        scale = 0.5
+        
     if scale == 0.5:
         clip_mean = [114.7748, 107.7354, 99.4750]
         clip_std = [1, 1, 1]
@@ -59,8 +64,12 @@ def VideoSpatialPrediction3D(
             ])
 
     elif scale == 1:
-        clip_mean = [0.5, 0.5, 0.5] 
-        clip_std = [0.5, 0.5, 0.5]
+        if not 'resnet' in architecture_name:
+            clip_mean = [0.5, 0.5, 0.5] 
+            clip_std = [0.5, 0.5, 0.5]
+        else:
+            clip_mean = [0.45, 0.45, 0.45]
+            clip_std = [0.225, 0.225, 0.225] 
         normalize = video_transforms.Normalize(mean=clip_mean,
                                  std=clip_std)
         val_transform = video_transforms.Compose([
@@ -151,9 +160,9 @@ def VideoSpatialPrediction3D(
          
     input_data=np.concatenate(rgb_list,axis=0)   
 
-    batch_size = 64
+    batch_size = length
     sample_size = int(batch_size/length)
-    result = np.zeros((int(input_data.shape[0]/64),num_categories))
+    result = np.zeros((int(input_data.shape[0]/length),num_categories))
     num_batches = int(math.ceil(float(input_data.shape[0])/batch_size))
 
     with torch.no_grad():
@@ -162,8 +171,8 @@ def VideoSpatialPrediction3D(
             input_data_batched = input_data[span,:,:,:]
             imgDataTensor = torch.from_numpy(input_data_batched).type(torch.FloatTensor).cuda()
             imgDataTensor = imgDataTensor.view(-1,length,3,imageSize,imageSize).transpose(1,2)
-            #output = net(imgDataTensor)
-            output,_,_,_ = net(imgDataTensor)
+            output = net(imgDataTensor)
+            #output,_,_,_ = net(imgDataTensor)
             span = range(sample_size*bb, min(int(input_data.shape[0]/64),sample_size*(bb+1)))
             result[span,:] = output.data.cpu().numpy()
         mean_result=np.mean(result,0)

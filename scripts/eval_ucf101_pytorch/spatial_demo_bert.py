@@ -43,10 +43,10 @@ dataset_names = sorted(name for name in datasets.__all__)
 
 parser = argparse.ArgumentParser(description='PyTorch Two-Stream Action Recognition RGB Test Case')
 
-parser.add_argument('--dataset', '-d', default='window',
+parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51"],
                     help='dataset: ucf101 | hmdb51')
-parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resnet18_bert10',
+parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resnet50I3D32fNL_bert10',
                     choices=model_names)
 
 parser.add_argument('-s', '--split', default=1, type=int, metavar='S',
@@ -124,7 +124,7 @@ def main():
     if args.window_val:
         val_fileName = "window%d.txt" %(args.window)
     else:
-        val_fileName = "test_rgb_split%d.txt" %(args.split)
+        val_fileName = "val_rgb_split%d.txt" %(args.split)
 
     if 'rgb' in args.arch:
         extension = 'img_{0:05d}.jpg'
@@ -185,6 +185,7 @@ def main():
                     clip_path,
                     spatial_net,
                     num_categories,
+                    args.arch,
                     start_frame,
                     duration,
                     num_seg=num_seg_3D ,
@@ -201,9 +202,9 @@ def main():
                 top5 = np.argsort(mean_result)[::-1][:5]                   
                 employee_writer.writerow([line_info[0], str(top5[0]), str(top5[1]),str(top5[2]),str(top5[3]),str(top5[4])])
                 
-            # print("Sample %d/%d: GT: %d, Prediction: %d" % (line_id, len(val_list), input_video_label, pred_index))
-            # print("Estimated Time  %0.4f" % estimatedTime)
-            # print("------------------")
+            print("Sample %d/%d: GT: %d, Prediction: %d" % (line_id, len(val_list), input_video_label, pred_index))
+            print("Estimated Time  %0.4f" % estimatedTime)
+            print("------------------")
             if pred_index == input_video_label:
                 match_count += 1
     

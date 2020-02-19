@@ -45,12 +45,12 @@ dataset_names = sorted(name for name in datasets.__all__)
 
 parser = argparse.ArgumentParser(description='PyTorch Two-Stream Action Recognition RGB Test Case')
 
-parser.add_argument('--dataset', '-d', default='window',
+parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51", 'window'],
                     help='dataset: ucf101 | hmdb51')
-parser.add_argument('--arch', '-a', metavar='ARCH', default='flow_resnet18_bert10',
+parser.add_argument('--arch', '-a', metavar='ARCH', default='flow_resnet152_bert10',
                     choices=model_names)
-parser.add_argument('-s', '--split', default=6, type=int, metavar='S',
+parser.add_argument('-s', '--split', default=3, type=int, metavar='S',
                     help='which split of data to work on (default: 1)')
 
 parser.add_argument('-w', '--window', default=3, type=int, metavar='V',
@@ -114,7 +114,7 @@ def main():
     if args.window_val:
         val_fileName = "window%d.txt" %(args.window)
     else:
-        val_fileName = "test_flow_split%d.txt" %(args.split)
+        val_fileName = "val_flow_split%d.txt" %(args.split)
 
     val_file=os.path.join(datasetFolder,'settings',args.dataset,val_fileName)
     
@@ -178,9 +178,9 @@ def main():
         
         pred_index = spatial_prediction
         
-        # print("Sample %d/%d: GT: %d, Prediction: %d" % (line_id, len(val_list), input_video_label, pred_index))
-        # print("Estimated Time  %0.4f" % estimatedTime)
-        # print("------------------")
+        print("Sample %d/%d: GT: %d, Prediction: %d" % (line_id, len(val_list), input_video_label, pred_index))
+        print("Estimated Time  %0.4f" % estimatedTime)
+        print("------------------")
         if pred_index == input_video_label:
             match_count += 1
 

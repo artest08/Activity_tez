@@ -32,6 +32,7 @@ def VideoSpatialPrediction3D_bert(
         vid_name,
         net,
         num_categories,
+        architecture_name,
         start_frame=0,
         num_frames=0,
         num_seg=4,
@@ -49,25 +50,32 @@ def VideoSpatialPrediction3D_bert(
     else:
         duration = num_frames
     
-    scale=1
-    if scale == 1:
-        clip_mean = [0.5, 0.5, 0.5]
-        clip_std = [0.5, 0.5, 0.5]
-        normalize = video_transforms.Normalize(mean=clip_mean,
-                                         std=clip_std)
+    if 'I3D' in architecture_name:
+        scale = 1
+    else:
+        scale = 0.5
         
-        val_transform = video_transforms.Compose([
-                video_transforms.ToTensor(),
-                normalize,
-            ])
-    elif scale==0.5:
+    if scale == 0.5:
         clip_mean = [114.7748, 107.7354, 99.4750]
         clip_std = [1, 1, 1]
         normalize = video_transforms.Normalize(mean=clip_mean,
-                                         std=clip_std)
-        
+                                 std=clip_std)
         val_transform = video_transforms.Compose([
                 video_transforms.ToTensor2(),
+                normalize,
+            ])
+
+    elif scale == 1:
+        if not 'resnet' in architecture_name:
+            clip_mean = [0.5, 0.5, 0.5] 
+            clip_std = [0.5, 0.5, 0.5]
+        else:
+            clip_mean = [0.45, 0.45, 0.45]
+            clip_std = [0.225, 0.225, 0.225] 
+        normalize = video_transforms.Normalize(mean=clip_mean,
+                                 std=clip_std)
+        val_transform = video_transforms.Compose([
+                video_transforms.ToTensor(),
                 normalize,
             ])
 

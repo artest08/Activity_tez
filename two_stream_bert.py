@@ -13,8 +13,8 @@ import shutil
 import numpy as np
 
 
-os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]="0"
+# os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
+# os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 import torch
 import torch.nn as nn
@@ -46,25 +46,25 @@ parser.add_argument('--settings', metavar='DIR', default='./datasets/settings',
 #parser.add_argument('--modality', '-m', metavar='MODALITY', default='rgb',
 #                    choices=["rgb", "flow"],
 #                    help='modality: rgb | flow')
-parser.add_argument('--dataset', '-d', default='hmdb51',
+parser.add_argument('--dataset', '-d', default='smtV2',
                     choices=["ucf101", "hmdb51", "smtV2", "window"],
                     help='dataset: ucf101 | hmdb51')
-parser.add_argument('--arch', '-a', metavar='ARCH', default='flow_resnet152_bert10',
+parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resnet152_bert10',
                     choices=model_names,
                     help='model architecture: ' +
                         ' | '.join(model_names) +
                         ' (default: rgb_vgg16)')
-parser.add_argument('-s', '--split', default=3, type=int, metavar='S',
+parser.add_argument('-s', '--split', default=1, type=int, metavar='S',
                     help='which split of data to work on (default: 1)')
-parser.add_argument('-j', '--workers', default=0, type=int, metavar='N',
+parser.add_argument('-j', '--workers', default=4, type=int, metavar='N',
                     help='number of data loading workers (default: 4)')
 parser.add_argument('--epochs', default=100, type=int, metavar='N',
                     help='number of total epochs to run')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
                     help='manual epoch number (useful on restarts)')
-parser.add_argument('-b', '--batch-size', default=2, type=int,
+parser.add_argument('-b', '--batch-size', default=16, type=int,
                     metavar='N', help='mini-batch size (default: 50)')
-parser.add_argument('--iter-size', default=64, type=int,
+parser.add_argument('--iter-size', default=8, type=int,
                     metavar='I', help='iter size as in Caffe to reduce memory usage (default: 5)')
 parser.add_argument('--new_width', default=340, type=int,
                     metavar='N', help='resize width (default: 340)')
@@ -78,7 +78,7 @@ parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
                     help='momentum')
 parser.add_argument('--weight-decay', '--wd', default=1e-3, type=float,
                     metavar='W', help='weight decay (default: 5e-4)')
-parser.add_argument('--print-freq', default=1000, type=int,
+parser.add_argument('--print-freq', default=65, type=int,
                     metavar='N', help='print frequency (default: 50)')
 parser.add_argument('--save-freq', default=1, type=int,
                     metavar='N', help='save frequency (default: 25)')
@@ -103,6 +103,8 @@ best_prec1 = 0
 best_loss = 30
 mseCoeffStart=10
 warmUpEpoch=5
+
+
 
 
 
@@ -158,7 +160,10 @@ def main():
         model = build_model_validate()
     elif args.contine:
         model, startEpoch, optimizer, best_prec1 = build_model_continue()
-        print("Continuing with best precision: %.3f and start epoch %d" %(best_prec1,startEpoch))
+        lr = None
+        for param_group in optimizer.param_groups:
+            lr = param_group['lr']
+        print("Continuing with best precision: %.3f and start epoch %d and lr: %f" %(best_prec1,startEpoch,lr))
     else:
         print("Building model ... ")
         model = build_model()
@@ -263,10 +268,16 @@ def main():
                 normalize,
             ])
     # data loading
-    train_setting_file = "train_%s_split%d.txt" % (modality, args.split)
-    train_split_file = os.path.join(args.settings, args.dataset, train_setting_file)
-    val_setting_file = "val_%s_split%d.txt" % (modality, args.split)
-    val_split_file = os.path.join(args.settings, args.dataset, val_setting_file)
+    if modality == 'both':
+        train_setting_file = "train_%s_split%d.txt" % ('rgb', args.split)
+        train_split_file = os.path.join(args.settings, args.dataset, train_setting_file)
+        val_setting_file = "val_%s_split%d.txt" % ('rgb', args.split)
+        val_split_file = os.path.join(args.settings, args.dataset, val_setting_file)
+    else:   
+        train_setting_file = "train_%s_split%d.txt" % (modality, args.split)
+        train_split_file = os.path.join(args.settings, args.dataset, train_setting_file)
+        val_setting_file = "val_%s_split%d.txt" % (modality, args.split)
+        val_split_file = os.path.join(args.settings, args.dataset, val_setting_file)
     if not os.path.exists(train_split_file) or not os.path.exists(val_split_file):
         print("No split file exists in %s directory. Preprocess the dataset first" % (args.settings))
 
@@ -438,6 +449,9 @@ def build_model_continue():
     model = model.cuda()
     optimizer = AdamW(model.parameters(), lr= args.lr, weight_decay=args.weight_decay)
     optimizer.load_state_dict(params['optimizer'])
+    for param_group in optimizer.param_groups:
+        lr = param_group['lr'] 
+    
     startEpoch = params['epoch']
     best_prec = params['best_prec1']
     return model, startEpoch, optimizer, best_prec
@@ -486,7 +500,10 @@ def train(train_loader, model, criterion, criterion2, optimizer, epoch,setMseCoe
         else:
             inputs = inputs.to(device)
         targets = targets.to(device)
-        output, input_vectors, sequenceOut, maskSample = model(inputs)
+        if modality == 'both':
+            output_rgb, output_flow, input_vectors, sequenceOut, maskSample = model(inputs)
+        else:
+            output, input_vectors, sequenceOut, maskSample = model(inputs)
 
         
 #        maskSample=maskSample.cuda()
@@ -498,6 +515,10 @@ def train(train_loader, model, criterion, criterion2, optimizer, epoch,setMseCoe
 #        targetRank=torch.tensor(range(args.num_seg)).repeat(input_vectors.shape[0]).cuda()
 #        rankingFC = nn.Linear(input_vectors.shape[-1], args.num_seg).cuda()
 #        out_rank = rankingFC(input_vectors_rank)
+        if modality == 'both':
+            output_rgb = torch.nn.functional.normalize(output_rgb,2,1)
+            output_flow = torch.nn.functional.normalize(output_flow,2,1)
+            output = output_rgb + output_flow            
         prec1, prec3 = accuracy(output.data, targets, topk=(1, 3))
         acc_mini_batch += prec1.item()
         acc_mini_batch_top3 += prec3.item()
@@ -505,7 +526,10 @@ def train(train_loader, model, criterion, criterion2, optimizer, epoch,setMseCoe
         
         #lossRanking = criterion(out_rank, targetRank)
         lossRanking=torch.tensor([0]).cuda()
-        lossClassification = criterion(output, targets)
+        if modality == 'both':
+            lossClassification = criterion(output_rgb, targets) + criterion(output_flow, targets)
+        else:
+            lossClassification = criterion(output, targets)
         #lossMSE = criterion2(input_vectors, sequenceOut)
         lossMSE = torch.mean(1 - criterion3(input_vectors,sequenceOut))
         lossBatchSimilarity=BatchSimilarityLossFunction(sequenceOut,input_vectors)
@@ -551,7 +575,7 @@ def train(train_loader, model, criterion, criterion2, optimizer, epoch,setMseCoe
     
             
         if (i+1) % args.print_freq == 0:
-            print('[%d] time: %.3f loss: %.4f' %(i,batch_time.avg,lossesMSE.avg))
+            print('[%d] time: %.3f loss: %.4f' %(i,batch_time.avg,lossesClassification.avg))
 #        if (i+1) % args.print_freq == 0:
 #
 #            print('Epoch: [{0}][{1}/{2}]\t'
@@ -618,7 +642,11 @@ def validate(val_loader, model, criterion,criterion2,modality):
             targets = targets.to(device)
     
             # compute output
-            output, input_vectors, sequenceOut, maskSample = model(inputs)
+            if modality == 'both':
+                output_rgb, output_flow, input_vectors, sequenceOut, maskSample = model(inputs)
+            else:
+                output, input_vectors, sequenceOut, maskSample = model(inputs)
+                
             if args.more_cropping:
                 
                 if args.dataset=='ucf101':
@@ -639,8 +667,13 @@ def validate(val_loader, model, criterion,criterion2,modality):
 #            lossRanking = criterion(out_rank, targetRank)
             
             lossRanking=torch.tensor([0]).cuda()
-            
-            lossClassification = criterion(output, targets)
+            if modality == 'both':
+                output_rgb = torch.nn.functional.normalize(output_rgb,2,1)
+                output_flow = torch.nn.functional.normalize(output_flow,2,1)
+                output = output_rgb + output_flow
+                lossClassification = criterion(output, targets)
+            else:
+                lossClassification = criterion(output, targets)
             #lossMSE = criterion2(input_vectors, sequenceOut)
             lossMSE = torch.mean(1 - criterion3(input_vectors,sequenceOut))
             lossBatchSimilarity=BatchSimilarityLossFunction(sequenceOut,input_vectors)

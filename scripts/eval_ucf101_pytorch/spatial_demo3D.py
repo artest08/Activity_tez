@@ -46,7 +46,7 @@ parser = argparse.ArgumentParser(description='PyTorch Two-Stream Action Recognit
 parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51"],
                     help='dataset: ucf101 | hmdb51')
-parser.add_argument('--arch', '-a', metavar='ARCH', default='pose_I3D64f_bert10',
+parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resnet50I3D32fNL',
                     choices=model_names)
 
 parser.add_argument('-s', '--split', default=1, type=int, metavar='S',
@@ -141,9 +141,10 @@ def main():
             clip_path,
             spatial_net,
             num_categories,
+            args.arch,
             start_frame,
             duration,
-            length = 64, 
+            length = 32, 
             extension = extension)
             
         

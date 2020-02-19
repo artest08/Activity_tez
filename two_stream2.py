@@ -15,7 +15,7 @@ import numpy as np
 
 
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]="1"
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 import torch
 import torch.nn as nn
@@ -52,7 +52,7 @@ parser.add_argument('--settings', metavar='DIR', default='./datasets/settings',
 parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51", "smtV2"],
                     help='dataset: ucf101 | hmdb51')
-parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resnet18_NLB10',
+parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resnet50I3D32fNL',
                     choices=model_names,
                     help='model architecture: ' +
                         ' | '.join(model_names) +
@@ -60,7 +60,7 @@ parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resnet18_NLB10'
 
 parser.add_argument('-s', '--split', default=1, type=int, metavar='S',
                     help='which split of data to work on (default: 1)')
-parser.add_argument('-j', '--workers', default=4, type=int, metavar='N',
+parser.add_argument('-j', '--workers', default=2, type=int, metavar='N',
                     help='number of data loading workers (default: 4)')
 parser.add_argument('--epochs', default=200, type=int, metavar='N',
                     help='number of total epochs to run')
@@ -70,7 +70,7 @@ parser.add_argument('-b', '--batch-size', default=8, type=int,
                     metavar='N', help='mini-batch size (default: 50)')
 parser.add_argument('--iter-size', default=16, type=int,
                     metavar='I', help='iter size as in Caffe to reduce memory usage (default: 5)')
-parser.add_argument('--lr', '--learning-rate', default=1e-4, type=float,
+parser.add_argument('--lr', '--learning-rate', default=1e-2, type=float,
                     metavar='LR', help='initial learning rate')
 parser.add_argument('--lr_steps', default=[15], type=float, nargs="+",
                     metavar='LRSteps', help='epochs to decay learning rate by 10')
@@ -82,7 +82,7 @@ parser.add_argument('--print-freq', default=50, type=int,
                     metavar='N', help='print frequency (default: 50)')
 parser.add_argument('--save-freq', default=1, type=int,
                     metavar='N', help='save frequency (default: 25)')
-parser.add_argument('--num-seg', default=16, type=int,
+parser.add_argument('--num-seg', default=1, type=int,
                     metavar='N', help='Number of segments for temporal LSTM (default: 16)')
 #parser.add_argument('--resume', default='./dene4', type=str, metavar='PATH',
 #                    help='path to latest checkpoint (default: none)')
@@ -146,16 +146,16 @@ def main():
     criterion = nn.CrossEntropyLoss().cuda()
     
 
-    # optimizer = torch.optim.SGD(
-    #     model.parameters(),
-    #     lr=args.lr,
-    #     momentum=args.momentum,
-    #     dampening=0.9,
-    #     weight_decay=args.weight_decay)
+    optimizer = torch.optim.SGD(
+        model.parameters(),
+        lr=args.lr,
+        momentum=args.momentum,
+        dampening=0.9,
+        weight_decay=args.weight_decay)
     
-    optimizer = AdamW(model.parameters(),
-                      lr=args.lr,
-                      weight_decay=args.weight_decay)
+    # optimizer = AdamW(model.parameters(),
+    #                   lr=args.lr,
+    #                   weight_decay=args.weight_decay)
     
     scheduler = lr_scheduler.ReduceLROnPlateau(
         optimizer, 'max', patience=5,verbose=True)
@@ -178,6 +178,8 @@ def main():
     if "3D" in args.arch:
         if '64f' in args.arch:
             length=64
+        elif '32f' in args.arch:
+            length=32
         else:
             length=16
     else:
@@ -187,8 +189,13 @@ def main():
         is_color = True
         scale_ratios = [1.0, 0.875, 0.75, 0.66]
         if 'I3D' in args.arch:
-            clip_mean = [0.5, 0.5, 0.5] * args.num_seg * length
-            clip_std = [0.5, 0.5, 0.5] * args.num_seg * length
+            if 'resnet' in args.arch:
+                clip_mean = [0.45, 0.45, 0.45] * args.num_seg * length
+                clip_std = [0.225, 0.225, 0.225] * args.num_seg * length
+            else:
+                clip_mean = [0.5, 0.5, 0.5] * args.num_seg * length
+                clip_std = [0.5, 0.5, 0.5] * args.num_seg * length
+            #clip_std = [0.25, 0.25, 0.25] * args.num_seg * length
         elif "3D" in args.arch:
             clip_mean = [114.7748, 107.7354, 99.4750] * args.num_seg * length
             clip_std = [1, 1, 1] * args.num_seg * length
@@ -361,7 +368,13 @@ def build_model():
             elif '18' in args.arch:
                 model_path='./weights/resnet-18-kinetics.pth'
             elif 'I3D' in args.arch:
-                model_path='./weights/rgb_imagenet.pth' #model_path = os.path.join(modelLocation,'model_best.pth.tar') 
+                if 'resnet50' in args.arch:
+                    if 'NL' in args.arch:
+                        model_path='./weights/i3d_r50_nl_kinetics.pth'
+                    else:
+                        model_path='./weights/i3d_r50_kinetics.pth'
+                else:
+                    model_path='./weights/rgb_imagenet.pth' #model_path = os.path.join(modelLocation,'model_best.pth.tar') 
     elif modality == "pose":
         model_path=''
         
@@ -461,6 +474,8 @@ def train(train_loader, model, criterion, optimizer, epoch,modality):
             acc_mini_batch = 0
             acc_mini_batch_top3 = 0.0
             totalSamplePerIter = 0.0
+        if (i+1) % args.print_freq == 0:
+            print('[%d] time: %.3f loss: %.4f' %(i,batch_time.avg,lossesClassification.avg))
 #        if (i+1) % args.print_freq == 0:
 #
 #            print('Epoch: [{0}][{1}/{2}]\t'

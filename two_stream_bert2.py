@@ -14,7 +14,7 @@ import numpy as np
 
 
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]="0"
+os.environ["CUDA_VISIBLE_DEVICES"]="1"
 
 import torch
 import torch.nn as nn
@@ -46,25 +46,25 @@ parser.add_argument('--settings', metavar='DIR', default='./datasets/settings',
 #parser.add_argument('--modality', '-m', metavar='MODALITY', default='rgb',
 #                    choices=["rgb", "flow"],
 #                    help='modality: rgb | flow')
-parser.add_argument('--dataset', '-d', default='window',
+parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51", "smtV2", "window"],
                     help='dataset: ucf101 | hmdb51 | smtV2')
 
-parser.add_argument('--arch', '-a', default='flow_I3D64f_bert10',
+parser.add_argument('--arch', '-a', default='rgb_resnet50I3D32fNL_bert10',
                     choices=model_names,
                     help='model architecture: ' +
                         ' | '.join(model_names) +
                         ' (default: rgb_vgg16)')
 
-parser.add_argument('-s', '--split', default=12, type=int, metavar='S',
+parser.add_argument('-s', '--split', default=1, type=int, metavar='S',
                     help='which split of data to work on (default: 1)')
-parser.add_argument('-j', '--workers', default=4, type=int, metavar='N',
+parser.add_argument('-j', '--workers', default=1, type=int, metavar='N',
                     help='number of data loading workers (default: 4)')
-parser.add_argument('--epochs', default=20, type=int, metavar='N',
+parser.add_argument('--epochs', default=100, type=int, metavar='N',
                     help='number of total epochs to run')
-parser.add_argument('-b', '--batch-size', default=4, type=int,
+parser.add_argument('-b', '--batch-size', default=8, type=int,
                     metavar='N', help='mini-batch size (default: 50)')
-parser.add_argument('--iter-size', default=1, type=int,
+parser.add_argument('--iter-size', default=16, type=int,
                     metavar='I', help='iter size as in Caffe to reduce memory usage (default: 5)')
 parser.add_argument('--lr', '--learning-rate', default=1e-4, type=float,
                     metavar='LR', help='initial learning rate')
@@ -92,6 +92,7 @@ best_prec1 = 0
 best_loss = 30
 warmUpEpoch=5
 
+smt_pretrained = False
 
 HALF = False
 
@@ -131,6 +132,13 @@ def main():
     else:
         print("Building model ... ")
         model = build_model()
+        if smt_pretrained:
+            smtV2_pretrained_weights = './weights/smtV2_' + args.arch + '.pth'
+            weights = torch.load(smtV2_pretrained_weights)         
+            weights['fc_action.weight'] = model.state_dict()['fc_action.weight']
+            weights['fc_action.bias'] = model.state_dict()['fc_action.bias']
+            model.load_state_dict(weights)
+            print('smtV2 pretrained is loaded')
         #optimizer = torch.optim.Adam(model.parameters(), args.lr)
         optimizer = AdamW(model.parameters(), lr= args.lr, weight_decay=args.weight_decay)
         #optimizer = swats.SWATS(model.parameters(), args.lr)
@@ -157,7 +165,7 @@ def main():
     #optimizer = torch.optim.Adam(model.parameters(), args.lr)
     
     scheduler = lr_scheduler.ReduceLROnPlateau(
-        optimizer, 'max', patience=2, verbose=True)
+        optimizer, 'max', patience=5, verbose=True)
     if args.contine:
         scheduler.step(best_prec1)
         print('scheduler step with best prec %f' %(best_prec1))
@@ -190,8 +198,12 @@ def main():
         is_color = True
         scale_ratios = [1.0, 0.875, 0.75, 0.66]
         if 'I3D' in args.arch:
-            clip_mean = [0.5, 0.5, 0.5] * args.num_seg * length
-            clip_std = [0.5, 0.5, 0.5] * args.num_seg * length
+            if 'resnet' in args.arch:
+                clip_mean = [0.45, 0.45, 0.45] * args.num_seg * length
+                clip_std = [0.225, 0.225, 0.225] * args.num_seg * length
+            else:
+                clip_mean = [0.5, 0.5, 0.5] * args.num_seg * length
+                clip_std = [0.5, 0.5, 0.5] * args.num_seg * length
         elif "3D" in args.arch:
             clip_mean = [114.7748, 107.7354, 99.4750] * args.num_seg * length
             clip_std = [1, 1, 1] * args.num_seg * length
@@ -358,7 +370,12 @@ def build_model():
             elif '18' in args.arch:
                 model_path='./weights/resnet-18-kinetics.pth'
             elif 'I3D' in args.arch:
-                model_path='./weights/rgb_imagenet.pth'
+                if 'resnet50' in args.arch:
+                    if 'NL' in args.arch:
+                        model_path='./weights/i3d_r50_nl_kinetics.pth'
+                else:
+                    model_path='./weights/rgb_imagenet.pth' #model_path = os.path.join(modelLocation,'model_best.pth.tar') 
+
         #model_path = os.path.join(modelLocation,'model_best.pth.tar') 
         
     elif modality == "flow":
@@ -383,7 +400,8 @@ def build_model():
         print('model path is: %s' %(model_path))
         model = models.__dict__[args.arch](modelPath=model_path, num_classes=3, length=args.num_seg)
     
-    model=torch.nn.DataParallel(model)
+    if torch.cuda.device_count() > 1:
+        model=torch.nn.DataParallel(model)
     model = model.cuda()
     
     return model
