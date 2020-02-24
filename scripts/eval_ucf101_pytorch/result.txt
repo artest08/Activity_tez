@@ -428,7 +428,6 @@ Accuracy with mean calculation is 0.5582
 
 Dropout = 0.7 with learning rate reduction at 30 epoch
 Accuracy with mean calculation is 0.5490
-./checkpoint/hmdb51_flow_resnet18_bert10_split2
 
 Dropout = 0.7 with learning rate reduction at 30 epoch
 Accuracy with mean calculation is 0.5732
@@ -890,9 +889,48 @@ Accuracy with mean calculation is 0.6693
 
 
 
+RGB_new
+Accuracy with mean calculation is 0.5216
+./checkpoint/hmdb51_rgb_resnet18_bert10_split1
+
+Flow New
+Accuracy with mean calculation is 0.5582
+./checkpoint/hmdb51_flow_resnet18_bert10_split1
 
 
+Accuracy with mean calculation is 0.6654
+./checkpoint/hmdb51_rgb_resnet18_bert10_split1
+./checkpoint/hmdb51_flow_resnet18_bert10_split1
 
+
+Accuracy with mean calculation is 0.6810
+./checkpoint/hmdb51_rgb_resnet18_bert10_split1
+./checkpoint/hmdb51_flow_resnet18_bert10_split1
+./checkpoint/hmdb51_pose_resnet18_bert10_split1
+
+RGB New
+Accuracy with mean calculation is 0.4941
+./checkpoint/hmdb51_rgb_resnet18_bert10_split2
+
+Flow New
+Accuracy with mean calculation is 0.5477
+./checkpoint/hmdb51_flow_resnet18_bert10_split2
+
+Accuracy with mean calculation is 0.6333
+./checkpoint/hmdb51_rgb_resnet18_bert10_split2
+./checkpoint/hmdb51_flow_resnet18_bert10_split2
+
+RGB_New
+Accuracy with mean calculation is 0.5033
+./checkpoint/hmdb51_rgb_resnet18_bert10_split3
+
+Flow New
+Accuracy with mean calculation is 0.5647
+./checkpoint/hmdb51_flow_resnet18_bert10_split3
+
+Accuracy with mean calculation is 0.6229
+./checkpoint/hmdb51_rgb_resnet18_bert10_split3
+./checkpoint/hmdb51_flow_resnet18_bert10_split3
 
 
 

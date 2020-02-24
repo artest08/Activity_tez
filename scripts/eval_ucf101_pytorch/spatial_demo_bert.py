@@ -33,7 +33,7 @@ from VideoSpatialPrediction_bert import VideoSpatialPrediction_bert
 from VideoSpatialPrediction3D_bert import VideoSpatialPrediction3D_bert
 
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   
-os.environ["CUDA_VISIBLE_DEVICES"]="1"
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 model_names = sorted(name for name in models.__dict__
     if not name.startswith("__")
@@ -46,10 +46,10 @@ parser = argparse.ArgumentParser(description='PyTorch Two-Stream Action Recognit
 parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51"],
                     help='dataset: ucf101 | hmdb51')
-parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resnet50I3D32fNL_bert10',
+parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resnet18_bert10',
                     choices=model_names)
 
-parser.add_argument('-s', '--split', default=1, type=int, metavar='S',
+parser.add_argument('-s', '--split', default=3, type=int, metavar='S',
                     help='which split of data to work on (default: 1)')
 
 parser.add_argument('-w', '--window', default=3, type=int, metavar='V',

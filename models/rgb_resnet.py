@@ -27,7 +27,8 @@ __all__ = ['ResNet', 'rgb_resnet18', 'rgb_resnet34', 'rgb_resnet50', 'rgb_resnet
            ,'rgb_resnet18_lstmType3','rgb_resnet152_bert10','rgb_resnet152_lstmType6',
            'rgb_resnet18_bert17','rgb_resnet18_bert10Y',
            'rgb_resnet34_bert10','rgb_resnet50_bert10X','rgb_resnet152_bert10X','rgb_resnet152_bert10XX',
-           'rgb_resnet18_NLB10','rgb_resnet18_RankingBert10','rgb_resnet18_RankingBert8','rgb_resnet18_RankingBert8Seg3']
+           'rgb_resnet18_NLB10','rgb_resnet18_RankingBert10','rgb_resnet18_RankingBert8','rgb_resnet18_RankingBert8Seg3'
+           ,'rgb_resnet18_unpre_bert10']
 
 
 model_urls = {
@@ -1066,6 +1067,43 @@ class rgb_resnet18_bert10(nn.Module):
     def forward(self, x):
         x = self.features1(x)
         x = self.features2(x)
+        x = self.avgpool(x)
+        x = x.view(x.size(0), -1)
+        x = x.view(-1,self.length,512)
+        input_vectors=x
+        output , maskSample = self.bert(x)
+        classificationOut = output[:,0,:]
+        sequenceOut=output[:,1:,:]
+        output=self.dp(classificationOut)
+        x = self.fc_action(output)
+        return x, input_vectors, sequenceOut, maskSample
+    
+class rgb_resnet18_unpre_bert10(nn.Module):
+    def __init__(self, num_classes , length, modelPath=''):
+        super(rgb_resnet18_unpre_bert10, self).__init__()
+        self.hidden_size=512
+        self.n_layers=1
+        self.attn_heads = 8
+        self.num_classes=num_classes
+        self.length=length
+        self.dp = nn.Dropout(p=0.8)
+        
+
+        self.features=nn.Sequential(*list(rgb_resnet18(pretrained=False).children())[:-3])
+            
+        self.avgpool = nn.AvgPool2d(7)
+        self.bert = BERT5(512,length, hidden=self.hidden_size, n_layers=self.n_layers, attn_heads=self.attn_heads, mask_prob = 0.75)
+        print(sum(p.numel() for p in self.bert.parameters() if p.requires_grad))
+        self.fc_action = nn.Linear(512, num_classes)
+            
+        for param in self.features.parameters():
+            param.requires_grad = True
+                
+        torch.nn.init.xavier_uniform_(self.fc_action.weight)
+        self.fc_action.bias.data.zero_()
+        
+    def forward(self, x):
+        x = self.features(x)
         x = self.avgpool(x)
         x = x.view(x.size(0), -1)
         x = x.view(-1,self.length,512)

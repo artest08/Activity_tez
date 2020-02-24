@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Tue Jul 23 11:38:36 2019
+Created on Wed Feb 19 15:44:45 2020
 
 @author: esat
 """
@@ -49,12 +49,12 @@ parser.add_argument('--settings', metavar='DIR', default='./datasets/settings',
 parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51", "smtV2", "window"],
                     help='dataset: ucf101 | hmdb51')
-parser.add_argument('--arch', '-a', metavar='ARCH', default='both_resnet18_bert10X',
+parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resnet18_unpre_bert10',
                     choices=model_names,
                     help='model architecture: ' +
                         ' | '.join(model_names) +
                         ' (default: rgb_vgg16)')
-parser.add_argument('-s', '--split', default=3, type=int, metavar='S',
+parser.add_argument('-s', '--split', default=1, type=int, metavar='S',
                     help='which split of data to work on (default: 1)')
 parser.add_argument('-j', '--workers', default=2, type=int, metavar='N',
                     help='number of data loading workers (default: 4)')
@@ -62,9 +62,9 @@ parser.add_argument('--epochs', default=100, type=int, metavar='N',
                     help='number of total epochs to run')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
                     help='manual epoch number (useful on restarts)')
-parser.add_argument('-b', '--batch-size', default=16, type=int,
+parser.add_argument('-b', '--batch-size', default=2, type=int,
                     metavar='N', help='mini-batch size (default: 50)')
-parser.add_argument('--iter-size', default=8, type=int,
+parser.add_argument('--iter-size', default=16, type=int,
                     metavar='I', help='iter size as in Caffe to reduce memory usage (default: 5)')
 parser.add_argument('--new_width', default=340, type=int,
                     metavar='N', help='resize width (default: 340)')
@@ -119,7 +119,6 @@ def BatchSimilarityLossFunction(outs,inputs):
 
     outsTransposed=outsNormalized.transpose(0,1)
     inputsTransposed=inputsNormalized.transpose(0,1)
-    
     
     similarity=torch.matmul(outsTransposed,inputsTransposed.transpose(1,2))
     LossMatrix=-logSoftFunc(similarity)
@@ -260,7 +259,6 @@ def main():
                 video_transforms.ToTensor3(),
                 normalize,
             ])
-        validation_batch_size = int(args.batch_size / 8)
     else:
         val_transform = video_transforms.Compose([
                 # video_transforms.Scale((256)),
@@ -268,7 +266,6 @@ def main():
                 video_transforms.ToTensor(),
                 normalize,
             ])
-        validation_batch_size = int(args.batch_size)
     # data loading
     if modality == 'both':
         train_setting_file = "train_%s_split%d.txt" % ('rgb', args.split)
@@ -315,7 +312,7 @@ def main():
         num_workers=args.workers, pin_memory=True)
     val_loader = torch.utils.data.DataLoader(
         val_dataset,
-        batch_size = validation_batch_size, shuffle=False,
+        batch_size=args.batch_size, shuffle=False,
         num_workers=args.workers, pin_memory=True)
 
     if args.evaluate:
@@ -544,7 +541,8 @@ def train(train_loader, model, criterion, criterion2, optimizer, epoch,setMseCoe
         lossSequenceSimilarity = lossSequenceSimilarity / args.iter_size
         
         #totalLoss=lossMSE
-        totalLoss=lossClassification 
+        #totalLoss=lossClassification 
+        totalLoss = lossBatchSimilarity + lossSequenceSimilarity
         #totalLoss = lossMSE * torch.tensor(20).cuda() + lossClassification 
         loss_mini_batch_classification += lossClassification.data.item()
         loss_mini_batch_MSE += lossMSE.data.item()
@@ -577,7 +575,7 @@ def train(train_loader, model, criterion, criterion2, optimizer, epoch,setMseCoe
     
             
         if (i+1) % args.print_freq == 0:
-            print('[%d] time: %.3f loss: %.4f' %(i,batch_time.avg,lossesClassification.avg))
+            print('[%d] time: %.3f Sequence loss: %.4f Batch loss: %.4f' %(i,batch_time.avg,lossesSequenceSimilarity.avg, lossesBatchSimilarity.avg))
 #        if (i+1) % args.print_freq == 0:
 #
 #            print('Epoch: [{0}][{1}/{2}]\t'
@@ -649,7 +647,7 @@ def validate(val_loader, model, criterion,criterion2,modality):
             else:
                 output, input_vectors, sequenceOut, maskSample = model(inputs)
                 
-            if args.more_cropping and (not modality == 'both'):
+            if args.more_cropping:
                 
                 if args.dataset=='ucf101':
                     output = output.view(-1,10,101)
@@ -670,21 +668,6 @@ def validate(val_loader, model, criterion,criterion2,modality):
             
             lossRanking=torch.tensor([0]).cuda()
             if modality == 'both':
-                if args.more_cropping:  
-                    if args.dataset=='ucf101':
-                        output_rgb = output_rgb.view(-1,10,101)
-                        output_flow = output_flow.view(-1,10,101)
-                    elif args.dataset=='hmdb51':
-                        output_rgb = output_rgb.view(-1,10,51)
-                        output_flow = output_flow.view(-1,10,51)
-                    elif args.dataset=='smtV2':
-                        output_rgb = output_rgb.view(-1,10,174)
-                        output_flow = output_flow.view(-1,10,174)
-                    elif args.dataset=='window':
-                        output_rgb = output_rgb.view(-1,10,3) 
-                        output_flow = output_flow.view(-1,10,3)
-                    output_rgb = torch.mean(output_rgb, dim = 1)
-                    output_flow = torch.mean(output_flow, dim = 1)
                 output_rgb = torch.nn.functional.normalize(output_rgb,2,1)
                 output_flow = torch.nn.functional.normalize(output_flow,2,1)
                 output = output_rgb + output_flow
