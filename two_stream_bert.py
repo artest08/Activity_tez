@@ -14,7 +14,7 @@ import numpy as np
 
 
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]="0"
+os.environ["CUDA_VISIBLE_DEVICES"]="1"
 
 import torch
 import torch.nn as nn
@@ -46,15 +46,15 @@ parser.add_argument('--settings', metavar='DIR', default='./datasets/settings',
 #parser.add_argument('--modality', '-m', metavar='MODALITY', default='rgb',
 #                    choices=["rgb", "flow"],
 #                    help='modality: rgb | flow')
-parser.add_argument('--dataset', '-d', default='hmdb51',
+parser.add_argument('--dataset', '-d', default='smtV2',
                     choices=["ucf101", "hmdb51", "smtV2", "window"],
                     help='dataset: ucf101 | hmdb51')
-parser.add_argument('--arch', '-a', metavar='ARCH', default='both_resnet18_bert10X',
+parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resnet152_bert10',
                     choices=model_names,
                     help='model architecture: ' +
                         ' | '.join(model_names) +
                         ' (default: rgb_vgg16)')
-parser.add_argument('-s', '--split', default=3, type=int, metavar='S',
+parser.add_argument('-s', '--split', default=1, type=int, metavar='S',
                     help='which split of data to work on (default: 1)')
 parser.add_argument('-j', '--workers', default=2, type=int, metavar='N',
                     help='number of data loading workers (default: 4)')
@@ -62,7 +62,7 @@ parser.add_argument('--epochs', default=100, type=int, metavar='N',
                     help='number of total epochs to run')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
                     help='manual epoch number (useful on restarts)')
-parser.add_argument('-b', '--batch-size', default=16, type=int,
+parser.add_argument('-b', '--batch-size', default=4, type=int,
                     metavar='N', help='mini-batch size (default: 50)')
 parser.add_argument('--iter-size', default=8, type=int,
                     metavar='I', help='iter size as in Caffe to reduce memory usage (default: 5)')
@@ -78,7 +78,7 @@ parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
                     help='momentum')
 parser.add_argument('--weight-decay', '--wd', default=1e-3, type=float,
                     metavar='W', help='weight decay (default: 5e-4)')
-parser.add_argument('--print-freq', default=100, type=int,
+parser.add_argument('--print-freq', default=1, type=int,
                     metavar='N', help='print frequency (default: 50)')
 parser.add_argument('--save-freq', default=1, type=int,
                     metavar='N', help='save frequency (default: 25)')
@@ -308,15 +308,19 @@ def main():
     print('{} samples found, {} train samples and {} test samples.'.format(len(val_dataset)+len(train_dataset),
                                                                            len(train_dataset),
                                                                            len(val_dataset)))
-
+    if torch.cuda.device_count() > 1:
+        drop_last_value = True
+    else:
+        drop_last_value = False
+        
     train_loader = torch.utils.data.DataLoader(
         train_dataset,
         batch_size=args.batch_size, shuffle=True,
-        num_workers=args.workers, pin_memory=True)
+        num_workers=args.workers, pin_memory=True, drop_last = drop_last_value)
     val_loader = torch.utils.data.DataLoader(
         val_dataset,
         batch_size = validation_batch_size, shuffle=False,
-        num_workers=args.workers, pin_memory=True)
+        num_workers=args.workers, pin_memory=True, drop_last = drop_last_value)
 
     if args.evaluate:
         prec1,prec3=validate(val_loader, model, criterion)

@@ -205,7 +205,7 @@ class rgb_openpose_resnet152_type1(nn.Module):
             param.requires_grad = False
                 
         torch.nn.init.xavier_uniform_(self.fc_action.weight)
-        self.fc_action.bias.data.zero_()
+        self.fc_action.bias.daboth_resnet18_bert10Xa.zero_()
         
     def forward(self, x):
         poses=self.openPose(x)
