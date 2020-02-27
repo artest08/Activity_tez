@@ -19,7 +19,7 @@ from .non_local.models.resnet import I3Res50
 from .BERT.bert import BERT, BERT2, BERT3, BERT4, BERT5, BERT6
 
 __all__ = ['rgb_I3D64f_bert10','flow_I3D64f_bert10','rgb_I3D64f','rgb_I3D64f_bert10X','pose_I3D64f_bert10'
-           ,'rgb_resnet50I3D32fNL', 'rgb_resnet50I3D32fNL_bert10']
+           ,'rgb_resnet50I3D32fNL', 'rgb_resnet50I3D32fNL_bert10', 'rgb_resnet50I3D32f']
 
 
 class rgb_I3D64f(nn.Module):
@@ -50,7 +50,7 @@ class rgb_I3D64f(nn.Module):
 
 class rgb_resnet50I3D32f(nn.Module):
     def __init__(self, num_classes , length, modelPath=''):
-        super(rgb_resnet50I3D32fNL, self).__init__()
+        super(rgb_resnet50I3D32f, self).__init__()
         self.num_classes=num_classes
         self.dp = nn.Dropout(p=0.8)
         #self.avgpool = nn.AvgPool3d((8, 7, 7), stride=1)
