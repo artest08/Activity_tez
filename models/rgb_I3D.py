@@ -110,9 +110,13 @@ class rgb_resnet50I3D32fNL_bert10(nn.Module):
         self.dp = nn.Dropout(p=0.8)
         
 
-        self.features=nn.Sequential(*list(_resnet50NL(model_path=modelPath).children())[:-3])
+        self.features1=nn.Sequential(*list(_resnet50(model_path=modelPath).children())[:-5])
+        self.features2=nn.Sequential(*list(_resnet50(model_path=modelPath).children())[-5:-3])
         
-        for param in self.features.parameters():
+        for param in self.features2.parameters():
+            param.requires_grad = False
+
+        for param in self.features1.parameters():
             param.requires_grad = True
             
         
@@ -128,7 +132,8 @@ class rgb_resnet50I3D32fNL_bert10(nn.Module):
         
         
     def forward(self, x):
-        x = self.features(x)
+        x = self.features1(x)
+        x = self.features2(x)
         x = self.avgpool(x)
         x = x.view(x.size(0), self.hidden_size,-1)
         x = x.transpose(1,2)
