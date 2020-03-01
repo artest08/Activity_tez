@@ -104,7 +104,7 @@ best_loss = 30
 mseCoeffStart=10
 warmUpEpoch=5
 
-
+smt_pretrained = False
 
 
 
@@ -167,6 +167,13 @@ def main():
     else:
         print("Building model ... ")
         model = build_model()
+        if smt_pretrained:
+            smtV2_pretrained_weights = './weights/smtV2_' + args.arch + '.pth'
+            weights = torch.load(smtV2_pretrained_weights)         
+            weights['fc_action.weight'] = model.state_dict()['fc_action.weight']
+            weights['fc_action.bias'] = model.state_dict()['fc_action.bias']
+            model.load_state_dict(weights)
+            print('smtV2 pretrained is loaded')
         #optimizer = torch.optim.Adam(model.parameters(), args.lr)
         optimizer = AdamW(model.parameters(), lr= args.lr, weight_decay=args.weight_decay)
         #optimizer = swats.SWATS(model.parameters(), args.lr)

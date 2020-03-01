@@ -496,7 +496,7 @@ Adamin kendi weightleri split 1'da 61 verdi
 
 Adamin weightleri ile 64 frame
 Accuracy with mean calculation is 0.7242
-./checkpoint/hmdb51_rgb_resneXt3D101_split1
+./checkpoint/hmdb51_rgb_resneXt3D10164_split1
 
 Adamin implementasyonu kendim egittigimde, only center frame
 Accuracy with mean calculation is 0.6856
@@ -551,7 +551,6 @@ Accuracy with mean calculation is 0.5771
 ./checkpoint/hmdb51_rgb_resnet3D18_bert10XX_split1
 
 
-N=16 Frame
 Accuracy with mean calculation is 0.5902
 ./checkpoint/hmdb51_rgb_resnet3D18_bert10XX_split1
 
@@ -887,6 +886,9 @@ Accuracy with mean calculation is 0.7013
 Accuracy with mean calculation is 0.6693
 ./checkpoint/hmdb51_rgb_resnet50I3D32fNL_bert10_split1
 
+Accuracy with mean calculation is 0.7320
+./checkpoint/hmdb51_rgb_resnet50I3D32f_split1
+
 
 
 RGB_new
@@ -931,6 +933,15 @@ Accuracy with mean calculation is 0.5647
 Accuracy with mean calculation is 0.6229
 ./checkpoint/hmdb51_rgb_resnet18_bert10_split3
 ./checkpoint/hmdb51_flow_resnet18_bert10_split3
+
+attentioni ortak kullanma fikri patladi gibi duruyor.
+[199] time: 13.770 loss: 6.6952
+ * Epoch: 28 Prec@1 93.958 Prec@3 98.375 Classification Loss 6.6943 MSE Loss 0.1973  Ranking Loss 0.0000
+
+ * * Prec@1 59.150 Prec@3 79.281 Classification Loss 2.9812 MSE Loss 0.1172  Ranking Loss 0.0000
+
+Model son iyi olarak kaydedildi
+
 
 
 

@@ -14,7 +14,7 @@ import numpy as np
 
 
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]="1"
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 import torch
 import torch.nn as nn
@@ -62,9 +62,9 @@ parser.add_argument('-j', '--workers', default=1, type=int, metavar='N',
                     help='number of data loading workers (default: 4)')
 parser.add_argument('--epochs', default=100, type=int, metavar='N',
                     help='number of total epochs to run')
-parser.add_argument('-b', '--batch-size', default=8, type=int,
+parser.add_argument('-b', '--batch-size', default=32, type=int,
                     metavar='N', help='mini-batch size (default: 50)')
-parser.add_argument('--iter-size', default=16, type=int,
+parser.add_argument('--iter-size', default=4, type=int,
                     metavar='I', help='iter size as in Caffe to reduce memory usage (default: 5)')
 parser.add_argument('--lr', '--learning-rate', default=1e-4, type=float,
                     metavar='LR', help='initial learning rate')
@@ -141,6 +141,9 @@ def main():
             print('smtV2 pretrained is loaded')
         #optimizer = torch.optim.Adam(model.parameters(), args.lr)
         optimizer = AdamW(model.parameters(), lr= args.lr, weight_decay=args.weight_decay)
+        # optimizer = torch.optim.SGD(model.parameters(), args.lr,
+        #                             momentum=args.momentum,
+        #                             weight_decay=args.weight_decay)
         #optimizer = swats.SWATS(model.parameters(), args.lr)
         #model = build_model_validate()
         startEpoch = 0
@@ -158,9 +161,7 @@ def main():
     criterion2 = nn.MSELoss().cuda()
     
 
-#    optimizer = torch.optim.SGD(model.parameters(), args.lr,
-#                                momentum=args.momentum,
-#                                weight_decay=args.weight_decay)
+
     
     #optimizer = torch.optim.Adam(model.parameters(), args.lr)
     
@@ -189,6 +190,8 @@ def main():
     if "3D" in args.arch:
         if '64f' in args.arch:
             length=64
+        elif '32f' in args.arch:
+            length=32
         else:
             length=16
     else:
@@ -373,6 +376,8 @@ def build_model():
                 if 'resnet50' in args.arch:
                     if 'NL' in args.arch:
                         model_path='./weights/i3d_r50_nl_kinetics.pth'
+                    else:
+                        model_path='./weights/i3d_r50_kinetics.pth'
                 else:
                     model_path='./weights/rgb_imagenet.pth' #model_path = os.path.join(modelLocation,'model_best.pth.tar') 
 

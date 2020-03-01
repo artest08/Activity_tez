@@ -192,10 +192,10 @@ class smtV2(data.Dataset):
             elif self.modality == "pose":
                 self.name_pattern = "pose1_%05d.jpg"
             elif self.modality == "flow":
-                self.name_pattern = "flow_%s_%05d"
+                self.name_pattern = "flow_%s_%05d.jpg"
             elif self.modality == "both":
                 self.name_pattern_rgb = "img_%05d.jpg"
-                self.name_pattern_flow = "flow_%s_%05d"
+                self.name_pattern_flow = "flow_%s_%05d.jpg"
 
         self.is_color = is_color
         self.num_segments = num_segments
