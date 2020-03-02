@@ -52,7 +52,7 @@ parser.add_argument('--settings', metavar='DIR', default='./datasets/settings',
 parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51", "smtV2"],
                     help='dataset: ucf101 | hmdb51')
-parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resnet50I3D32f',
+parser.add_argument('--arch', '-a', metavar='ARCH', default='flow_I3D64f',
                     choices=model_names,
                     help='model architecture: ' +
                         ' | '.join(model_names) +
@@ -66,9 +66,9 @@ parser.add_argument('--epochs', default=200, type=int, metavar='N',
                     help='number of total epochs to run')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
                     help='manual epoch number (useful on restarts)')
-parser.add_argument('-b', '--batch-size', default=16, type=int,
+parser.add_argument('-b', '--batch-size', default=64, type=int,
                     metavar='N', help='mini-batch size (default: 50)')
-parser.add_argument('--iter-size', default=8, type=int,
+parser.add_argument('--iter-size', default=2, type=int,
                     metavar='I', help='iter size as in Caffe to reduce memory usage (default: 5)')
 parser.add_argument('--lr', '--learning-rate', default=1e-2, type=float,
                     metavar='LR', help='initial learning rate')
@@ -107,7 +107,10 @@ def main():
     
     if '3D' in args.arch:
         if 'I3D' in args.arch:
-            scale = 1
+            if '112' in args.arch:
+                scale = 0.5
+            else:
+                scale = 1
         else:
             scale=0.5
     else:
@@ -208,11 +211,15 @@ def main():
         clip_mean = [0.485, 0.456, 0.406] * args.num_seg
         clip_std = [0.229, 0.224, 0.225] * args.num_seg
     elif modality == "flow":
-        #length=10
         is_color = False
-        scale_ratios = [1.0, 0.875, 0.75]
-        clip_mean = [0.5, 0.5] * args.num_seg * length
-        clip_std = [0.226, 0.226] * args.num_seg * length
+        scale_ratios = [1.0, 0.875, 0.75, 0.66]
+        if 'I3D' in args.arch:
+            clip_mean = [0.5, 0.5] * args.num_seg * length
+            clip_std = [0.5, 0.5] * args.num_seg * length
+        
+        else:
+            clip_mean = [0.5, 0.5] * args.num_seg * length
+            clip_std = [0.226, 0.226] * args.num_seg * length
     elif modality == "both":
         is_color = True
         scale_ratios = [1.0, 0.875, 0.75, 0.66]
