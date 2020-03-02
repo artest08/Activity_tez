@@ -390,7 +390,9 @@ def build_model():
     elif args.dataset=='hmdb51':
         print('model path is: %s' %(model_path))
         model = models.__dict__[args.arch](modelPath=model_path, num_classes=51, length=args.num_seg)
-    
+
+    if torch.cuda.device_count() > 1:
+        model=torch.nn.DataParallel(model)    
     model = model.cuda()
     
     return model
