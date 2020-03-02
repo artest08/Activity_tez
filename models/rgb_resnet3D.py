@@ -52,7 +52,7 @@ class rgb_resnet3D18(nn.Module):
         self.dp = nn.Dropout(p=0.8)
         
 
-        self.features=nn.Sequential(*list(_trained_resnet18(model_path=modelPath, sample_size=112, sample_duration=16).children())[:-1])
+        self.features=nn.Sequential(*list(_trained_resnet18(model_path=modelPath, sample_size=112, sample_duration=16,shortcut_type='A').children())[:-1])
         
         #self.avgpool = nn.AvgPool3d((1, 7, 7), stride=1)
         self.fc_action = nn.Linear(512, num_classes)
