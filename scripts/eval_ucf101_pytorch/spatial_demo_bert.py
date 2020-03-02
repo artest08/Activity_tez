@@ -46,10 +46,10 @@ parser = argparse.ArgumentParser(description='PyTorch Two-Stream Action Recognit
 parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51"],
                     help='dataset: ucf101 | hmdb51')
-parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resnet18_bert10',
+parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resnet50I3D32f_bert10',
                     choices=model_names)
 
-parser.add_argument('-s', '--split', default=3, type=int, metavar='S',
+parser.add_argument('-s', '--split', default=1, type=int, metavar='S',
                     help='which split of data to work on (default: 1)')
 
 parser.add_argument('-w', '--window', default=3, type=int, metavar='V',
@@ -101,6 +101,8 @@ def main():
     args = parser.parse_args()
     if '64' in args.arch:
         length=64
+    if '32' in args.arch:
+        length=32
     else:
         length=16
         

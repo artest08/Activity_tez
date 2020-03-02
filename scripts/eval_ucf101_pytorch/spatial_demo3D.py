@@ -46,7 +46,7 @@ parser = argparse.ArgumentParser(description='PyTorch Two-Stream Action Recognit
 parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51"],
                     help='dataset: ucf101 | hmdb51')
-parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resnet50I3D32f',
+parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resnet50I3D32f_112',
                     choices=model_names)
 
 parser.add_argument('-s', '--split', default=1, type=int, metavar='S',
@@ -56,6 +56,8 @@ parser.add_argument('-t', '--tsn', dest='tsn', action='store_true',
 multiGPUTest=False
 num_seg=16
 num_seg_3D=1
+
+
 
 def buildModel(model_path,num_categories):
     if not '3D' in args.arch:
@@ -96,6 +98,12 @@ def main():
         frameFolderName = "hmdb51_frames"
     data_dir=os.path.join(datasetFolder,frameFolderName)
     
+    if '64f' in args.arch:
+        length=64
+    elif '32f' in args.arch:
+        length=32
+    else:
+        length=16
 
     val_fileName = "val_rgb_split%d.txt" %(args.split)
     if 'rgb' in args.arch:
@@ -144,7 +152,7 @@ def main():
             args.arch,
             start_frame,
             duration,
-            length = 32, 
+            length = length, 
             extension = extension)
             
         
