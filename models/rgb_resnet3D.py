@@ -15,7 +15,7 @@ from functools import partial
 from .BERT.bert import BERT, BERT2, BERT3, BERT4, BERT5, BERT6
 from .BERT.embedding import BERTEmbedding
 
-__all__ = ['rgb_resnet3D101_bert10','rgb_resnet3D18_bert10','rgb_resnet3D18_bert10X','rgb_resnet3D101_bert10X',
+__all__ = ['rgb_resnet3D101_bert10','rgb_resnet3D18_bert10','rgb_resnet3D18_bert10X','rgb_resnet3D101_bert10X', 'rgb_resnet3D18' ,
            'pose_resnet3D18_bert10XX','rgb_resnet3D101','resnet3D101','rgb_resnet3D18_bert10XX','rgb_resnet3D101_bert10XX','rgb_resnet3D101_bert10XXX']
 
 
@@ -31,6 +31,31 @@ class rgb_resnet3D101(nn.Module):
         
         #self.avgpool = nn.AvgPool3d((1, 7, 7), stride=1)
         self.fc_action = nn.Linear(2048, num_classes)
+        for param in self.features.parameters():
+            param.requires_grad = True
+                
+        torch.nn.init.xavier_uniform_(self.fc_action.weight)
+        self.fc_action.bias.data.zero_()
+        
+    def forward(self, x):
+        x = self.features(x)
+        #x = self.avgpool(x)
+        x = x.view(x.size(0), -1)
+        x = self.dp(x)
+        x = self.fc_action(x)
+        return x
+    
+class rgb_resnet3D18(nn.Module):
+    def __init__(self, num_classes , length, modelPath=''):
+        super(rgb_resnet3D18, self).__init__()
+        self.num_classes=num_classes
+        self.dp = nn.Dropout(p=0.8)
+        
+
+        self.features=nn.Sequential(*list(_trained_resnet18(model_path=modelPath, sample_size=112, sample_duration=16).children())[:-1])
+        
+        #self.avgpool = nn.AvgPool3d((1, 7, 7), stride=1)
+        self.fc_action = nn.Linear(512, num_classes)
         for param in self.features.parameters():
             param.requires_grad = True
                 
