@@ -444,7 +444,10 @@ def train(train_loader, model, criterion, optimizer, epoch,modality):
             else:
                 inputs=inputs.view(-1,3*length,input_size,input_size)
         elif modality == "flow":
-            inputs=inputs.view(-1,2*length,input_size,input_size)            
+            if "3D" in args.arch:
+                inputs=inputs.view(-1,length,2,input_size,input_size).transpose(1,2)
+            else:
+                inputs=inputs.view(-1,2*length,input_size,input_size)            
         elif modality == "both":
             inputs=inputs.view(-1,5*length,input_size,input_size)
             
@@ -529,7 +532,10 @@ def validate(val_loader, model, criterion,modality):
                 else:
                     inputs=inputs.view(-1,3*length,input_size,input_size)
             elif modality == "flow":
-                inputs=inputs.view(-1,2*length,input_size,input_size)
+                if "3D" in args.arch:
+                    inputs=inputs.view(-1,length,2,input_size,input_size).transpose(1,2)
+                else:
+                    inputs=inputs.view(-1,2*length,input_size,input_size)      
             elif modality == "both":
                 inputs=inputs.view(-1,5*length,input_size,input_size)
                 
