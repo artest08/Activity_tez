@@ -198,7 +198,7 @@ def main():
             timeList.append(estimatedTime)
             
             pred_index, mean_result = spatial_prediction
-            if args.dataset=='smtV2':
+            if args.dataset=='smtV2' and 'test' in val_fileName:
                 top5 = np.argsort(mean_result)[::-1][:5]                   
                 employee_writer.writerow([line_info[0], str(top5[0]), str(top5[1]),str(top5[2]),str(top5[3]),str(top5[4])])
                 
