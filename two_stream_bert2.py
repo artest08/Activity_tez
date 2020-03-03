@@ -50,7 +50,7 @@ parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51", "smtV2", "window"],
                     help='dataset: ucf101 | hmdb51 | smtV2')
 
-parser.add_argument('--arch', '-a', default='rgb_resnet50I3D32fNL_bert10',
+parser.add_argument('--arch', '-a', default='rgb_resnet50I3D32f_bert10',
                     choices=model_names,
                     help='model architecture: ' +
                         ' | '.join(model_names) +
@@ -62,9 +62,9 @@ parser.add_argument('-j', '--workers', default=1, type=int, metavar='N',
                     help='number of data loading workers (default: 4)')
 parser.add_argument('--epochs', default=100, type=int, metavar='N',
                     help='number of total epochs to run')
-parser.add_argument('-b', '--batch-size', default=32, type=int,
+parser.add_argument('-b', '--batch-size', default=16, type=int,
                     metavar='N', help='mini-batch size (default: 50)')
-parser.add_argument('--iter-size', default=4, type=int,
+parser.add_argument('--iter-size', default=8, type=int,
                     metavar='I', help='iter size as in Caffe to reduce memory usage (default: 5)')
 parser.add_argument('--lr', '--learning-rate', default=1e-4, type=float,
                     metavar='LR', help='initial learning rate')
@@ -366,10 +366,13 @@ def build_model():
         model_path=''
         if "3D" in args.arch:
             if '101' in args.arch:
-                if '64f' in args.arch:
+                if '64f' in args.arch and not '16fweight' in args.arch:
                     model_path='./weights/resnext-101-64f-kinetics.pth'
                 else:
-                    model_path='./weights/resnet-101-kinetics.pth'
+                    if 'resneXt' in args.arch:
+                        model_path='./weights/resnext-101-kinetics.pth'
+                    else:
+                        model_path='./weights/resnet-101-kinetics.pth'
             elif '18' in args.arch:
                 model_path='./weights/resnet-18-kinetics.pth'
             elif 'I3D' in args.arch:

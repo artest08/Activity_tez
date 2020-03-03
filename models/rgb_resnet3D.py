@@ -17,7 +17,7 @@ from .BERT.embedding import BERTEmbedding
 
 __all__ = ['rgb_resnet3D101_bert10','rgb_resnet3D18_bert10','rgb_resnet3D18_bert10X','rgb_resnet3D101_bert10X', 'rgb_resnet3D18' ,
            'pose_resnet3D18_bert10XX','rgb_resnet3D101','resnet3D101','rgb_resnet3D18_bert10XX','rgb_resnet3D101_bert10XX','rgb_resnet3D101_bert10XXX'
-           ,'rgb_resnet3D10164f_bert10XY']
+           ,'rgb_resnet3D10164f_bert10XY_16fweight']
 
 
 
@@ -333,9 +333,9 @@ class rgb_resnet3D101_bert10XX(nn.Module):
         x = self.fc_action(output)
         return x, input_vectors, sequenceOut, maskSample
     
-class rgb_resnet3D10164f_bert10XY(nn.Module):
+class rgb_resnet3D10164f_bert10XY_16fweight(nn.Module):
     def __init__(self, num_classes , length, modelPath=''):
-        super(rgb_resnet3D10164f_bert10XY, self).__init__()
+        super(rgb_resnet3D10164f_bert10XY_16fweight, self).__init__()
         self.hidden_size=2048
         self.n_layers=1
         self.attn_heads=8
