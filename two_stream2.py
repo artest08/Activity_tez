@@ -52,7 +52,7 @@ parser.add_argument('--settings', metavar='DIR', default='./datasets/settings',
 parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51", "smtV2"],
                     help='dataset: ucf101 | hmdb51')
-parser.add_argument('--arch', '-a', metavar='ARCH', default='flow_I3D64f',
+parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resneXt3D64f101_16fweight',
                     choices=model_names,
                     help='model architecture: ' +
                         ' | '.join(model_names) +
@@ -66,9 +66,9 @@ parser.add_argument('--epochs', default=200, type=int, metavar='N',
                     help='number of total epochs to run')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
                     help='manual epoch number (useful on restarts)')
-parser.add_argument('-b', '--batch-size', default=64, type=int,
+parser.add_argument('-b', '--batch-size', default=8, type=int,
                     metavar='N', help='mini-batch size (default: 50)')
-parser.add_argument('--iter-size', default=2, type=int,
+parser.add_argument('--iter-size', default=16, type=int,
                     metavar='I', help='iter size as in Caffe to reduce memory usage (default: 5)')
 parser.add_argument('--lr', '--learning-rate', default=1e-2, type=float,
                     metavar='LR', help='initial learning rate')
@@ -369,9 +369,15 @@ def build_model():
         if "3D" in args.arch:
             if '101' in args.arch:
                 if '64f' in args.arch:
-                    model_path='./weights/resnext-101-64f-kinetics.pth'
+                    if not '16fweight' in args.arch:
+                        model_path='./weights/resnext-101-64f-kinetics.pth'
+                    else:
+                        model_path='./weights/resnext-101-kinetics.pth'
                 else:
-                    model_path='./weights/resnet-101-kinetics.pth'
+                    if 'resneXt' in args.arch:
+                        model_path='./weights/resnext-101-kinetics.pth'
+                    else:
+                        model_path='./weights/resnet-101-kinetics.pth'
             elif '18' in args.arch:
                 model_path='./weights/resnet-18-kinetics.pth'
             elif 'I3D' in args.arch:
@@ -387,7 +393,9 @@ def build_model():
         
     elif modality == "flow":
         model_path=''
-        #model_path = os.path.join(modelLocation,'model_best.pth.tar') 
+        if "3D" in args.arch:
+            if 'I3D' in args.arch:
+                 model_path='./weights/flow_imagenet.pth'   
     elif modality == "both":
         model_path='' 
         
