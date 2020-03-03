@@ -342,9 +342,9 @@ class rgb_resnet3D10164f_bert10XY_16fweight(nn.Module):
         self.num_classes=num_classes
         self.dp = nn.Dropout(p=0.8)
         
-
-        self.features1=nn.Sequential(*list(_trained_resnet101(model_path=modelPath, sample_size=112, sample_duration=64).children())[:-3])
-        self.features2=nn.Sequential(*list(_trained_resnet101(model_path=modelPath, sample_size=112, sample_duration=64).children())[-3:-1])
+        self.avgpool = nn.AvgPool3d((1, 4, 4), stride=1)
+        self.features1=nn.Sequential(*list(_trained_resnet101(model_path=modelPath, sample_size=112, sample_duration = 64).children())[:-3])
+        self.features2=nn.Sequential(*list(_trained_resnet101(model_path=modelPath, sample_size=112, sample_duration = 64).children())[-3:-2])
         self.bert = BERT5(self.hidden_size, 4, hidden=self.hidden_size, n_layers=self.n_layers, attn_heads=self.attn_heads)
         print(sum(p.numel() for p in self.bert.parameters() if p.requires_grad))
         self.fc_action = nn.Linear(self.hidden_size, num_classes)
@@ -361,8 +361,9 @@ class rgb_resnet3D10164f_bert10XY_16fweight(nn.Module):
     def forward(self, x):
         x = self.features1(x)
         x = self.features2(x)
-        x = x.view(x.size(0), -1)
-        x = x.view(-1,self.length,self.hidden_size)
+        x = self.avgpool(x)
+        x = x.view(x.size(0), self.hidden_size, 4)
+        x = x.transpose(1,2)
         input_vectors=x
         output , maskSample = self.bert(x)
         classificationOut = output[:,0,:]
