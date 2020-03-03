@@ -343,8 +343,8 @@ class rgb_resnet3D10164f_bert10XY(nn.Module):
         self.dp = nn.Dropout(p=0.8)
         
 
-        self.features1=nn.Sequential(*list(_trained_resnet101(model_path=modelPath, sample_size=112, sample_duration=16).children())[:-3])
-        self.features2=nn.Sequential(*list(_trained_resnet101(model_path=modelPath, sample_size=112, sample_duration=16).children())[-3:-1])
+        self.features1=nn.Sequential(*list(_trained_resnet101(model_path=modelPath, sample_size=112, sample_duration=64).children())[:-3])
+        self.features2=nn.Sequential(*list(_trained_resnet101(model_path=modelPath, sample_size=112, sample_duration=64).children())[-3:-1])
         self.bert = BERT5(self.hidden_size, 4, hidden=self.hidden_size, n_layers=self.n_layers, attn_heads=self.attn_heads)
         print(sum(p.numel() for p in self.bert.parameters() if p.requires_grad))
         self.fc_action = nn.Linear(self.hidden_size, num_classes)
