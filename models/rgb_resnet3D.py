@@ -16,7 +16,8 @@ from .BERT.bert import BERT, BERT2, BERT3, BERT4, BERT5, BERT6
 from .BERT.embedding import BERTEmbedding
 
 __all__ = ['rgb_resnet3D101_bert10','rgb_resnet3D18_bert10','rgb_resnet3D18_bert10X','rgb_resnet3D101_bert10X', 'rgb_resnet3D18' ,
-           'pose_resnet3D18_bert10XX','rgb_resnet3D101','resnet3D101','rgb_resnet3D18_bert10XX','rgb_resnet3D101_bert10XX','rgb_resnet3D101_bert10XXX']
+           'pose_resnet3D18_bert10XX','rgb_resnet3D101','resnet3D101','rgb_resnet3D18_bert10XX','rgb_resnet3D101_bert10XX','rgb_resnet3D101_bert10XXX'
+           ,'rgb_resnet3D10164f_bert10XY']
 
 
 
@@ -332,6 +333,43 @@ class rgb_resnet3D101_bert10XX(nn.Module):
         x = self.fc_action(output)
         return x, input_vectors, sequenceOut, maskSample
     
+class rgb_resnet3D10164f_bert10XY(nn.Module):
+    def __init__(self, num_classes , length, modelPath=''):
+        super(rgb_resnet3D10164f_bert10XY, self).__init__()
+        self.hidden_size=2048
+        self.n_layers=1
+        self.attn_heads=8
+        self.num_classes=num_classes
+        self.dp = nn.Dropout(p=0.8)
+        
+
+        self.features1=nn.Sequential(*list(_trained_resnet101(model_path=modelPath, sample_size=112, sample_duration=16).children())[:-3])
+        self.features2=nn.Sequential(*list(_trained_resnet101(model_path=modelPath, sample_size=112, sample_duration=16).children())[-3:-1])
+        self.bert = BERT5(self.hidden_size, 4, hidden=self.hidden_size, n_layers=self.n_layers, attn_heads=self.attn_heads)
+        print(sum(p.numel() for p in self.bert.parameters() if p.requires_grad))
+        self.fc_action = nn.Linear(self.hidden_size, num_classes)
+            
+        for param in self.features1.parameters():
+            param.requires_grad = False
+            
+        for param in self.features2.parameters():
+            param.requires_grad = True
+                
+        torch.nn.init.xavier_uniform_(self.fc_action.weight)
+        self.fc_action.bias.data.zero_()
+        
+    def forward(self, x):
+        x = self.features1(x)
+        x = self.features2(x)
+        x = x.view(x.size(0), -1)
+        x = x.view(-1,self.length,self.hidden_size)
+        input_vectors=x
+        output , maskSample = self.bert(x)
+        classificationOut = output[:,0,:]
+        sequenceOut=output[:,1:,:]
+        output=self.dp(classificationOut)
+        x = self.fc_action(output)
+        return x, input_vectors, sequenceOut, maskSample
     
     
 class rgb_resnet3D101_bert10XXX(nn.Module):

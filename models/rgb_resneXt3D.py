@@ -15,8 +15,9 @@ from functools import partial
 
 from .BERT.bert import BERT, BERT2, BERT3, BERT4, BERT5, BERT6
 from .BERT.embedding import BERTEmbedding
-__all__ = ['rgb_resneXt3D64f101','rgb_resneXt3D64f101_bert10XX','rgb_resneXt3D64f101_bert10XY'
-           ,'rgb_resneXt3D64f101_bert10XYY','rgb_resneXt3D64f101_bert10XY2','rgb_resneXt3D64f101_bert10XY3']
+__all__ = ['rgb_resneXt3D64f101','rgb_resneXt3D64f101_bert10XX','rgb_resneXt3D64f101_bert10XY','rgb_resneXt3D16f101'
+           ,'rgb_resneXt3D64f101_bert10XYY','rgb_resneXt3D64f101_bert10XY2','rgb_resneXt3D64f101_bert10XY3'
+           ,'rgb_resneXt3D64f101_16fweight']
 
 
 class rgb_resneXt3D64f101(nn.Module):
@@ -42,6 +43,51 @@ class rgb_resneXt3D64f101(nn.Module):
         x = self.fc_action(x)
         return x
 
+class rgb_resneXt3D16f101(nn.Module):
+    def __init__(self, num_classes , length, modelPath=''):
+        super(rgb_resneXt3D16f101, self).__init__()
+        self.num_classes=num_classes
+        self.dp = nn.Dropout(p=0.8)
+        
+
+        self.features=nn.Sequential(*list(_trained_resnext101(model_path=modelPath, sample_size=112, sample_duration=16).children())[:-1])
+        
+        self.fc_action = nn.Linear(2048, num_classes)
+        for param in self.features.parameters():
+            param.requires_grad = True
+                
+        torch.nn.init.xavier_uniform_(self.fc_action.weight)
+        self.fc_action.bias.data.zero_()
+        
+    def forward(self, x):
+        x = self.features(x)
+        x = x.view(x.size(0), -1)
+        x = self.dp(x)
+        x = self.fc_action(x)
+        return x
+    
+class rgb_resneXt3D64f101_16fweight(nn.Module):
+    def __init__(self, num_classes , length, modelPath=''):
+        super(rgb_resneXt3D64f101_16fweight, self).__init__()
+        self.num_classes=num_classes
+        self.dp = nn.Dropout(p=0.8)
+        
+
+        self.features=nn.Sequential(*list(_trained_resnext101(model_path=modelPath, sample_size=112, sample_duration=64).children())[:-1])
+        
+        self.fc_action = nn.Linear(2048, num_classes)
+        for param in self.features.parameters():
+            param.requires_grad = True
+                
+        torch.nn.init.xavier_uniform_(self.fc_action.weight)
+        self.fc_action.bias.data.zero_()
+        
+    def forward(self, x):
+        x = self.features(x)
+        x = x.view(x.size(0), -1)
+        x = self.dp(x)
+        x = self.fc_action(x)
+        return x
 
 class rgb_resneXt3D64f101_bert10XX(nn.Module):
     def __init__(self, num_classes , length, modelPath=''):
