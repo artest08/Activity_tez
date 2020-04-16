@@ -4,10 +4,10 @@ from .rgb_resnet import *
 from .flow_resnet import *
 from .rgb_densenet import *
 from .flow_densenet import *
-from .poseNet import *
 from .rgb_efficient import *
 from .both_resnet import *
 from .pose_resnet import *
 from .rgb_resnet3D import *
 from .rgb_resneXt3D import *
 from .rgb_I3D import *
+from .rgb_MFNET3D import *

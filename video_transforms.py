@@ -466,3 +466,100 @@ class MultiScaleFixedCrop(object):
             scaled_clips_list.append(np.expand_dims(scaled_clips,-1))
             scaled_clips_list.append(np.expand_dims(scaled_clips_flips,-1))
         return np.concatenate(scaled_clips_list,axis=-1)
+
+class rawPoseAugmentation(object):
+    def __init__(self, scale_ratios):
+        self.possible_scale_tuples = []
+        self.scale_ratios = scale_ratios
+        for i in range(len(scale_ratios)):
+            for j in range(len(scale_ratios)):
+                if np.abs(i-j) < 2:
+                    scale_ration_height = self.scale_ratios[i]
+                    scale_ration_width = self.scale_ratios[j]
+                    self.possible_scale_tuples.append((scale_ration_height, scale_ration_width))
+        self.length_possible_scale_tuples = len(self.possible_scale_tuples)
+    def __call__(self, poses):
+        selected_random_scale_tuple_index = np.random.randint(self.length_possible_scale_tuples)
+        selected_scale_height = self.possible_scale_tuples[selected_random_scale_tuple_index][0]
+        selected_scale_width = self.possible_scale_tuples[selected_random_scale_tuple_index][1]
+        random_crop_height_start = np.random.uniform(0,1-selected_scale_height)
+        random_crop_width_start = np.random.uniform(0,1-selected_scale_width)
+#        pos_not_touched = poses.copy()
+        check_width = poses[:,:,0,:] > random_crop_width_start + selected_scale_width
+        check_height = poses[:,:,1,:] > random_crop_height_start + selected_scale_height
+        check = np.logical_or(check_width,check_height)
+        check = np.expand_dims(check, 2)
+        check = np.concatenate((check,check),2)
+        poses[check] = 0
+        poses[:,:,0,:] -= random_crop_width_start
+        poses[:,:,1,:] -= random_crop_height_start
+        poses[poses < 0] = None
+        poses[:,:,0,:] /= selected_scale_width
+        poses[:,:,1,:] /= selected_scale_height
+        if len(poses[poses>1]) > 0:
+            print('basdasd')
+        return poses
+    
+class pose_one_hot_decoding(object):
+    def __init__(self,length):
+        self.space = 0.1
+        self.number_of_people = 1
+        self.total_bins = self.number_of_people * 25
+        self.one_hot_vector_length_per_joint = (1/self.space ) ** 2 
+        self.one_hot_vector_length = int(self.total_bins * self.one_hot_vector_length_per_joint + 1)
+        self.one_hot = np.zeros(self.one_hot_vector_length)
+        self.length = length
+        self.onehot_multiplication = np.repeat(range(self.total_bins), length).reshape(self.total_bins,length)
+    def __call__(self, poses):
+        poses = poses.reshape(-1,2,self.length)
+        dim1 = np.floor(poses[:,0,:] / self.space)
+        dim2 = np.floor(poses[:,1,:] / self.space)
+        one_hot_values = (1/self.space ) * dim1 + dim2
+        one_hot_values[np.isnan(one_hot_values)] = self.one_hot_vector_length_per_joint
+        one_hot_values = one_hot_values * self.onehot_multiplication + one_hot_values
+        one_hot_values[np.isnan(one_hot_values)] = self.one_hot_vector_length + 1
+        
+        return poses
+    
+class pose_one_hot_decoding2(object):
+    def __init__(self,length):
+        self.space = 1/32
+        self.bin_number = int((1/self.space))
+        self.number_of_people = 1
+        self.total_bins = self.number_of_people * 25
+        self.one_hot_vector_length = self.bin_number ** 2
+        self.one_hot = np.zeros(self.one_hot_vector_length)
+        self.length = length
+        self.position_matrix = np.zeros([self.bin_number + 1, self.bin_number + 1, self.length])
+    def __call__(self, poses):
+        poses = poses.reshape(-1,2,self.length)
+        dim1 = np.floor(poses[:,0,:] / self.space)
+        dim2 = np.floor(poses[:,1,:] / self.space)
+        dim1[np.isnan(dim1)] = self.bin_number
+        dim2[np.isnan(dim2)] = self.bin_number
+        dim1 = dim1.astype(np.int)
+        dim2 = dim2.astype(np.int)
+        for i in range(self.length):
+            try:
+                self.position_matrix[dim1[:,i], dim2[:,i], i] = 1
+            except:
+                print('hasdasd')
+        one_hot_encoding = self.position_matrix[:self.bin_number, :self.bin_number, :]
+        one_hot_encoding = one_hot_encoding.reshape(-1,self.length)
+        one_hot_encoding_torch = torch.from_numpy(one_hot_encoding.transpose((1,0))).float()
+        
+        
+        return one_hot_encoding_torch
+        
+class ToTensorPose(object):
+
+    def __call__(self, clips):
+        if isinstance(clips, np.ndarray):
+            # handle numpy ar
+            clips = clips - 0.5
+            clips[np.isnan(clips)] = 0
+            clips = torch.from_numpy(clips.transpose((3,0,1,2))).float()
+            # backward compatibility
+            return clips
+        
+                    

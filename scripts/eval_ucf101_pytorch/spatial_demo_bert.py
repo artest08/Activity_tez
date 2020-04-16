@@ -15,6 +15,8 @@ import random
 import time
 import argparse
 
+from ptflops import get_model_complexity_info
+
 import torch
 import torch.nn as nn
 import torch.nn.parallel
@@ -46,7 +48,7 @@ parser = argparse.ArgumentParser(description='PyTorch Two-Stream Action Recognit
 parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51"],
                     help='dataset: ucf101 | hmdb51')
-parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resnet50I3D32f_bert10',
+parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_I3D64f_bert10',
                     choices=model_names)
 
 parser.add_argument('-s', '--split', default=1, type=int, metavar='S',
@@ -69,10 +71,14 @@ num_seg_3D=1
 result_dict = {}
 
 def buildModel(model_path,num_categories):
-    if not '3D' in args.arch:
-        model=models.__dict__[args.arch](modelPath='', num_classes=num_categories,length=num_seg)
-    else:
+    if '3D' in args.arch:
         model=models.__dict__[args.arch](modelPath='', num_classes=num_categories,length=num_seg_3D)
+    elif 'tsm' in args.arch:
+        model=models.__dict__[args.arch](modelPath='', num_classes=num_categories,length=num_seg_3D)
+    else:
+        model=models.__dict__[args.arch](modelPath='', num_classes=num_categories,length=num_seg)
+
+       
     params = torch.load(model_path)
     if args.tsn:
         new_dict = {k[7:]: v for k, v in params['state_dict'].items()} 
@@ -99,9 +105,9 @@ def buildModel(model_path,num_categories):
 def main():
     global args
     args = parser.parse_args()
-    if '64' in args.arch:
+    if '64f' in args.arch:
         length=64
-    if '32' in args.arch:
+    elif '32f' in args.arch:
         length=32
     else:
         length=16
@@ -151,7 +157,10 @@ def main():
     model_end_time = time.time()
     model_time = model_end_time - model_start_time
     print("Action recognition model is loaded in %4.4f seconds." % (model_time))
-
+    
+    flops, params = get_model_complexity_info(spatial_net, (3, length, 224, 224), as_strings=True, print_per_layer_stat=False)
+    print('{:<30}  {:<8}'.format('Computational complexity: ', flops))
+    print('{:<30}  {:<8}'.format('Number of parameters: ', params))
     
     f_val = open(val_file, "r")
     val_list = f_val.readlines()
@@ -159,6 +168,7 @@ def main():
 
     line_id = 1
     match_count = 0
+    match_count_top3 = 0
 
     y_true=[]
     y_pred=[]
@@ -199,7 +209,7 @@ def main():
             estimatedTime=end-start
             timeList.append(estimatedTime)
             
-            pred_index, mean_result = spatial_prediction
+            pred_index, mean_result, top3 = spatial_prediction
             if args.dataset=='smtV2' and 'test' in val_fileName:
                 top5 = np.argsort(mean_result)[::-1][:5]                   
                 employee_writer.writerow([line_info[0], str(top5[0]), str(top5[1]),str(top5[2]),str(top5[3]),str(top5[4])])
@@ -209,6 +219,8 @@ def main():
             print("------------------")
             if pred_index == input_video_label:
                 match_count += 1
+            if input_video_label in top3:
+                match_count_top3 += 1
     
             line_id += 1
             y_true.append(input_video_label)
@@ -218,8 +230,10 @@ def main():
         print(confusion_matrix(y_true,y_pred))
     
         print("Accuracy with mean calculation is %4.4f" % (float(match_count)/len(val_list)))
+        print("top3 accuracy %4.4f" % (float(match_count_top3)/len(val_list)))
         print(modelLocation)
         print("Mean Estimated Time %0.4f" % (np.mean(timeList)))  
+        print('one clips')
         
         resultDict={'y_true':y_true,'y_pred':y_pred}
         

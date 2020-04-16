@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Wed Dec  4 10:42:00 2019
-
-@author: esat
-"""
 
 import os
 import time
@@ -14,7 +9,7 @@ import numpy as np
 
 
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]="0"
+os.environ["CUDA_VISIBLE_DEVICES"]="1"
 
 import torch
 import torch.nn as nn
@@ -23,17 +18,17 @@ import torch.backends.cudnn as cudnn
 import torch.optim
 import torch.utils.data
 from tensorboardX import SummaryWriter
-
+from opt.AdamW import AdamW
 from torch.optim import lr_scheduler
+
 import video_transforms
 import models
 import datasets
 import swats
-from opt.AdamW import AdamW
 
 
 model_names = sorted(name for name in models.__dict__
-    if not name.startswith("__")
+    if name.islower() and not name.startswith("__")
     and callable(models.__dict__[name]))
 
 dataset_names = sorted(name for name in datasets.__all__)
@@ -48,28 +43,30 @@ parser.add_argument('--settings', metavar='DIR', default='./datasets/settings',
 #                    help='modality: rgb | flow')
 parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51", "smtV2", "window"],
-                    help='dataset: ucf101 | hmdb51 | smtV2')
-
-parser.add_argument('--arch', '-a', default='rgb_resneXt3D64f101_bert10XY',
+                    help='dataset: ucf101 | hmdb51')
+parser.add_argument('--arch', '-a', metavar='ARCH', default='poseRaw_bert10_twoPeople_withoutAngle',
                     choices=model_names,
                     help='model architecture: ' +
                         ' | '.join(model_names) +
                         ' (default: rgb_vgg16)')
-
 parser.add_argument('-s', '--split', default=1, type=int, metavar='S',
                     help='which split of data to work on (default: 1)')
-parser.add_argument('-j', '--workers', default=1, type=int, metavar='N',
+parser.add_argument('-j', '--workers', default=0, type=int, metavar='N',
                     help='number of data loading workers (default: 4)')
-parser.add_argument('--epochs', default=150, type=int, metavar='N',
+parser.add_argument('--epochs', default=1000, type=int, metavar='N',
                     help='number of total epochs to run')
-parser.add_argument('-b', '--batch-size', default=8, type=int,
+parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
+                    help='manual epoch number (useful on restarts)')
+parser.add_argument('-b', '--batch-size', default=128, type=int,
                     metavar='N', help='mini-batch size (default: 50)')
-parser.add_argument('--iter-size', default=16, type=int,
+parser.add_argument('--iter-size', default=1, type=int,
                     metavar='I', help='iter size as in Caffe to reduce memory usage (default: 5)')
-parser.add_argument('--lr', '--learning-rate', default=1e-4, type=float,
+parser.add_argument('--new_width', default=340, type=int,
+                    metavar='N', help='resize width (default: 340)')
+parser.add_argument('--new_height', default=256, type=int,
+                    metavar='N', help='resize height (default: 256)')
+parser.add_argument('--lr', '--learning-rate', default=0.0001, type=float,
                     metavar='LR', help='initial learning rate')
-parser.add_argument('--lr_steps', default=[10], type=float, nargs="+",
-                    metavar='LRSteps', help='epochs to decay learning rate by 10')
 parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
                     help='momentum')
 parser.add_argument('--weight-decay', '--wd', default=1e-3, type=float,
@@ -78,7 +75,7 @@ parser.add_argument('--print-freq', default=200, type=int,
                     metavar='N', help='print frequency (default: 50)')
 parser.add_argument('--save-freq', default=1, type=int,
                     metavar='N', help='save frequency (default: 25)')
-parser.add_argument('--num-seg', default=1, type=int,
+parser.add_argument('--num-seg', default=16, type=int,
                     metavar='N', help='Number of segments for temporal LSTM (default: 16)')
 #parser.add_argument('--resume', default='./dene4', type=str, metavar='PATH',
 #                    help='path to latest checkpoint (default: none)')
@@ -88,30 +85,20 @@ parser.add_argument('-e', '--evaluate', dest='evaluate', action='store_true',
 parser.add_argument('-c', '--continue', dest='contine', action='store_true',
                     help='evaluate model on validation set')
 
+parser.add_argument('-r', '--ranking', dest='ranking', action='store_true',
+                    help='enable ranking mode')
+
+
+
 best_prec1 = 0
 best_loss = 30
-warmUpEpoch=5
-
-smt_pretrained = False
-
-HALF = False
+mseCoeffStart=10
 
 
 
 def main():
-    global args, best_prec1,model,writer,best_loss, length, width, height, input_size
+    global args, best_prec1,writer,best_loss,mseCoeffStart, length
     args = parser.parse_args()
-    
-    if 'I3D' in args.arch:
-        scale = 1
-    else:
-        scale=0.5
-        
-    print('scale: %.1f' %(scale))
-    
-    input_size = int(224 * scale)
-    width = int(340 * scale)
-    height = int(256 * scale)
     
     saveLocation="./checkpoint/"+args.dataset+"_"+args.arch+"_split"+str(args.split)
     if not os.path.exists(saveLocation):
@@ -132,27 +119,13 @@ def main():
     else:
         print("Building model ... ")
         model = build_model()
-        if smt_pretrained:
-            smtV2_pretrained_weights = './weights/smtV2_' + args.arch + '.pth'
-            weights = torch.load(smtV2_pretrained_weights)         
-            weights['fc_action.weight'] = model.state_dict()['fc_action.weight']
-            weights['fc_action.bias'] = model.state_dict()['fc_action.bias']
-            model.load_state_dict(weights)
-            print('smtV2 pretrained is loaded')
         #optimizer = torch.optim.Adam(model.parameters(), args.lr)
         optimizer = AdamW(model.parameters(), lr= args.lr, weight_decay=args.weight_decay)
-        # optimizer = torch.optim.SGD(model.parameters(), args.lr,
-        #                             momentum=args.momentum,
-        #                             weight_decay=args.weight_decay)
         #optimizer = swats.SWATS(model.parameters(), args.lr)
         #model = build_model_validate()
         startEpoch = 0
     
-    if HALF:
-        model.half()  # convert to half precision
-        for layer in model.modules():
-            if isinstance(layer, nn.BatchNorm2d):
-                layer.float()
+
     
     print("Model %s is loaded. " % (args.arch))
 
@@ -160,113 +133,55 @@ def main():
     criterion = nn.CrossEntropyLoss().cuda()
     criterion2 = nn.MSELoss().cuda()
     
-
-
     
-    #optimizer = torch.optim.Adam(model.parameters(), args.lr)
+
+#    optimizer = torch.optim.SGD(model.parameters(), args.lr,
+#                                momentum=args.momentum,
+#                                weight_decay=args.weight_decay)
     
+
     scheduler = lr_scheduler.ReduceLROnPlateau(
-        optimizer, 'max', patience=6, verbose=True)
-    if args.contine:
-        scheduler.step(best_prec1)
-        print('scheduler step with best prec %f' %(best_prec1))
-    #optimizer = swats.SWATS(model.parameters(), args.lr)
-
+        optimizer, 'max', patience=200,verbose=True)    
+    
     print("Saving everything to directory %s." % (saveLocation))
     if args.dataset=='ucf101':
-        dataset='./datasets/ucf101_frames'
+        dataset='./datasets/pose_information2/ucf101'
     elif args.dataset=='hmdb51':
-        dataset='./datasets/hmdb51_frames'
+        dataset='./datasets/pose_information2/hmdb51'
     elif args.dataset=='smtV2':
-        dataset='./datasets/smtV2_frames'
+        dataset='./datasets/pose_information2/smtV2'
     elif args.dataset=='window':
-        dataset='./datasets/window_frames'
+        dataset='./datasets/pose_information2/window'
     else:
         print("No convenient dataset entered, exiting....")
         return 0
     
     cudnn.benchmark = True
     modality=args.arch.split('_')[0]
-    if "3D" in args.arch:
-        if '64f' in args.arch:
-            length=64
-        elif '32f' in args.arch:
-            length=32
-        else:
-            length=16
-    else:
-        length=1
+    length=1
     # Data transforming
-    if modality == "rgb" or modality == "pose":
-        is_color = True
-        scale_ratios = [1.0, 0.875, 0.75, 0.66]
-        if 'I3D' in args.arch:
-            if 'resnet' in args.arch:
-                clip_mean = [0.45, 0.45, 0.45] * args.num_seg * length
-                clip_std = [0.225, 0.225, 0.225] * args.num_seg * length
-            else:
-                clip_mean = [0.5, 0.5, 0.5] * args.num_seg * length
-                clip_std = [0.5, 0.5, 0.5] * args.num_seg * length
-        elif "3D" in args.arch:
-            clip_mean = [114.7748, 107.7354, 99.4750] * args.num_seg * length
-            clip_std = [1, 1, 1] * args.num_seg * length
-        else:
-            clip_mean = [0.485, 0.456, 0.406] * args.num_seg * length
-            clip_std = [0.229, 0.224, 0.225] * args.num_seg * length
-    elif modality == "flow":
-        #length=10
-        is_color = False
-        scale_ratios = [1.0, 0.875, 0.75, 0.66]
-        if 'I3D' in args.arch:
-            clip_mean = [0.5, 0.5] * args.num_seg * length
-            clip_std = [0.5, 0.5] * args.num_seg * length
-        
-        else:
-            clip_mean = [0.5, 0.5] * args.num_seg * length
-            clip_std = [0.226, 0.226] * args.num_seg * length
-    elif modality == "both":
-        is_color = True
-        scale_ratios = [1.0, 0.875, 0.75, 0.66]
-        clip_mean = [0.485, 0.456, 0.406, 0.5, 0.5] * args.num_seg * length
-        clip_std = [0.229, 0.224, 0.225, 0.226, 0.226] * args.num_seg * length
-    else:
-        print("No such modality. Only rgb and flow supported.")
 
-    
-    normalize = video_transforms.Normalize(mean=clip_mean,
-                                           std=clip_std)
+    scale_ratios = [1.0, 0.875, 0.75, 0.66]
 
-    if "3D" in args.arch and not ('I3D' in args.arch):
-        train_transform = video_transforms.Compose([
-                video_transforms.MultiScaleCrop((input_size, input_size), scale_ratios),
-                video_transforms.RandomHorizontalFlip(),
-                video_transforms.ToTensor2(),
-                normalize,
-            ])
-    
-        val_transform = video_transforms.Compose([
-                video_transforms.CenterCrop((input_size)),
-                video_transforms.ToTensor2(),
-                normalize,
-            ])
-    else:
-        train_transform = video_transforms.Compose([
-                video_transforms.MultiScaleCrop((input_size, input_size), scale_ratios),
-                video_transforms.RandomHorizontalFlip(),
-                video_transforms.ToTensor(),
-                normalize,
-            ])
-    
-        val_transform = video_transforms.Compose([
-                video_transforms.CenterCrop((input_size)),
-                video_transforms.ToTensor(),
-                normalize,
-            ])
 
+
+    train_transform = video_transforms.Compose([
+            video_transforms.rawPoseAugmentation(scale_ratios),
+            video_transforms.ToTensorPose()
+        ])
+
+
+
+    val_transform = video_transforms.Compose([
+            video_transforms.rawPoseAugmentation([1.0]),
+            video_transforms.ToTensorPose()
+        ])
+    validation_batch_size = int(args.batch_size)
     # data loading
-    train_setting_file = "train_%s_split%d.txt" % (modality, args.split)
+
+    train_setting_file = "train_%s_split%d.txt" % ('rgb', args.split)
     train_split_file = os.path.join(args.settings, args.dataset, train_setting_file)
-    val_setting_file = "val_%s_split%d.txt" % (modality, args.split)
+    val_setting_file = "val_%s_split%d.txt" % ('rgb', args.split)
     val_split_file = os.path.join(args.settings, args.dataset, val_setting_file)
     if not os.path.exists(train_split_file) or not os.path.exists(val_split_file):
         print("No split file exists in %s directory. Preprocess the dataset first" % (args.settings))
@@ -275,10 +190,10 @@ def main():
                                                     source=train_split_file,
                                                     phase="train",
                                                     modality=modality,
-                                                    is_color=is_color,
+                                                    is_color=False,
                                                     new_length=length,
-                                                    new_width=width,
-                                                    new_height=height,
+                                                    new_width=args.new_width,
+                                                    new_height=args.new_height,
                                                     video_transform=train_transform,
                                                     num_segments=args.num_seg)
     
@@ -286,41 +201,46 @@ def main():
                                                   source=val_split_file,
                                                   phase="val",
                                                   modality=modality,
-                                                  is_color=is_color,
+                                                  is_color=False,
                                                   new_length=length,
-                                                  new_width=width,
-                                                  new_height=height,
+                                                  new_width=args.new_width,
+                                                  new_height=args.new_height,
                                                   video_transform=val_transform,
                                                   num_segments=args.num_seg)
 
     print('{} samples found, {} train samples and {} test samples.'.format(len(val_dataset)+len(train_dataset),
                                                                            len(train_dataset),
                                                                            len(val_dataset)))
-
+    if torch.cuda.device_count() > 1:
+        drop_last_value = True
+    else:
+        drop_last_value = False
+        
     train_loader = torch.utils.data.DataLoader(
         train_dataset,
         batch_size=args.batch_size, shuffle=True,
-        num_workers=args.workers, pin_memory=True)
+        num_workers=args.workers, pin_memory=True, drop_last = drop_last_value)
     val_loader = torch.utils.data.DataLoader(
         val_dataset,
-        batch_size=args.batch_size, shuffle=False,
-        num_workers=args.workers, pin_memory=True)
+        batch_size = validation_batch_size, shuffle=False,
+        num_workers=args.workers, pin_memory=True, drop_last = drop_last_value)
 
     if args.evaluate:
-        prec1,prec3,lossClassification = validate(val_loader, model, criterion,criterion2,modality)
+        prec1,prec3=validate(val_loader, model, criterion)
         return
 
     for epoch in range(startEpoch, args.epochs):
-#        if learning_rate_index > max_learning_rate_decay_count:
-#            break
-#        adjust_learning_rate(optimizer, epoch)
-        train(train_loader, model, criterion,criterion2, optimizer, epoch,modality)
+        #adjust_learning_rate(optimizer, epoch)
+        setMseCoeff=adjust_mse_coeff(mseCoeffStart, epoch)
+        # train for one epoch
+        train(train_loader, model, criterion,criterion2, optimizer, epoch,setMseCoeff,modality)
 
         # evaluate on validation set
         prec1 = 0.0
         lossClassification = 0
+        lossMSE = None
         if (epoch + 1) % args.save_freq == 0:
-            prec1,prec3,lossClassification = validate(val_loader, model, criterion,criterion2,modality)
+            prec1, prec3, lossClassification, lossMSE = validate(val_loader, model, criterion,criterion2,modality)
             writer.add_scalar('data/top1_validation', prec1, epoch)
             writer.add_scalar('data/top3_validation', prec3, epoch)
             writer.add_scalar('data/classification_loss_validation', lossClassification, epoch)
@@ -329,11 +249,12 @@ def main():
         
         is_best = prec1 >= best_prec1
         best_prec1 = max(prec1, best_prec1)
-#        best_in_existing_learning_rate = max(prec1, best_in_existing_learning_rate)
-#        
-#        if best_in_existing_learning_rate > prec1 + 1:
-#            learning_rate_index = learning_rate_index 
-#            best_in_existing_learning_rate = 0        
+        # if lossMSE == None:
+        #     is_best = True
+        #     best_loss = lossMSE
+        # else:
+        #     is_best = lossMSE < best_loss
+        #     best_loss = min(lossMSE, best_loss)
 
         if (epoch + 1) % args.save_freq == 0:
             checkpoint_name = "%03d_%s" % (epoch + 1, "checkpoint.pth.tar")
@@ -361,49 +282,10 @@ def main():
     writer.close()
 
 def build_model():
+    modelLocation="./checkpoint/"+args.dataset+"_"+'_'.join(args.arch.split('_')[:-1])+"_split"+str(args.split)
     modality=args.arch.split('_')[0]
-    if modality == "rgb":
-        model_path=''
-        if 'I3D' in args.arch:
-            if 'resnet' in args.arch:
-                if '50' in args.arch:
-                    if '32f' in args.arch:
-                        if 'NL' in args.arch:
-                            model_path='./weights/i3d_r50_nl_kinetics.pth'
-                        else:
-                            model_path='./weights/i3d_r50_kinetics.pth'
-            else:
-                model_path='./weights/rgb_imagenet.pth' #model_path = os.path.join(modelLocation,'model_best.pth.tar') 
-        elif "3D" in args.arch:
-            if 'resnet' in args.arch:
-                if '101' in args.arch:
-                    if '64f' in args.arch and not '16fweight' in args.arch:
-                        model_path='./weights/resnet-101-64f-kinetics.pth'
-                    else:
-                        model_path='./weights/resnet-101-kinetics.pth'
-                elif '18' in args.arch:
-                    if '64f' in args.arch and not '16fweight' in args.arch:
-                        model_path='./weights/resnet-18-64f-kinetics.pth'
-                    else:
-                        model_path='./weights/resnet-18-kinetics.pth'
-                    
-            elif 'resneXt' in args.arch:
-                if '101' in args.arch:
-                    if '64f' in args.arch and not '16fweight' in args.arch:
-                        model_path='./weights/resnext-101-64f-kinetics.pth'
-                    else:
-                        model_path='./weights/resnext-101-kinetics.pth'
-        #model_path = os.path.join(modelLocation,'model_best.pth.tar') 
-        
-    elif modality == "flow":
-        model_path=''
-        if "3D" in args.arch:
-            if 'I3D' in args.arch:
-                 model_path='./weights/flow_imagenet.pth'        
-        #model_path = os.path.join(modelLocation,'model_best.pth.tar') 
-    elif modality == "both":
-        model_path='' 
-        
+
+    model_path='' 
     if args.dataset=='ucf101':
         print('model path is: %s' %(model_path))
         model = models.__dict__[args.arch](modelPath=model_path, num_classes=101,length=args.num_seg)
@@ -412,13 +294,15 @@ def build_model():
         model = models.__dict__[args.arch](modelPath=model_path, num_classes=51, length=args.num_seg)
     elif args.dataset=='smtV2':
         print('model path is: %s' %(model_path))
-        model = models.__dict__[args.arch](modelPath=model_path, num_classes=174, length=args.num_seg)
+        model = models.__dict__[args.arch](modelPath=model_path, num_classes=174, length=args.num_seg)  
     elif args.dataset=='window':
         print('model path is: %s' %(model_path))
-        model = models.__dict__[args.arch](modelPath=model_path, num_classes=3, length=args.num_seg)
-    
+        model = models.__dict__[args.arch](modelPath=model_path, num_classes=3, length=args.num_seg)  
+        
     if torch.cuda.device_count() > 1:
+        print('Multi-GPU test enabled...')
         model=torch.nn.DataParallel(model)
+    #model.load_state_dict(torch.load('./weights/pose_pretrain.pth')['state_dict'])
     model = model.cuda()
     
     return model
@@ -439,7 +323,7 @@ def build_model_validate():
         model = models.__dict__[args.arch](modelPath=model_path, num_classes=174, length=args.num_seg)
     elif args.dataset=='window':
         print('model path is: %s' %(model_path))
-        model = models.__dict__[args.arch](modelPath=model_path, num_classes=3, length=args.num_seg)
+        model = models.__dict__[args.arch](modelPath=model_path, num_classes=3, length=args.num_seg)  
    
     model.load_state_dict(params['state_dict'])
     model.cuda()
@@ -451,24 +335,36 @@ def build_model_continue():
     model_path = os.path.join(modelLocation,'model_best.pth.tar') 
     params = torch.load(model_path)
     print(modelLocation)
-    model = build_model()   
+    if args.dataset=='ucf101':
+        model=models.__dict__[args.arch](modelPath='', num_classes=101,length=args.num_seg)
+    elif args.dataset=='hmdb51':
+        model=models.__dict__[args.arch](modelPath='', num_classes=51,length=args.num_seg)
+   
     model.load_state_dict(params['state_dict'])
     model = model.cuda()
     optimizer = AdamW(model.parameters(), lr= args.lr, weight_decay=args.weight_decay)
     optimizer.load_state_dict(params['optimizer'])
+    for param_group in optimizer.param_groups:
+        lr = param_group['lr'] 
+    
     startEpoch = params['epoch']
     best_prec = params['best_prec1']
     return model, startEpoch, optimizer, best_prec
 
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-def train(train_loader, model, criterion, criterion2, optimizer, epoch,modality):
+def train(train_loader, model, criterion, criterion2, optimizer, epoch,setMseCoeff,modality):
     batch_time = AverageMeter()
     lossesClassification = AverageMeter()
+    lossesMSE = AverageMeter()
+    lossesBatchSimilarity=AverageMeter()
+    lossesSequenceSimilarity=AverageMeter()
+    lossesRanking=AverageMeter()
     top1 = AverageMeter()
     top3 = AverageMeter()
-    
+    criterion3 = torch.nn.CosineSimilarity(dim = 2)
+    msecoeff=torch.tensor(setMseCoeff).cuda()
 
     # switch to train mode
     model.train()
@@ -476,29 +372,17 @@ def train(train_loader, model, criterion, criterion2, optimizer, epoch,modality)
     end = time.time()
     optimizer.zero_grad()
     loss_mini_batch_classification = 0.0
+    loss_mini_batch_MSE = 0.0
+    loss_mini_batch_ranking = 0.0
     acc_mini_batch = 0.0
     acc_mini_batch_top3 = 0.0
     totalSamplePerIter=0
     for i, (inputs, targets) in enumerate(train_loader):
-        if modality == "rgb" or modality == "pose":
-            if "3D" in args.arch:
-                inputs=inputs.view(-1,length,3,input_size,input_size).transpose(1,2)
-            else:
-                inputs=inputs.view(-1,3*length,input_size,input_size)
-        elif modality == "flow":
-            if "3D" in args.arch:
-                inputs=inputs.view(-1,length,2,input_size,input_size).transpose(1,2)
-            else:
-                inputs=inputs.view(-1,2*length,input_size,input_size)          
-        elif modality == "both":
-            inputs=inputs.view(-1,5*length,input_size,input_size)
-            
-        if HALF:
-            inputs = inputs.to(device).half()
-        else:
-            inputs = inputs.to(device)
+
+        inputs = inputs.to(device)
         targets = targets.to(device)
         output, input_vectors, sequenceOut, maskSample = model(inputs)
+
         
 #        maskSample=maskSample.cuda()
 #        input_vectors=(1-maskSample[:,1:]).unsqueeze(2)*input_vectors
@@ -508,19 +392,30 @@ def train(train_loader, model, criterion, criterion2, optimizer, epoch,modality)
 #        input_vectors_rank=input_vectors.view(-1,input_vectors.shape[-1])
 #        targetRank=torch.tensor(range(args.num_seg)).repeat(input_vectors.shape[0]).cuda()
 #        rankingFC = nn.Linear(input_vectors.shape[-1], args.num_seg).cuda()
-#        out_rank = rankingFC(input_vectors_rank)
+#        out_rank = rankingFC(input_vectors_rank)          
         prec1, prec3 = accuracy(output.data, targets, topk=(1, 3))
         acc_mini_batch += prec1.item()
         acc_mini_batch_top3 += prec3.item()
         
-        lossClassification = criterion(output, targets)
         
+        #lossRanking = criterion(out_rank, targetRank)
+        lossRanking=torch.tensor([0]).cuda()
+
+        lossClassification = criterion(output, targets)
+        lossMSE = criterion2(input_vectors, sequenceOut)
+        #lossMSE = torch.mean(1 - criterion3(input_vectors,sequenceOut))
+        
+        lossRanking = lossRanking / args.iter_size
         lossClassification = lossClassification / args.iter_size
+        lossMSE = lossMSE / args.iter_size
         
         #totalLoss=lossMSE
+        
         totalLoss=lossClassification 
-        #totalLoss = lossMSE + lossClassification 
+        #totalLoss = lossMSE * torch.tensor(20).cuda() + lossClassification 
         loss_mini_batch_classification += lossClassification.data.item()
+        loss_mini_batch_MSE += lossMSE.data.item()
+        loss_mini_batch_ranking += lossRanking.data.item()
         totalLoss.backward()
         totalSamplePerIter +=  output.size(0)
         if (i+1) % args.iter_size == 0:
@@ -528,64 +423,99 @@ def train(train_loader, model, criterion, criterion2, optimizer, epoch,modality)
             optimizer.step()
             optimizer.zero_grad()
             lossesClassification.update(loss_mini_batch_classification, totalSamplePerIter)
+            lossesMSE.update(loss_mini_batch_MSE, totalSamplePerIter)
+            lossesRanking.update(loss_mini_batch_ranking,totalSamplePerIter)
             top1.update(acc_mini_batch/args.iter_size, totalSamplePerIter)
             top3.update(acc_mini_batch_top3/args.iter_size, totalSamplePerIter)
             batch_time.update(time.time() - end)
             end = time.time()
             loss_mini_batch_classification = 0
+            loss_mini_batch_MSE = 0
+            loss_mini_batch_ranking = 0
             acc_mini_batch = 0
             acc_mini_batch_top3 = 0.0
             totalSamplePerIter = 0.0
+    
             
         if (i+1) % args.print_freq == 0:
             print('[%d] time: %.3f loss: %.4f' %(i,batch_time.avg,lossesClassification.avg))
+#        if (i+1) % args.print_freq == 0:
+#
+#            print('Epoch: [{0}][{1}/{2}]\t'
+#                  'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
+#                  'Classification Loss {lossClassification.val:.4f} ({lossClassification.avg:.4f})\t'
+#                  'Prec@1 {top1.val:.3f} ({top1.avg:.3f})\t'
+#                  'Prec@3 {top3.val:.3f} ({top3.avg:.3f})\n'
+#                  'MSE Loss {lossMSE.val:.4f} ({lossMSE.avg:.4f})\t'
+#                  'Batch Similarity Loss {lossBatchSimilarity.val:.4f} ({lossBatchSimilarity.avg:.4f})\t'
+#                  'Sequence Similarity Loss {lossSequenceSimilarity.val:.4f} ({lossSequenceSimilarity.avg:.4f})'.format(
+#                   epoch, i+1, len(train_loader)+1, batch_time=batch_time, lossClassification=lossesClassification,lossMSE=lossesMSE,
+#                   lossBatchSimilarity = lossesBatchSimilarity , lossSequenceSimilarity=lossesSequenceSimilarity,
+#                   top1=top1, top3=top3))
+            
+#    print(' * Epoch: {epoch} Prec@1 {top1.avg:.3f} Prec@3 {top3.avg:.3f} Classification Loss {lossClassification.avg:.4f} MSE Loss {lossMSE.avg:.4f} '
+#          'Batch Similarity Loss {lossBatchSimilarity.avg:.4f} Sequence Similarity Loss {lossSequenceSimilarity.avg:.4f} Ranking Loss {lossRanking.avg:.4f}\n'
+#          .format(epoch = epoch, top1=top1, top3=top3, lossClassification=lossesClassification,lossMSE=lossesMSE,
+#                  lossBatchSimilarity = lossesBatchSimilarity , 
+#                  lossSequenceSimilarity=lossesSequenceSimilarity), 
+#                  lossRanking = lossesRanking) 
           
-    print(' * Epoch: {epoch} Prec@1 {top1.avg:.3f} Prec@3 {top3.avg:.3f} Classification Loss {lossClassification.avg:.4f}\n'
-          .format(epoch = epoch, top1=top1, top3=top3, lossClassification=lossesClassification))
+    print(' * Epoch: {epoch} Prec@1 {top1.avg:.3f} Prec@3 {top3.avg:.3f} Classification Loss {lossClassification.avg:.4f} MSE Loss {lossMSE.avg:.4f} '
+          ' Ranking Loss {lossRanking.avg:.4f}\n'
+          .format(epoch = epoch, top1=top1, top3=top3, lossClassification=lossesClassification,lossMSE=lossesMSE,
+                  lossRanking = lossesRanking))
           
     writer.add_scalar('data/classification_loss_training', lossesClassification.avg, epoch)
+    writer.add_scalar('data/mse_loss_training', lossesMSE.avg, epoch)
+    writer.add_scalar('data/batchSimilarity_loss_training', lossesBatchSimilarity.avg, epoch)
+    writer.add_scalar('data/sequenceSimilarity_loss_training', lossesSequenceSimilarity.avg, epoch)
+    writer.add_scalar('data/total_loss_training', lossesMSE.avg+lossesClassification.avg+lossesBatchSimilarity.avg+lossesSequenceSimilarity.avg, epoch)
     writer.add_scalar('data/top1_training', top1.avg, epoch)
     writer.add_scalar('data/top3_training', top3.avg, epoch)
 def validate(val_loader, model, criterion,criterion2,modality):
     batch_time = AverageMeter()
     lossesClassification = AverageMeter()
+    lossesMSE = AverageMeter()
+    lossesRanking=AverageMeter()
     top1 = AverageMeter()
     top3 = AverageMeter()
+    criterion3 = torch.nn.CosineSimilarity(dim = 2)
     # switch to evaluate mode
     model.eval()
 
     end = time.time()
     with torch.no_grad():
         for i, (inputs, targets) in enumerate(val_loader):
-            if modality == "rgb" or modality == "pose":
-                if "3D" in args.arch:
-                    inputs=inputs.view(-1,length,3,input_size,input_size).transpose(1,2)
-                else:
-                    inputs=inputs.view(-1,3*length,input_size,input_size)
-            elif modality == "flow":
-                if "3D" in args.arch:
-                    inputs=inputs.view(-1,length,2,input_size,input_size).transpose(1,2)
-                else:
-                    inputs=inputs.view(-1,2*length,input_size,input_size)
-            elif modality == "both":
-                inputs=inputs.view(-1,5*length,input_size,input_size)
                 
-            if HALF:
-                inputs = inputs.to(device).half()
-            else:
-                inputs = inputs.to(device)
+
+            inputs = inputs.to(device)
             targets = targets.to(device)
     
             # compute output
-            output, input_vectors, sequenceOut, _ = model(inputs)
+            if modality == 'both':
+                output_rgb, output_flow, input_vectors, sequenceOut, maskSample = model(inputs)
+            else:
+                output, input_vectors, sequenceOut, maskSample = model(inputs)
+                
+#            input_vectors_rank=input_vectors.view(-1,input_vectors.shape[-1])
+#            targetRank=torch.tensor(range(args.num_seg)).repeat(input_vectors.shape[0]).cuda()
+#            rankingFC = nn.Linear(input_vectors.shape[-1], args.num_seg).cuda()
+#            out_rank = rankingFC(input_vectors_rank)
+#            
+#            lossRanking = criterion(out_rank, targetRank)
             
-            
+            lossRanking=torch.tensor([0]).cuda()
+
             lossClassification = criterion(output, targets)
-    
+            lossMSE = criterion2(input_vectors, sequenceOut)
+            #lossMSE = torch.mean(1 - criterion3(input_vectors,sequenceOut))
+
             # measure accuracy and record loss
             prec1, prec3 = accuracy(output.data, targets, topk=(1, 3))
             
             lossesClassification.update(lossClassification.data.item(), output.size(0))
+            lossesMSE.update(lossMSE.data.item(), output.size(0))
+            lossesRanking.update(lossRanking.data.item(), output.size(0))
             
             top1.update(prec1.item(), output.size(0))
             top3.update(prec3.item(), output.size(0))
@@ -594,11 +524,25 @@ def validate(val_loader, model, criterion,criterion2,modality):
             batch_time.update(time.time() - end)
             end = time.time()
     
+#            if i % args.print_freq == 0:
+#                print('Test: [{0}/{1}]\t'
+#                      'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
+#                      'Classification Loss {lossClassification.val:.4f} ({lossClassification.avg:.4f})\t'
+#                      'Prec@1 {top1.val:.3f} ({top1.avg:.3f})\t'
+#                      'Prec@3 {top3.val:.3f} ({top3.avg:.3f})\n'
+#                      'MSE Loss {lossMSE.val:.4f} ({lossMSE.avg:.4f})\t'
+#                      'Batch Similarity Loss {lossBatchSimilarity.val:.4f} ({lossBatchSimilarity.avg:.4f})\t'
+#                      'Sequence Similarity Loss {lossSequenceSimilarity.val:.4f} ({lossSequenceSimilarity.avg:.4f})'.format(
+#                       i, len(val_loader), batch_time=batch_time, lossClassification=lossesClassification,lossMSE=lossesMSE,
+#                       lossBatchSimilarity = lossesBatchSimilarity , lossSequenceSimilarity=lossesSequenceSimilarity,
+#                       top1=top1, top3=top3))
     
-        print(' * * Prec@1 {top1.avg:.3f} Prec@3 {top3.avg:.3f} Classification Loss {lossClassification.avg:.4f}\n' 
-              .format(top1=top1, top3=top3, lossClassification=lossesClassification))
+        print(' * * Prec@1 {top1.avg:.3f} Prec@3 {top3.avg:.3f} Classification Loss {lossClassification.avg:.4f} MSE Loss {lossMSE.avg:.4f} '
+              ' Ranking Loss {lossRanking.avg:.4f}\n' 
+              .format(top1=top1, top3=top3, lossClassification=lossesClassification,lossMSE=lossesMSE,
+                      lossRanking = lossesRanking))
 
-    return top1.avg, top3.avg, lossesClassification.avg
+    return top1.avg, top3.avg, lossesClassification.avg, lossesMSE.avg
 
 def save_checkpoint(state, is_best, filename, resume_path):
     cur_path = os.path.join(resume_path, filename)
@@ -633,41 +577,15 @@ def adjust_learning_rate(optimizer, epoch):
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
         
-def adjust_learning_rate2(optimizer, epoch):
-    isWarmUp=epoch < warmUpEpoch
-    decayRate=0.2
-    if isWarmUp:
-        lr=args.lr*(epoch+1)/warmUpEpoch
-    else:
-        lr=args.lr*(1/(1+(epoch+1-warmUpEpoch)*decayRate))
-    
-    #decay = 0.1 ** (sum(epoch >= np.array(args.lr_steps)))
-    print("Current learning rate is %4.6f:" % lr)
-    for param_group in optimizer.param_groups:
-        param_group['lr'] = lr
         
-def adjust_learning_rate3(optimizer, epoch):
-    isWarmUp=epoch < warmUpEpoch
-    decayRate=0.97
-    if isWarmUp:
-        lr=args.lr*(epoch+1)/warmUpEpoch
-    else:
-        lr = args.lr * decayRate**(epoch+1-warmUpEpoch)
-    
-    #decay = 0.1 ** (sum(epoch >= np.array(args.lr_steps)))
-    print("Current learning rate is %4.6f:" % lr)
-    for param_group in optimizer.param_groups:
-        param_group['lr'] = lr
-        
-def adjust_learning_rate4(optimizer, learning_rate_index):
+def adjust_mse_coeff(mseCoeffStart, epoch):
     """Sets the learning rate to the initial LR decayed by 10 every 150 epochs"""
+    setMseCoeff=mseCoeffStart*0.90**(epoch)
+    
+    print("Current mse coeff rate is %4.6f:" % setMseCoeff)
+    return setMseCoeff
 
-    decay = 0.1 ** learning_rate_index
-    lr = args.lr * decay
-    print("Current learning rate is %4.8f:" % lr)
-    for param_group in optimizer.param_groups:
-        param_group['lr'] = lr
-        
+
 def accuracy(output, target, topk=(1,)):
     """Computes the precision@k for the specified values of k"""
     maxk = max(topk)

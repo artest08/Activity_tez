@@ -17,7 +17,7 @@ from .BERT.embedding import BERTEmbedding
 
 __all__ = ['rgb_resnet3D101_bert10','rgb_resnet3D18_bert10','rgb_resnet3D18_bert10X','rgb_resnet3D101_bert10X', 'rgb_resnet3D18' ,
            'pose_resnet3D18_bert10XX','rgb_resnet3D101','resnet3D101','rgb_resnet3D18_bert10XX','rgb_resnet3D101_bert10XX','rgb_resnet3D101_bert10XXX'
-           ,'rgb_resnet3D10164f_bert10XY_16fweight']
+           ,'rgb_resnet3D10164f_bert10XY_16fweight','rgb_resnet3D64f101_16fweight', 'rgb_resnet3D10164f_bert10XY']
 
 
 
@@ -29,6 +29,29 @@ class rgb_resnet3D101(nn.Module):
         
 
         self.features=nn.Sequential(*list(_trained_resnet101(model_path=modelPath, sample_size=112, sample_duration=16).children())[:-1])
+        
+        #self.avgpool = nn.AvgPool3d((1, 7, 7), stride=1)
+        self.fc_action = nn.Linear(2048, num_classes)
+        for param in self.features.parameters():
+            param.requires_grad = True
+                
+        torch.nn.init.xavier_uniform_(self.fc_action.weight)
+        self.fc_action.bias.data.zero_()
+        
+    def forward(self, x):
+        x = self.features(x)
+        #x = self.avgpool(x)
+        x = x.view(x.size(0), -1)
+        x = self.dp(x)
+        x = self.fc_action(x)
+        return x
+    
+class rgb_resnet3D64f101_16fweight(nn.Module):
+    def __init__(self, num_classes , length, modelPath=''):
+        super(rgb_resnet3D64f101_16fweight, self).__init__()
+        self.num_classes=num_classes
+        self.dp = nn.Dropout(p=0.8)
+        self.features=nn.Sequential(*list(_trained_resnet101(model_path=modelPath, sample_size=112, sample_duration=64).children())[:-1])
         
         #self.avgpool = nn.AvgPool3d((1, 7, 7), stride=1)
         self.fc_action = nn.Linear(2048, num_classes)
@@ -95,6 +118,7 @@ class rgb_resnet3D101X(nn.Module):
         x = self.dp(x)
         x = self.fc_action(x)
         return x
+
 
 class rgb_resnet3D101_bert10(nn.Module):
     def __init__(self, num_classes , length, modelPath=''):
@@ -350,10 +374,15 @@ class rgb_resnet3D10164f_bert10XY_16fweight(nn.Module):
         self.fc_action = nn.Linear(self.hidden_size, num_classes)
             
         for param in self.features1.parameters():
-            param.requires_grad = False
+            param.requires_grad = True
             
         for param in self.features2.parameters():
             param.requires_grad = True
+            
+        numberofparam_feature1 = sum(p.numel() for p in self.features1.parameters() if p.requires_grad)
+        numberofparam_feature2 = sum(p.numel() for p in self.features2.parameters() if p.requires_grad)
+        total_parameters = numberofparam_feature1 + numberofparam_feature2
+        print('total parameters of the backbone architecture: %d' %(total_parameters))
                 
         torch.nn.init.xavier_uniform_(self.fc_action.weight)
         self.fc_action.bias.data.zero_()
@@ -371,6 +400,42 @@ class rgb_resnet3D10164f_bert10XY_16fweight(nn.Module):
         output=self.dp(classificationOut)
         x = self.fc_action(output)
         return x, input_vectors, sequenceOut, maskSample
+    
+class rgb_resnet3D10164f_bert10XY(nn.Module):
+    def __init__(self, num_classes , length, modelPath=''):
+        super(rgb_resnet3D10164f_bert10XY, self).__init__()
+        self.hidden_size=2048
+        self.n_layers=1
+        self.attn_heads=8
+        self.num_classes=num_classes
+        self.dp = nn.Dropout(p=0.8)
+        
+        self.avgpool = nn.AvgPool3d((1, 4, 4), stride=1)
+        features_unp=nn.Sequential(*list(_trained_rgb_resnet3D10164f_bert10XY_16fweight(model_path=modelPath, num_classes=51, length = 64).children())[1])
+        self.features = features_unp[:-1]
+        self.bert = BERT5(self.hidden_size, 4, hidden=self.hidden_size, n_layers=self.n_layers, attn_heads=self.attn_heads)
+        print(sum(p.numel() for p in self.bert.parameters() if p.requires_grad))
+        self.fc_action = nn.Linear(self.hidden_size, num_classes)
+            
+        for param in self.features.parameters():
+            param.requires_grad = True
+            
+        torch.nn.init.xavier_uniform_(self.fc_action.weight)
+        self.fc_action.bias.data.zero_()
+        
+    def forward(self, x):
+        x = self.features(x)
+        x = self.avgpool(x)
+        x = x.view(x.size(0), self.hidden_size, 4)
+        x = x.transpose(1,2)
+        input_vectors=x
+        output , maskSample = self.bert(x)
+        classificationOut = output[:,0,:]
+        sequenceOut=output[:,1:,:]
+        output=self.dp(classificationOut)
+        x = self.fc_action(output)
+        return x, input_vectors, sequenceOut, maskSample
+    
     
     
 class rgb_resnet3D101_bert10XXX(nn.Module):
@@ -695,6 +760,22 @@ def _trained_resnet101(model_path, **kwargs):
         return model
     params = torch.load(model_path)
     new_dict = {k[7:]: v for k, v in params['state_dict'].items()} 
+    model_dict=model.state_dict() 
+    model_dict.update(new_dict)
+    model.load_state_dict(new_dict)
+    return model
+
+def _trained_rgb_resnet3D10164f_bert10XY_16fweight(model_path, **kwargs):
+    """Constructs a ResNet-18 model.
+
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = rgb_resnet3D64f101_16fweight(**kwargs)
+    if model_path=='':
+        return model
+    params = torch.load(model_path)
+    new_dict = {k: v for k, v in params['state_dict'].items()} 
     model_dict=model.state_dict() 
     model_dict.update(new_dict)
     model.load_state_dict(new_dict)

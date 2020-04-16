@@ -17,7 +17,7 @@ from .BERT.bert import BERT, BERT2, BERT3, BERT4, BERT5, BERT6
 from .BERT.embedding import BERTEmbedding
 __all__ = ['rgb_resneXt3D64f101','rgb_resneXt3D64f101_bert10XX','rgb_resneXt3D64f101_bert10XY','rgb_resneXt3D16f101'
            ,'rgb_resneXt3D64f101_bert10XYY','rgb_resneXt3D64f101_bert10XY2','rgb_resneXt3D64f101_bert10XY3'
-           ,'rgb_resneXt3D64f101_16fweight']
+           ,'rgb_resneXt3D64f101_16fweight','rgb_resneXt3D64f101_bert10XY_16fweight','rgb_resneXt3D64f101_bert10XY_nonPreTrained']
 
 
 class rgb_resneXt3D64f101(nn.Module):
@@ -132,6 +132,91 @@ class rgb_resneXt3D64f101_bert10XX(nn.Module):
 class rgb_resneXt3D64f101_bert10XY(nn.Module):
     def __init__(self, num_classes , length, modelPath=''):
         super(rgb_resneXt3D64f101_bert10XY, self).__init__()
+        self.hidden_size=2048
+        self.n_layers=1
+        self.attn_heads=8
+        self.num_classes=num_classes
+        self.length=length
+        self.dp = nn.Dropout(p=0.8)
+        
+        self.avgpool = nn.AvgPool3d((1, 4, 4), stride=1)
+        self.features1=nn.Sequential(*list(_trained_resnext101(model_path=modelPath, sample_size=112, sample_duration=64).children())[:-3])
+        self.features2=nn.Sequential(*list(_trained_resnext101(model_path=modelPath, sample_size=112, sample_duration=64).children())[-3:-2])
+        self.bert = BERT5(self.hidden_size, 4 , hidden=self.hidden_size, n_layers=self.n_layers, attn_heads=self.attn_heads)
+        print(sum(p.numel() for p in self.bert.parameters() if p.requires_grad))
+        self.fc_action = nn.Linear(self.hidden_size, num_classes)
+            
+        for param in self.features1.parameters():
+            param.requires_grad = True
+            
+        for param in self.features2.parameters():
+            param.requires_grad = True
+            
+        numberofparam_feature1 = sum(p.numel() for p in self.features1.parameters() if p.requires_grad)
+        numberofparam_feature2 = sum(p.numel() for p in self.features2.parameters() if p.requires_grad)
+        total_parameters = numberofparam_feature1 + numberofparam_feature2
+        print('total parameters of the backbone architecture: %d' %(total_parameters))
+                
+        torch.nn.init.xavier_uniform_(self.fc_action.weight)
+        self.fc_action.bias.data.zero_()
+        
+    def forward(self, x):
+        x = self.features1(x)
+        x = self.features2(x)
+        x = self.avgpool(x)
+        x = x.view(x.size(0), self.hidden_size, 4)
+        x = x.transpose(1,2)
+        input_vectors=x
+        output , maskSample = self.bert(x)
+        classificationOut = output[:,0,:]
+        sequenceOut=output[:,1:,:]
+        output=self.dp(classificationOut)
+        x = self.fc_action(output)
+        return x, input_vectors, sequenceOut, maskSample
+    
+class rgb_resneXt3D64f101_bert10XY_nonPreTrained(nn.Module):
+    def __init__(self, num_classes , length, modelPath=''):
+        super(rgb_resneXt3D64f101_bert10XY_nonPreTrained, self).__init__()
+        self.hidden_size=2048
+        self.n_layers=1
+        self.attn_heads=8
+        self.num_classes=num_classes
+        self.length=length
+        self.dp = nn.Dropout(p=0.8)
+        
+        self.avgpool = nn.AvgPool3d((1, 4, 4), stride=1)
+        self.features1=nn.Sequential(*list(resnext3D101(sample_size=112, sample_duration=64).children())[:-3])
+        self.features2=nn.Sequential(*list(resnext3D101(sample_size=112, sample_duration=64).children())[-3:-2])
+        self.bert = BERT5(self.hidden_size, 4 , hidden=self.hidden_size, n_layers=self.n_layers, attn_heads=self.attn_heads)
+        print(sum(p.numel() for p in self.bert.parameters() if p.requires_grad))
+        self.fc_action = nn.Linear(self.hidden_size, num_classes)
+            
+        for param in self.features1.parameters():
+            param.requires_grad = True
+            
+        for param in self.features2.parameters():
+            param.requires_grad = True
+                
+        torch.nn.init.xavier_uniform_(self.fc_action.weight)
+        self.fc_action.bias.data.zero_()
+        
+    def forward(self, x):
+        x = self.features1(x)
+        x = self.features2(x)
+        x = self.avgpool(x)
+        x = x.view(x.size(0), self.hidden_size, 4)
+        x = x.transpose(1,2)
+        input_vectors=x
+        output , maskSample = self.bert(x)
+        classificationOut = output[:,0,:]
+        sequenceOut=output[:,1:,:]
+        output=self.dp(classificationOut)
+        x = self.fc_action(output)
+        return x, input_vectors, sequenceOut, maskSample
+    
+class rgb_resneXt3D64f101_bert10XY_16fweight(nn.Module):
+    def __init__(self, num_classes , length, modelPath=''):
+        super(rgb_resneXt3D64f101_bert10XY_16fweight, self).__init__()
         self.hidden_size=2048
         self.n_layers=1
         self.attn_heads=8

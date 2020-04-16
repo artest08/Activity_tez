@@ -15,7 +15,7 @@ import numpy as np
 
 
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]="0"
+os.environ["CUDA_VISIBLE_DEVICES"]="1"
 
 import torch
 import torch.nn as nn
@@ -52,7 +52,7 @@ parser.add_argument('--settings', metavar='DIR', default='./datasets/settings',
 parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51", "smtV2"],
                     help='dataset: ucf101 | hmdb51')
-parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resneXt3D64f101_16fweight',
+parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resnet50I3D64f',
                     choices=model_names,
                     help='model architecture: ' +
                         ' | '.join(model_names) +
@@ -78,7 +78,7 @@ parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
                     help='momentum')
 parser.add_argument('--weight-decay', '--wd', default=1e-3, type=float,
                     metavar='W', help='weight decay (default: 5e-4)')
-parser.add_argument('--print-freq', default=50, type=int,
+parser.add_argument('--print-freq', default=100, type=int,
                     metavar='N', help='print frequency (default: 50)')
 parser.add_argument('--save-freq', default=1, type=int,
                     metavar='N', help='save frequency (default: 25)')
@@ -106,7 +106,7 @@ def main():
     args = parser.parse_args()
     
     if '3D' in args.arch:
-        if 'I3D' in args.arch:
+        if 'I3D' or 'MFNET3D' in args.arch:
             if '112' in args.arch:
                 scale = 0.5
             else:
@@ -185,6 +185,8 @@ def main():
             length=32
         else:
             length=16
+    elif "tsm" in args.arch:
+        length=64
     else:
         length = 1
     # Data transforming
@@ -199,6 +201,9 @@ def main():
                 clip_mean = [0.5, 0.5, 0.5] * args.num_seg * length
                 clip_std = [0.5, 0.5, 0.5] * args.num_seg * length
             #clip_std = [0.25, 0.25, 0.25] * args.num_seg * length
+        elif 'MFNET3D' in args.arch:
+            clip_mean = [0.48627451, 0.45882353, 0.40784314] * args.num_seg * length
+            clip_std = [0.234, 0.234, 0.234]  * args.num_seg * length
         elif "3D" in args.arch:
             clip_mean = [114.7748, 107.7354, 99.4750] * args.num_seg * length
             clip_std = [1, 1, 1] * args.num_seg * length
@@ -232,7 +237,7 @@ def main():
     normalize = video_transforms.Normalize(mean=clip_mean,
                                            std=clip_std)
 
-    if "3D" in args.arch and not ('I3D' in args.arch):
+    if "3D" in args.arch and not ('I3D' in args.arch or 'MFNET3D' in args.arch):
         train_transform = video_transforms.Compose([
                 video_transforms.MultiScaleCrop((input_size, input_size), scale_ratios),
                 video_transforms.RandomHorizontalFlip(),
@@ -366,28 +371,47 @@ def build_model():
     modality=args.arch.split('_')[0]
     if modality == "rgb":
         model_path=''
-        if "3D" in args.arch:
-            if '101' in args.arch:
-                if '64f' in args.arch:
-                    if not '16fweight' in args.arch:
+        if 'I3D' in args.arch:
+            if 'resnet' in args.arch:
+                if '50' in args.arch:
+                    if '32f' in args.arch:
+                        if 'NL' in args.arch:
+                            model_path='./weights/i3d_r50_nl_kinetics.pth'
+                        else:
+                            model_path='./weights/i3d_r50_kinetics.pth'
+                    elif '64f' in args.arch:
+                        if 'NL' in args.arch:
+                            model_path='./weights/i3d_r50_nl_kinetics.pth'
+                        else:
+                            model_path='./weights/i3d_r50_kinetics.pth'
+            else:
+                model_path='./weights/rgb_imagenet.pth' #model_path = os.path.join(modelLocation,'model_best.pth.tar') 
+        elif 'MFNET3D' in args.arch:
+            if '16f' in args.arch:
+                model_path='./weights/MFNet3D_Kinetics-400_72.8.pth'
+        elif "3D" in args.arch:
+            if 'resnet' in args.arch:
+                if '101' in args.arch:
+                    if '64f' in args.arch and not '16fweight' in args.arch:
+                        model_path='./weights/resnet-101-64f-kinetics.pth'
+                    else:
+                        model_path='./weights/resnet-101-kinetics.pth'
+                elif '18' in args.arch:
+                    if '64f' in args.arch and not '16fweight' in args.arch:
+                        model_path='./weights/resnet-18-64f-kinetics.pth'
+                    else:
+                        model_path='./weights/resnet-18-kinetics.pth'
+                    
+            elif 'resneXt' in args.arch:
+                if '101' in args.arch:
+                    if '64f' in args.arch and not '16fweight' in args.arch:
                         model_path='./weights/resnext-101-64f-kinetics.pth'
                     else:
                         model_path='./weights/resnext-101-kinetics.pth'
-                else:
-                    if 'resneXt' in args.arch:
-                        model_path='./weights/resnext-101-kinetics.pth'
-                    else:
-                        model_path='./weights/resnet-101-kinetics.pth'
-            elif '18' in args.arch:
-                model_path='./weights/resnet-18-kinetics.pth'
-            elif 'I3D' in args.arch:
-                if 'resnet50' in args.arch:
-                    if 'NL' in args.arch:
-                        model_path='./weights/i3d_r50_nl_kinetics.pth'
-                    else:
-                        model_path='./weights/i3d_r50_kinetics.pth'
-                else:
-                    model_path='./weights/rgb_imagenet.pth' #model_path = os.path.join(modelLocation,'model_best.pth.tar') 
+        elif "tsm" in args.arch:
+            model_path='./weights/TSM_kinetics_RGB_resnet50_shift8_blockres_avg_segment8_e100_dense.pth'
+            
+        
     elif modality == "pose":
         model_path=''
         
@@ -445,10 +469,16 @@ def train(train_loader, model, criterion, optimizer, epoch,modality):
     acc_mini_batch = 0.0
     acc_mini_batch_top3 = 0.0
     totalSamplePerIter=0
+    tsm_frame_bias = int(length/16)
+    tsm_selection = np.array(range(0,length,8)) + tsm_frame_bias
     for i, (inputs, targets) in enumerate(train_loader):
         if modality == "rgb" or modality == "pose":
             if "3D" in args.arch:
                 inputs=inputs.view(-1,length,3,input_size,input_size).transpose(1,2)
+            elif "tsm" in args.arch:
+                inputs=inputs.view(-1,length,3,input_size,input_size)
+                inputs = inputs[:, tsm_selection]
+                inputs = inputs.view(-1, 3, input_size, input_size)
             else:
                 inputs=inputs.view(-1,3*length,input_size,input_size)
         elif modality == "flow":
@@ -464,8 +494,11 @@ def train(train_loader, model, criterion, optimizer, epoch,modality):
         else:
             inputs = inputs.to(device)
         targets = targets.to(device)
-        output = model(inputs)
         
+        output = model(inputs)
+        if "tsm" in args.arch:
+            output = output.view(-1,8,output.shape[1])
+            output = torch.mean(output, 1)
         prec1, prec3 = accuracy(output.data, targets, topk=(1, 3))
         acc_mini_batch += prec1.item()
         acc_mini_batch_top3 += prec3.item()
@@ -532,11 +565,17 @@ def validate(val_loader, model, criterion,modality):
     model.eval()
 
     end = time.time()
+    tsm_frame_bias = int(length/16)
+    tsm_selection = np.array(range(0,length,8)) + tsm_frame_bias
     with torch.no_grad():
         for i, (inputs, targets) in enumerate(val_loader):
             if modality == "rgb" or modality == "pose":
                 if "3D" in args.arch:
                     inputs=inputs.view(-1,length,3,input_size,input_size).transpose(1,2)
+                elif "tsm" in args.arch:
+                    inputs=inputs.view(-1,length,3,input_size,input_size)
+                    inputs = inputs[:, tsm_selection]
+                    inputs = inputs.view(-1, 3, input_size, input_size)
                 else:
                     inputs=inputs.view(-1,3*length,input_size,input_size)
             elif modality == "flow":
@@ -556,7 +595,10 @@ def validate(val_loader, model, criterion,modality):
             # compute output
             output= model(inputs)
             
-            
+            if "tsm" in args.arch:
+                output = output.view(-1,8,output.shape[1])
+                output = torch.mean(output, 1)         
+                
             lossClassification = criterion(output, targets)
     
             # measure accuracy and record loss

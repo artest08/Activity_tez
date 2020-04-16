@@ -46,25 +46,26 @@ parser = argparse.ArgumentParser(description='PyTorch Two-Stream Action Recognit
 parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51"],
                     help='dataset: ucf101 | hmdb51')
-parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resnet50I3D32f_112',
+parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_I3D64f_bert10',
                     choices=model_names)
 
 parser.add_argument('-s', '--split', default=1, type=int, metavar='S',
                     help='which split of data to work on (default: 1)')
 parser.add_argument('-t', '--tsn', dest='tsn', action='store_true',
                     help='TSN Mode')
-multiGPUTest=False
+
+multiGPUTest = False
+multiGPUTrain=False
 num_seg=16
 num_seg_3D=1
 
-
+result_dict = {}
 
 def buildModel(model_path,num_categories):
     if not '3D' in args.arch:
         model=models.__dict__[args.arch](modelPath='', num_classes=num_categories,length=num_seg)
     else:
         model=models.__dict__[args.arch](modelPath='', num_classes=num_categories,length=num_seg_3D)
-#    model=models.__dict__['resnext3D101'](sample_size=112, sample_duration=64, num_classes=num_categories)
     params = torch.load(model_path)
     if args.tsn:
         new_dict = {k[7:]: v for k, v in params['state_dict'].items()} 
@@ -75,6 +76,12 @@ def buildModel(model_path,num_categories):
         model=torch.nn.DataParallel(model)
         new_dict={"module."+k: v for k, v in params['state_dict'].items()} 
         model.load_state_dict(new_dict)
+        
+    elif multiGPUTrain:
+        new_dict = {k[7:]: v for k, v in params['state_dict'].items()} 
+        model_dict=model.state_dict() 
+        model_dict.update(new_dict)
+        model.load_state_dict(model_dict)
     else:
         model.load_state_dict(params['state_dict'])
     model.cuda()
@@ -132,6 +139,7 @@ def main():
 
     line_id = 1
     match_count = 0
+    match_count_top3 = 0
 
     y_true=[]
     y_pred=[]
@@ -160,13 +168,16 @@ def main():
         estimatedTime=end-start
         timeList.append(estimatedTime)
         
-        pred_index, _ = spatial_prediction
+        pred_index, _, top3 = spatial_prediction
         
         print("Sample %d/%d: GT: %d, Prediction: %d" % (line_id, len(val_list), input_video_label, pred_index))
         print("Estimated Time  %0.4f" % estimatedTime)
         print("------------------")
         if pred_index == input_video_label:
             match_count += 1
+            
+        if input_video_label in top3:
+            match_count_top3 += 1
 
         line_id += 1
         y_true.append(input_video_label)
@@ -176,8 +187,10 @@ def main():
     print(confusion_matrix(y_true,y_pred))
 
     print("Accuracy with mean calculation is %4.4f" % (float(match_count)/len(val_list)))
+    print("top3 accuracy %4.4f" % (float(match_count_top3)/len(val_list)))
     print(modelLocation)
     print("Mean Estimated Time %0.4f" % (np.mean(timeList)))  
+    print('multiple clips')
     
     resultDict={'y_true':y_true,'y_pred':y_pred}
     

@@ -58,7 +58,7 @@ parser.add_argument('--arch_rgb', '-b', metavar='ARCH', default='rgb_resnet18_be
                     choices=model_names)
 parser.add_argument('--arch_pose', '-c', metavar='ARCH', default='pose_resnet18_bert10',
                     choices=model_names)
-parser.add_argument('-s', '--split', default=3, type=int, metavar='S',
+parser.add_argument('-s', '--split', default=1, type=int, metavar='S',
                     help='which split of data to work on (default: 1)')
 
 parser.add_argument('-w', '--window', default=3, type=int, metavar='V',
@@ -77,18 +77,21 @@ num_seg_rgb=16
 num_seg_pose=16
 num_seg_flow=16
 len_flow=1
-poseEnabled = False
+poseEnabled = True
 num_seg_3D=1
 length_3D = 64
 
 def buildModel(model_path,arch,num_categories):
+    global multiGPUTrain
     if 'rgb' in arch:
         model=models.__dict__[arch](modelPath='', num_classes=num_categories,length=num_seg_rgb)
     elif 'flow' in arch:
         model=models.__dict__[arch](modelPath='', num_classes=num_categories,length=num_seg_flow)
-    elif 'pose'in arch:
+    elif 'pose' in arch:
+        multiGPUTrain = True
         model=models.__dict__[arch](modelPath='', num_classes=num_categories,length=num_seg_pose)
     params = torch.load(model_path)
+        
     if args.tsn:
         new_dict = {k[7:]: v for k, v in params['state_dict'].items()} 
         model_dict=model.state_dict() 

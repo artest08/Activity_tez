@@ -31,6 +31,88 @@ def make_dataset(root, source):
                 clips.append(item)
     return clips
 
+part_info = [(1,8),   (1,2),   
+             (1,5),   (2,3),   (3,4),   (5,6),   
+             (6,7),   (8,9),   (9,10),  (10,11), 
+             (8,12),  (12,13), (13,14),  (1,0),  
+             (0,15),  (15,17), (0,16),  (16,18),   
+             (2,17),  (5,18),  (14,19), (19,20),
+             (14,21), (11,22), (22,23), (11,24)]
+
+first_part = [part1 for part1,part2 in part_info]
+second_part = [part2 for part1,part2 in part_info]
+
+def ReadSegmentPoseRaw(path, offsets, new_length, name_pattern, duration):
+    sampled_list = []
+    max_person = 2
+    for offset_id in range(len(offsets)):
+        offset = offsets[offset_id]
+        for length_id in range(1, new_length+1):
+            loaded_frame_index = length_id + offset
+            moded_loaded_frame_index = loaded_frame_index % (duration + 1)
+            if moded_loaded_frame_index == 0:
+                moded_loaded_frame_index = (duration + 1)
+            frame_name = name_pattern % (moded_loaded_frame_index)
+            frame_path = path + "/" + frame_name
+            pose_info = np.load(frame_path)
+            if pose_info is None:
+               print("Could not load file %s" % (frame_path))
+               sys.exit()
+            #pose_info_people_count = pose_info.shape[0]
+            #pose_extracted = np.zeros([max_person, 25, 2])
+            # if pose_info_people_count > max_person:
+            #     pose_extracted = pose_info[:max_person, :, :]
+            # else:
+            #     pose_extracted[:max_person, :, :] = pose_info[:max_person, :, :]
+            pose_extracted = np.zeros([max_person, 26, 3])
+            pose_extracted[:,:25,:2] = pose_info[:max_person, :, :]
+            pose_extracted[pose_extracted == 0] = None
+            pose_extracted[:,:,0] = pose_extracted[:,:,0] / 340
+            pose_extracted[:,:,1] = pose_extracted[:,:,1] / 256
+            joint_information = pose_extracted[:,first_part, :] - pose_extracted[:,second_part, :]
+            angle_information = np.arctan2(-joint_information[:,:,1], joint_information[:,:,0])
+            angle_information[angle_information < 0] += 2 * np.pi
+            angle_information = angle_information / (2 * np.pi)
+            pose_extracted[:,:,2] = angle_information
+            pose_extracted = np.expand_dims(pose_extracted, 3)
+            sampled_list.append(pose_extracted)
+    clip_input = np.concatenate(sampled_list, axis=3)
+    return clip_input   
+
+
+def ReadSegmentPoseRaw2(path, offsets, new_length, name_pattern, duration):
+    sampled_list = []
+    max_person = 2
+    for offset_id in range(len(offsets)):
+        offset = offsets[offset_id]
+        for length_id in range(1, new_length+1):
+            loaded_frame_index = length_id + offset
+            moded_loaded_frame_index = loaded_frame_index % (duration + 1)
+            if moded_loaded_frame_index == 0:
+                moded_loaded_frame_index = (duration + 1)
+            frame_name = name_pattern % (moded_loaded_frame_index)
+            frame_path = path + "/" + frame_name
+            pose_info = np.load(frame_path)
+            if pose_info is None:
+               print("Could not load file %s" % (frame_path))
+               sys.exit()
+            #pose_info_people_count = pose_info.shape[0]
+            #pose_extracted = np.zeros([max_person, 25, 2])
+            # if pose_info_people_count > max_person:
+            #     pose_extracted = pose_info[:max_person, :, :]
+            # else:
+            #     pose_extracted[:max_person, :, :] = pose_info[:max_person, :, :]
+            pose_extracted = np.zeros([max_person, 25, 2])
+            pose_extracted[:,:25,:2] = pose_info[:max_person, :, :]
+            pose_extracted[pose_extracted == 0] = None
+            pose_extracted[:,:,0] = pose_extracted[:,:,0] / 340
+            pose_extracted[:,:,1] = pose_extracted[:,:,1] / 256
+            pose_extracted = np.expand_dims(pose_extracted, 3)
+            sampled_list.append(pose_extracted)
+    clip_input = np.concatenate(sampled_list, axis=3)
+    return clip_input      
+             
+
 def ReadSegmentRGB(path, offsets, new_height, new_width, new_length, is_color, name_pattern, duration):
     if is_color:
         cv_read_flag = cv2.IMREAD_COLOR         # > 0
@@ -183,6 +265,8 @@ class hmdb51(data.Dataset):
                 self.name_pattern = "img_%05d.jpg"
             elif self.modality == "pose":
                 self.name_pattern = "pose1_%05d.jpg"
+            elif self.modality == "poseRaw" or  self.modality == "poseRaw2":
+                self.name_pattern = "pose_%05d.npy"
             elif self.modality == "flow":
                 self.name_pattern = "flow_%s_%05d"
             elif self.modality == "both":
@@ -267,6 +351,20 @@ class hmdb51(data.Dataset):
                                         self.new_width,
                                         self.new_length,
                                         self.is_color,
+                                        self.name_pattern,
+                                        duration
+                                        )
+        elif self.modality == "poseRaw":
+            clip_input = ReadSegmentPoseRaw2(path,
+                                        offsets,
+                                        self.new_length,
+                                        self.name_pattern,
+                                        duration
+                                        )
+        elif self.modality == "poseRaw2":
+            clip_input = ReadSegmentPoseRaw2(path,
+                                        offsets,
+                                        self.new_length,
                                         self.name_pattern,
                                         duration
                                         )

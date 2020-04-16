@@ -7,6 +7,8 @@
 /datasets/smtV2_frames
 /datasets/ucf101_frames
 /datasets/settings
+/datasets/pose_information
+/datasets/pose_information2
 /datasets/window_frames
 /old checkpoints
 models/__pycache__/
@@ -17,3 +19,5 @@ models/BERT/__pycache__/
 /weights
 /cercop
 __pycache__/
+__pycache__*
+.py[cod]

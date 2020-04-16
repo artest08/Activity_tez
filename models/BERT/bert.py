@@ -346,7 +346,9 @@ class BERT7(nn.Module):
         for transformer in self.transformer_blocks:
             x = transformer.forward(x, mask)
         
-        return x, sample    
+        return x, sample  
+    
+
 
     
 

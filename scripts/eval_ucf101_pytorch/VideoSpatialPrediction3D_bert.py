@@ -51,21 +51,7 @@ def VideoSpatialPrediction3D_bert(
         duration = num_frames
     
     if 'I3D' in architecture_name:
-        scale = 1
-    else:
-        scale = 0.5
         
-    if scale == 0.5:
-        clip_mean = [114.7748, 107.7354, 99.4750]
-        clip_std = [1, 1, 1]
-        normalize = video_transforms.Normalize(mean=clip_mean,
-                                 std=clip_std)
-        val_transform = video_transforms.Compose([
-                video_transforms.ToTensor2(),
-                normalize,
-            ])
-
-    elif scale == 1:
         if not 'resnet' in architecture_name:
             clip_mean = [0.5, 0.5, 0.5] 
             clip_std = [0.5, 0.5, 0.5]
@@ -76,6 +62,32 @@ def VideoSpatialPrediction3D_bert(
                                  std=clip_std)
         val_transform = video_transforms.Compose([
                 video_transforms.ToTensor(),
+                normalize,
+            ])
+        if '112' in architecture_name:
+            scale = 0.5
+        else:
+            scale = 1
+    elif 'MFNET3D' in architecture_name:
+        clip_mean = [0.48627451, 0.45882353, 0.40784314]
+        clip_std = [0.234, 0.234, 0.234] 
+        normalize = video_transforms.Normalize(mean=clip_mean,
+                                 std=clip_std)
+        val_transform = video_transforms.Compose([
+                video_transforms.ToTensor(),
+                normalize])
+        if '112' in architecture_name:
+            scale = 0.5
+        else:
+            scale = 1
+    else:
+        scale = 0.5
+        clip_mean = [114.7748, 107.7354, 99.4750]
+        clip_std = [1, 1, 1]
+        normalize = video_transforms.Normalize(mean=clip_mean,
+                                 std=clip_std)
+        val_transform = video_transforms.Compose([
+                video_transforms.ToTensor2(),
                 normalize,
             ])
 
@@ -143,9 +155,9 @@ def VideoSpatialPrediction3D_bert(
 #        imageList12.append(img_flip2)
 
 
-    imageList=imageList1+imageList2+imageList3+imageList4+imageList5+imageList6+imageList7+imageList8+imageList9+imageList10
+    #imageList=imageList1+imageList2+imageList3+imageList4+imageList5+imageList6+imageList7+imageList8+imageList9+imageList10
     
-    #imageList=imageList1
+    imageList=imageList1
     
     #imageList=imageList11+imageList12
     
@@ -161,10 +173,14 @@ def VideoSpatialPrediction3D_bert(
     with torch.no_grad():
         imgDataTensor = torch.from_numpy(input_data).type(torch.FloatTensor).cuda()
         imgDataTensor = imgDataTensor.view(-1,length,3,imageSize,imageSize).transpose(1,2)
-        output, input_vectors, sequenceOut, maskSample = net(imgDataTensor)
+        if 'bert' in architecture_name:
+            output, input_vectors, sequenceOut, maskSample = net(imgDataTensor)
+        else:
+            output = net(imgDataTensor)
 #        outputSoftmax=soft(output)
         result = output.data.cpu().numpy()
         mean_result=np.mean(result,0)
         prediction=np.argmax(mean_result)
+        top3 = mean_result.argsort()[::-1][:3]
         
-    return prediction, mean_result
+    return prediction, mean_result, top3

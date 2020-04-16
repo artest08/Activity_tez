@@ -49,21 +49,7 @@ def VideoSpatialPrediction3D(
         duration = num_frames
     
     if 'I3D' in architecture_name:
-        scale = 1
-    else:
-        scale = 0.5
         
-    if scale == 0.5:
-        clip_mean = [114.7748, 107.7354, 99.4750]
-        clip_std = [1, 1, 1]
-        normalize = video_transforms.Normalize(mean=clip_mean,
-                                 std=clip_std)
-        val_transform = video_transforms.Compose([
-                video_transforms.ToTensor2(),
-                normalize,
-            ])
-
-    elif scale == 1:
         if not 'resnet' in architecture_name:
             clip_mean = [0.5, 0.5, 0.5] 
             clip_std = [0.5, 0.5, 0.5]
@@ -76,8 +62,33 @@ def VideoSpatialPrediction3D(
                 video_transforms.ToTensor(),
                 normalize,
             ])
+        if '112' in architecture_name:
+            scale = 0.5
+        else:
+            scale = 1
+    elif 'MFNET3D' in architecture_name:
+        clip_mean = [0.48627451, 0.45882353, 0.40784314]
+        clip_std = [0.234, 0.234, 0.234] 
+        normalize = video_transforms.Normalize(mean=clip_mean,
+                                 std=clip_std)
+        val_transform = video_transforms.Compose([
+                video_transforms.ToTensor(),
+                normalize])
+        if '112' in architecture_name:
+            scale = 0.5
+        else:
+            scale = 1
+    else:
+        scale = 0.5
+        clip_mean = [114.7748, 107.7354, 99.4750]
+        clip_std = [1, 1, 1]
+        normalize = video_transforms.Normalize(mean=clip_mean,
+                                 std=clip_std)
+        val_transform = video_transforms.Compose([
+                video_transforms.ToTensor2(),
+                normalize,
+            ])
     
-
 
     # selection
     #step = int(math.floor((duration-1)/(num_samples-1)))
@@ -85,6 +96,7 @@ def VideoSpatialPrediction3D(
     
     imageSize=int(224 * scale)
     dims = (int(256 * scale),int(340 * scale),3,duration)
+    #dims = (int(256 * scale),int(256 * scale),3,duration)
     duration = duration - 1
     
     offsets = []
@@ -93,9 +105,10 @@ def VideoSpatialPrediction3D(
     if len(offsetMainIndexes) == 0:
         offsets = list(range(1,duration+2))*int(np.floor(length/(duration+1))) + list(range(1,length%(duration+1)+1))
     else:
+        shift = int((duration - (offsetMainIndexes[-1] + length))/2)
         for mainOffsetValue in offsetMainIndexes:
             for lengthID in range(1, length+1):
-                 offsets.append(lengthID + mainOffsetValue)
+                 offsets.append(lengthID + mainOffsetValue + shift)
                  
 #    offsetMainIndexes = list(range(0,duration,length))
 #    for mainOffsetValue in offsetMainIndexes:
@@ -131,6 +144,7 @@ def VideoSpatialPrediction3D(
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         img_flip = img[:,::-1,:].copy()
         #img_flip2 = img2[:,::-1,:].copy()
+        #imageList1.append(img[int(16 * scale):int(16 * scale + imageSize), int(16 * scale) : int(16 * scale + imageSize), :])
         imageList1.append(img[int(16 * scale):int(16 * scale + imageSize), int(58 * scale) : int(58 * scale + imageSize), :])
         imageList2.append(img[:imageSize, :imageSize, :])
         imageList3.append(img[:imageSize, -imageSize:, :])
@@ -145,9 +159,9 @@ def VideoSpatialPrediction3D(
 #        imageList12.append(img_flip2)
 
 
-    imageList=imageList1+imageList2+imageList3+imageList4+imageList5+imageList6+imageList7+imageList8+imageList9+imageList10
+    #imageList=imageList1+imageList2+imageList3+imageList4+imageList5+imageList6+imageList7+imageList8+imageList9+imageList10
     
-    #imageList=imageList1
+    imageList=imageList1
     
     #imageList=imageList11+imageList12
     
@@ -159,23 +173,24 @@ def VideoSpatialPrediction3D(
         rgb_list.append(np.expand_dims(cur_img_tensor.numpy(), 0))
          
     input_data=np.concatenate(rgb_list,axis=0)   
+    input_data = input_data.reshape(-1,length,3,imageSize,imageSize)
 
-    batch_size = length
-    sample_size = int(batch_size/length)
-    result = np.zeros((int(input_data.shape[0]/length),num_categories))
+    batch_size = 10
+    result = np.zeros([input_data.shape[0],num_categories])
     num_batches = int(math.ceil(float(input_data.shape[0])/batch_size))
 
     with torch.no_grad():
         for bb in range(num_batches):
             span = range(batch_size*bb, min(input_data.shape[0],batch_size*(bb+1)))
-            input_data_batched = input_data[span,:,:,:]
+            input_data_batched = input_data[span,:,:,:,:]
             imgDataTensor = torch.from_numpy(input_data_batched).type(torch.FloatTensor).cuda()
             imgDataTensor = imgDataTensor.view(-1,length,3,imageSize,imageSize).transpose(1,2)
-            output = net(imgDataTensor)
-            #output,_,_,_ = net(imgDataTensor)
-            span = range(sample_size*bb, min(int(input_data.shape[0]/64),sample_size*(bb+1)))
+            #output = net(imgDataTensor)
+            output,_,_,_ = net(imgDataTensor)
+            #span = range(sample_size*bb, min(int(input_data.shape[0]/length),sample_size*(bb+1)))
             result[span,:] = output.data.cpu().numpy()
         mean_result=np.mean(result,0)
         prediction=np.argmax(mean_result)
+        top3 = mean_result.argsort()[::-1][:3]
         
-    return prediction, mean_result
+    return prediction, mean_result, top3

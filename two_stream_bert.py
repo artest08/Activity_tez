@@ -46,10 +46,10 @@ parser.add_argument('--settings', metavar='DIR', default='./datasets/settings',
 #parser.add_argument('--modality', '-m', metavar='MODALITY', default='rgb',
 #                    choices=["rgb", "flow"],
 #                    help='modality: rgb | flow')
-parser.add_argument('--dataset', '-d', default='smtV2',
+parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51", "smtV2", "window"],
                     help='dataset: ucf101 | hmdb51')
-parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resnet152_bert10',
+parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_tsm_resnet50',
                     choices=model_names,
                     help='model architecture: ' +
                         ' | '.join(model_names) +
@@ -58,13 +58,13 @@ parser.add_argument('-s', '--split', default=1, type=int, metavar='S',
                     help='which split of data to work on (default: 1)')
 parser.add_argument('-j', '--workers', default=2, type=int, metavar='N',
                     help='number of data loading workers (default: 4)')
-parser.add_argument('--epochs', default=100, type=int, metavar='N',
+parser.add_argument('--epochs', default=300, type=int, metavar='N',
                     help='number of total epochs to run')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
                     help='manual epoch number (useful on restarts)')
-parser.add_argument('-b', '--batch-size', default=4, type=int,
+parser.add_argument('-b', '--batch-size', default=2, type=int,
                     metavar='N', help='mini-batch size (default: 50)')
-parser.add_argument('--iter-size', default=8, type=int,
+parser.add_argument('--iter-size', default=32, type=int,
                     metavar='I', help='iter size as in Caffe to reduce memory usage (default: 5)')
 parser.add_argument('--new_width', default=340, type=int,
                     metavar='N', help='resize width (default: 340)')
@@ -78,11 +78,11 @@ parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
                     help='momentum')
 parser.add_argument('--weight-decay', '--wd', default=1e-3, type=float,
                     metavar='W', help='weight decay (default: 5e-4)')
-parser.add_argument('--print-freq', default=1, type=int,
+parser.add_argument('--print-freq', default=64, type=int,
                     metavar='N', help='print frequency (default: 50)')
 parser.add_argument('--save-freq', default=1, type=int,
                     metavar='N', help='save frequency (default: 25)')
-parser.add_argument('--num-seg', default=16, type=int,
+parser.add_argument('--num-seg', default=8, type=int,
                     metavar='N', help='Number of segments for temporal LSTM (default: 16)')
 #parser.add_argument('--resume', default='./dene4', type=str, metavar='PATH',
 #                    help='path to latest checkpoint (default: none)')
@@ -219,6 +219,9 @@ def main():
     modality=args.arch.split('_')[0]
     if "3D" in args.arch:
         length=16
+    if "tsm" in args.arch:
+        length=64
+        args.num_seg = 1
     else:
         length=1
     # Data transforming
@@ -391,6 +394,8 @@ def build_model():
                 model_path='./weights/resnet-101-kinetics.pth'
             elif '18' in args.arch:
                 model_path='./weights/resnet-18-kinetics.pth'
+        if "tsm" in args.arch:
+            model_path='./weights/TSM_kinetics_RGB_resnet50_shift8_blockres_avg_segment8_e100_dense.pth'
         #model_path = os.path.join(modelLocation,'model_best.pth.tar') 
     elif modality == "pose":
         model_path=''

@@ -3,9 +3,10 @@ import math
 import torch.utils.model_zoo as model_zoo
 import sys
 from time import time
-from models.poseNet import openPoseL2Part
-from models.convGRU import ConvGRU
+from .poseNet.poseNet import openPoseL2Part
+from .convGRU.convGRU import ConvGRU
 from .BERT.bert import BERT3, BERT4, BERT5, BERT6, BERT7
+from .TSM.temporal_shift import make_temporal_shift
 from .NLB.NLBlockND import NLBlockND
 from .BERT.embedding import BERTEmbedding
 import torch
@@ -28,7 +29,7 @@ __all__ = ['ResNet', 'rgb_resnet18', 'rgb_resnet34', 'rgb_resnet50', 'rgb_resnet
            'rgb_resnet18_bert17','rgb_resnet18_bert10Y',
            'rgb_resnet34_bert10','rgb_resnet50_bert10X','rgb_resnet152_bert10X','rgb_resnet152_bert10XX',
            'rgb_resnet18_NLB10','rgb_resnet18_RankingBert10','rgb_resnet18_RankingBert8','rgb_resnet18_RankingBert8Seg3'
-           ,'rgb_resnet18_unpre_bert10']
+           ,'rgb_resnet18_unpre_bert10', 'rgb_resnet152_bert10_light','rgb_tsm_resnet50']
 
 
 model_urls = {
@@ -1327,6 +1328,52 @@ class rgb_resnet152_bert10(nn.Module):
         x = self.fc_action(output)
         return x, input_vectors, sequenceOut, maskSample
     
+class rgb_resnet152_bert10_light(nn.Module):
+    def __init__(self, num_classes , length, modelPath=''):
+        super(rgb_resnet152_bert10_light, self).__init__()
+        self.hidden_size=512
+        self.n_layers=1
+        self.attn_heads=8
+        self.num_classes=num_classes
+        self.length=length
+        self.dp = nn.Dropout(p=0.8)
+        
+        if modelPath=='':
+            self.features1=nn.Sequential(*list(rgb_resnet152(pretrained=True).children())[:-5])
+            self.features2=nn.Sequential(*list(rgb_resnet152(pretrained=True).children())[-5:-3])
+        else:
+            self.features1=nn.Sequential(*list(_trained_rgb_resnet152(modelPath,num_classes=num_classes).children())[:-5])
+            self.features2=nn.Sequential(*list(_trained_rgb_resnet152(modelPath,num_classes=num_classes).children())[-5:-3])
+        
+        self.avgpool = nn.AvgPool2d(7)
+        self.bert = BERT5(self.hidden_size,length, hidden=self.hidden_size, n_layers=self.n_layers, attn_heads=self.attn_heads)
+        print(sum(p.numel() for p in self.bert.parameters() if p.requires_grad))
+        self.fc_action = nn.Linear(self.hidden_size, num_classes)
+        self.reduction = nn.Linear(self.hidden_size * 4, self.hidden_size)
+            
+        for param in self.features1.parameters():
+            param.requires_grad = False
+        for param in self.features2.parameters():
+            param.requires_grad = True
+                
+        torch.nn.init.xavier_uniform_(self.fc_action.weight)
+        self.fc_action.bias.data.zero_()
+        
+    def forward(self, x):
+        x = self.features1(x)
+        x = self.features2(x)
+        x = self.avgpool(x)
+        x = x.view(x.size(0), -1)
+        x = self.reduction(x)
+        x = x.view(-1,self.length,self.hidden_size)
+        input_vectors=x
+        output , maskSample = self.bert(x)
+        classificationOut = output[:,0,:]
+        sequenceOut=output[:,1:,:]
+        output=self.dp(classificationOut)
+        x = self.fc_action(output)
+        return x, input_vectors, sequenceOut, maskSample
+    
     
 class rgb_resnet152_bert10X(nn.Module):
     def __init__(self, num_classes , length, modelPath=''):
@@ -2398,5 +2445,37 @@ def _trained_rgb_resnet18(model_path, **kwargs):
     pretrained_dict=params['state_dict']
     model.load_state_dict(pretrained_dict)
     return model
+
+def rgb_tsm_resnet50(num_classes , length, modelPath=''):
+    num_segments = 8
+    shift_div = 8
+    shift_place = 'blockres'
+    temporal_pool = False
+    model = ResNet(Bottleneck, [3, 4, 6, 3], num_classes=400)    
+    make_temporal_shift(model, num_segments,
+        n_div=shift_div, place=shift_place, temporal_pool=temporal_pool)
+    
+    if modelPath != '':
+        params = torch.load(modelPath)
+        kinetics_dict = params['state_dict']
+        
+        model_dict = model.state_dict()
+        kinetics_dict_new = {}
+    
+        # 1. filter out unnecessary keys
+        for k, v in kinetics_dict.items():
+            if 'module.base_model.' in k:
+                kinetics_dict_new.update({k[18:]:v})
+    
+        # 2. overwrite entries in the existing state dict
+        model_dict.update(kinetics_dict_new) 
+        # 3. load the new state dict
+        model.load_state_dict(model_dict)
+    model.fc_action = nn.Linear(2048, num_classes)
+    
+    torch.nn.init.xavier_uniform_(model.fc_action.weight)
+    model.fc_action.bias.data.zero_()
+    return model
+
 
 
