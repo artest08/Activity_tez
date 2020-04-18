@@ -21,7 +21,7 @@ from .BERT.bert import BERT, BERT2, BERT3, BERT4, BERT5, BERT6
 
 __all__ = ['rgb_I3D64f_bert10','flow_I3D64f_bert10','rgb_I3D64f', 'flow_I3D64f', 'rgb_I3D64f_bert10X','pose_I3D64f_bert10'
            ,'rgb_resnet50I3D32fNL', 'rgb_resnet50I3D32fNL_bert10', 'rgb_resnet50I3D32f', 'rgb_resnet50I3D32f_bert10'
-           ,'rgb_resnet50I3D32f_112','rgb_resnet50I3D64f']
+           ,'rgb_resnet50I3D32f_112','rgb_resnet50I3D64f','rgb_resnet50I3D64fNL']
 
 
 class rgb_I3D64f(nn.Module):
@@ -154,6 +154,31 @@ class rgb_resnet50I3D32f_112(nn.Module):
 class rgb_resnet50I3D32fNL(nn.Module):
     def __init__(self, num_classes , length, modelPath=''):
         super(rgb_resnet50I3D32fNL, self).__init__()
+        self.num_classes=num_classes
+        self.dp = nn.Dropout(p=0.8)
+        #self.avgpool = nn.AvgPool3d((8, 7, 7), stride=1)
+        self.avgpool = nn.AdaptiveAvgPool3d(output_size=(1, 1, 1))
+
+        self.features=nn.Sequential(*list(_resnet50NL(model_path=modelPath).children())[:-3])
+        
+        self.fc_action = nn.Linear(2048, num_classes)
+        for param in self.features.parameters():
+            param.requires_grad = True
+                
+        torch.nn.init.xavier_uniform_(self.fc_action.weight)
+        self.fc_action.bias.data.zero_()
+        
+    def forward(self, x):
+        x = self.features(x)
+        x = self.avgpool(x)
+        x = x.view(x.size(0), -1)
+        x = self.dp(x)
+        x = self.fc_action(x)
+        return x
+    
+class rgb_resnet50I3D64fNL(nn.Module):
+    def __init__(self, num_classes , length, modelPath=''):
+        super(rgb_resnet50I3D64fNL, self).__init__()
         self.num_classes=num_classes
         self.dp = nn.Dropout(p=0.8)
         #self.avgpool = nn.AvgPool3d((8, 7, 7), stride=1)

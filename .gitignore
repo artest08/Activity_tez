@@ -1,3 +1,9 @@
+*.py[cod]
+
+# C extensions
+*.so
+*.pyc
+
 /checkpoint
 /datasets/settings
 /datasets/hmdb51_frames
@@ -20,4 +26,5 @@ models/BERT/__pycache__/
 /cercop
 __pycache__/
 __pycache__*
-.py[cod]
+
+

@@ -13,8 +13,8 @@ import shutil
 import numpy as np
 
 
-os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]="0"
+# os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
+# os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 import torch
 import torch.nn as nn
@@ -62,9 +62,9 @@ parser.add_argument('-j', '--workers', default=1, type=int, metavar='N',
                     help='number of data loading workers (default: 4)')
 parser.add_argument('--epochs', default=150, type=int, metavar='N',
                     help='number of total epochs to run')
-parser.add_argument('-b', '--batch-size', default=8, type=int,
+parser.add_argument('-b', '--batch-size', default=16, type=int,
                     metavar='N', help='mini-batch size (default: 50)')
-parser.add_argument('--iter-size', default=16, type=int,
+parser.add_argument('--iter-size', default=8, type=int,
                     metavar='I', help='iter size as in Caffe to reduce memory usage (default: 5)')
 parser.add_argument('--lr', '--learning-rate', default=1e-4, type=float,
                     metavar='LR', help='initial learning rate')
@@ -460,7 +460,7 @@ def build_model_continue():
     best_prec = params['best_prec1']
     return model, startEpoch, optimizer, best_prec
 
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+#device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
 def train(train_loader, model, criterion, criterion2, optimizer, epoch,modality):
@@ -494,10 +494,10 @@ def train(train_loader, model, criterion, criterion2, optimizer, epoch,modality)
             inputs=inputs.view(-1,5*length,input_size,input_size)
             
         if HALF:
-            inputs = inputs.to(device).half()
+            inputs = inputs.cuda().half()
         else:
-            inputs = inputs.to(device)
-        targets = targets.to(device)
+            inputs = inputs.cuda()
+        targets = targets.cuda()
         output, input_vectors, sequenceOut, maskSample = model(inputs)
         
 #        maskSample=maskSample.cuda()
@@ -571,10 +571,10 @@ def validate(val_loader, model, criterion,criterion2,modality):
                 inputs=inputs.view(-1,5*length,input_size,input_size)
                 
             if HALF:
-                inputs = inputs.to(device).half()
+                inputs = inputs.cuda().half()
             else:
-                inputs = inputs.to(device)
-            targets = targets.to(device)
+                inputs = inputs.cuda()
+            targets = targets.cuda()
     
             # compute output
             output, input_vectors, sequenceOut, _ = model(inputs)

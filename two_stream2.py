@@ -15,7 +15,7 @@ import numpy as np
 
 
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]="1"
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 import torch
 import torch.nn as nn
@@ -52,7 +52,7 @@ parser.add_argument('--settings', metavar='DIR', default='./datasets/settings',
 parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51", "smtV2"],
                     help='dataset: ucf101 | hmdb51')
-parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resnet50I3D64f',
+parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resnet50I3D64fNL',
                     choices=model_names,
                     help='model architecture: ' +
                         ' | '.join(model_names) +
@@ -450,8 +450,6 @@ def build_model_validate():
     model = model.cuda()
     return model
 
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
 
 def train(train_loader, model, criterion, optimizer, epoch,modality):
     batch_time = AverageMeter()
@@ -490,10 +488,10 @@ def train(train_loader, model, criterion, optimizer, epoch,modality):
             inputs=inputs.view(-1,5*length,input_size,input_size)
             
         if HALF:
-            inputs = inputs.to(device).half()
+            inputs = inputs.cuda().half()
         else:
-            inputs = inputs.to(device)
-        targets = targets.to(device)
+            inputs = inputs.cuda()
+        targets = targets.cuda()
         
         output = model(inputs)
         if "tsm" in args.arch:
@@ -587,10 +585,10 @@ def validate(val_loader, model, criterion,modality):
                 inputs=inputs.view(-1,5*length,input_size,input_size)
                 
             if HALF:
-                inputs = inputs.to(device).half()
+                inputs = inputs.cuda().half()
             else:
-                inputs = inputs.to(device)
-            targets = targets.to(device)
+                inputs = inputs.cuda()
+            targets = targets.cuda()
     
             # compute output
             output= model(inputs)
