@@ -49,12 +49,13 @@ class BERT3(nn.Module):
         clsToken.require_grad = True
         self.clsToken= nn.Parameter(clsToken)
         torch.nn.init.normal_(clsToken,std=0.02)
+        
 
         # paper noted they used 4*hidden_size for ff_network_hidden_size
-        self.feed_forward_hidden = hidden * 4
+        self.feed_forward_hidden = hidden 
 
         # embedding for BERT, sum of positional, segment, token embeddings
-        self.embedding = BERTEmbedding(input_dim=input_dim, max_len=max_len+1)
+        self.embedding = BERTEmbedding2(input_dim=input_dim, max_len=max_len+1)
 
         # multi-layers transformer blocks, deep network
         self.transformer_blocks = nn.ModuleList(
@@ -77,13 +78,13 @@ class BERT3(nn.Module):
 
         # embedding the indexed sequence to sequence of vectors
         x = torch.cat((self.clsToken.repeat(batch_size,1,1),input_vectors),1)
+        x = self.embedding(x)
         
         # running over multiple transformer blocks
         for transformer in self.transformer_blocks:
             x = transformer.forward(x, mask)
         
-        return x, sample    
-    
+        return x, sample  
 
 class BERT4(nn.Module):
     """
@@ -175,8 +176,8 @@ class BERT5(nn.Module):
         
         clsToken = torch.zeros(1,1,self.input_dim).float().cuda()
         clsToken.require_grad = True
-        torch.nn.init.normal_(clsToken,std=0.02)
         self.clsToken= nn.Parameter(clsToken)
+        torch.nn.init.normal_(clsToken,std=0.02)
         
 
         # paper noted they used 4*hidden_size for ff_network_hidden_size

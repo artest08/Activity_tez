@@ -33,7 +33,7 @@ import models
 from VideoSpatialPrediction3D import VideoSpatialPrediction3D
 
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   
-os.environ["CUDA_VISIBLE_DEVICES"]="0"
+os.environ["CUDA_VISIBLE_DEVICES"]="1"
 
 model_names = sorted(name for name in models.__dict__
     if name.islower() and not name.startswith("__")
@@ -46,7 +46,7 @@ parser = argparse.ArgumentParser(description='PyTorch Two-Stream Action Recognit
 parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51"],
                     help='dataset: ucf101 | hmdb51')
-parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_I3D64f_bert10',
+parser.add_argument('--arch', '-a', metavar='ARCH', default='flow_resneXt3D64f101_bert10XY',
                     choices=model_names)
 
 parser.add_argument('-s', '--split', default=1, type=int, metavar='S',
@@ -54,8 +54,13 @@ parser.add_argument('-s', '--split', default=1, type=int, metavar='S',
 parser.add_argument('-t', '--tsn', dest='tsn', action='store_true',
                     help='TSN Mode')
 
+parser.add_argument('-v', '--val', dest='window_val', action='store_true',
+                    help='Window Validation Selection')
+
+
 multiGPUTest = False
-multiGPUTrain=False
+multiGPUTrain = False
+ten_crop_enabled = False
 num_seg=16
 num_seg_3D=1
 
@@ -109,14 +114,25 @@ def main():
         length=64
     elif '32f' in args.arch:
         length=32
+    elif '8f' in args.arch:
+        length=8
     else:
         length=16
 
-    val_fileName = "val_rgb_split%d.txt" %(args.split)
     if 'rgb' in args.arch:
         extension = 'img_{0:05d}.jpg'
+        if args.window_val:
+            val_fileName = "window%d.txt" %(args.window)
+        else:
+            val_fileName = "val_rgb_split%d.txt" %(args.split)
     elif 'pose' in args.arch:
         extension = 'pose1_{0:05d}.jpg'
+    elif 'flow' in args.arch:
+        val_fileName = "val_flow_split%d.txt" %(args.split)
+        if 'ucf101' in args.dataset or 'window' in args.dataset:
+            extension = 'flow_{0}_{1:05d}.jpg'
+        elif 'hmdb51' in args.dataset:
+            extension = 'flow_{0}_{1:05d}'
 
     val_file=os.path.join(datasetFolder,'settings',args.dataset,val_fileName)
     
@@ -161,7 +177,8 @@ def main():
             start_frame,
             duration,
             length = length, 
-            extension = extension)
+            extension = extension,
+            ten_crop = ten_crop_enabled)
             
         
         end = time.time()
@@ -191,6 +208,10 @@ def main():
     print(modelLocation)
     print("Mean Estimated Time %0.4f" % (np.mean(timeList)))  
     print('multiple clips')
+    if ten_crop_enabled:
+        print('10 crops')
+    else:
+        print('single crop')
     
     resultDict={'y_true':y_true,'y_pred':y_pred}
     

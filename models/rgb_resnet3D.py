@@ -13,7 +13,8 @@ from torch.autograd import Variable
 import math
 from functools import partial
 from .BERT.bert import BERT, BERT2, BERT3, BERT4, BERT5, BERT6
-from .BERT.embedding import BERTEmbedding
+
+
 
 __all__ = ['rgb_resnet3D101_bert10','rgb_resnet3D18_bert10','rgb_resnet3D18_bert10X','rgb_resnet3D101_bert10X', 'rgb_resnet3D18' ,
            'pose_resnet3D18_bert10XX','rgb_resnet3D101','resnet3D101','rgb_resnet3D18_bert10XX','rgb_resnet3D101_bert10XX','rgb_resnet3D101_bert10XXX'

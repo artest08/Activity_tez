@@ -14,7 +14,7 @@ import torch.nn as nn
 import torch
 
 
-__all__ = ['rgb_MFNET3D16f','rgb_MFNET3D_HMDB51']
+__all__ = ['rgb_MFNET3D16f','rgb_MFNET3D_HMDB51', 'rgb_MFNET3D64f_16x4_ensemble_112', 'rgb_MFNET3D64f_16x4_ensemble2_112']
 
 class rgb_MFNET3D16f(nn.Module):
     def __init__(self, num_classes , length, modelPath=''):
@@ -40,6 +40,179 @@ class rgb_MFNET3D16f(nn.Module):
         x = self.dp(x)
         x = self.fc_action(x)
         return x
+    
+class rgb_MFNET3D64f_16x4_ensemble_112(nn.Module):
+    def __init__(self, num_classes , length, modelPath=''):
+        super(rgb_MFNET3D64f_16x4_ensemble_112, self).__init__()
+        self.num_classes=num_classes
+        self.dp = nn.Dropout(p=0.8)
+        self.avgpool = nn.AdaptiveAvgPool3d(output_size=(1, 1, 1))
+
+        self.model = _trained_rgb_MFNET3D(model_path=modelPath)
+
+        self.feature_projection1 = nn.Sequential(OrderedDict([
+            ('linear', nn.Linear(768, 512)),
+            ('bn', nn.BatchNorm1d(512)),
+            ('relu', nn.ReLU(inplace=True))
+            ]))
+        self.feature_projection2 = nn.Sequential(OrderedDict([
+            ('linear', nn.Linear(768, 2304)),
+            ('bn', nn.BatchNorm1d(2304)),
+            ('relu', nn.ReLU(inplace=True))
+            ]))
+        self.feature_projection3 = nn.Sequential(OrderedDict([
+            ('linear', nn.Linear(768, 2048)),
+            ('bn', nn.BatchNorm1d(2048)),
+            ('relu', nn.ReLU(inplace=True))
+            ]))
+        
+        self.fc_action = nn.Linear(768, num_classes)
+        for param in self.model.parameters():
+            param.requires_grad = True
+                
+        torch.nn.init.xavier_uniform_(self.fc_action.weight)
+        self.fc_action.bias.data.zero_()
+ 
+   
+    def forward(self, x):
+        x = x[:, :, ::4, :, :]
+        x = self.model.forward_feature(x)
+        x = self.avgpool(x)
+        x = x.view(x.size(0), -1)
+        x = self.dp(x)
+        x = self.fc_action(x)
+        return x
+    
+    def ensemble_forward(self, x):
+        x = x[:, :, ::4, :, :]
+        x = self.model.forward_feature(x)
+        x = self.avgpool(x)
+        x = x.view(x.size(0), -1)
+        feature1 = self.feature_projection1(x)
+        feature2 = self.feature_projection2(x)
+        feature3 = self.feature_projection3(x)
+        x = self.dp(x)
+        x = self.fc_action(x)
+        return x, feature1, feature2, feature3
+    
+class feature_projection_tail(nn.Module):
+
+    def __init__(self, number_in_channels, number_out_channels):
+        super(feature_projection_tail, self).__init__()
+        
+        self.B = MF_UNIT(num_in = number_in_channels,
+                num_mid = number_out_channels,
+                num_out = number_out_channels,
+                stride = (1,1,1),
+                g = 16,
+                first_block = True)
+        
+        self.bn = nn.BatchNorm3d(number_out_channels)
+        self.relu = nn.ReLU(inplace=True)
+        
+        for m in self.modules():
+            if isinstance(m, nn.Conv3d):
+                nn.init.kaiming_normal_(m.weight)
+                #m.weight = nn.init.kaiming_normal(m.weight, mode='fan_out')
+            elif isinstance(m, nn.BatchNorm3d):
+                m.weight.data.fill_(1)
+                m.bias.data.zero_()
+
+    def forward(self, x):
+        x = self.B(x)
+        x = self.bn(x)
+        x = self.relu(x)
+        return x
+    
+class rgb_MFNET3D64f_16x4_ensemble2_112(nn.Module):
+    def __init__(self, num_classes , length, modelPath=''):
+        super(rgb_MFNET3D64f_16x4_ensemble2_112, self).__init__()
+        self.num_classes=num_classes
+        self.dp = nn.Dropout(p=0.8)
+        self.avgpool = nn.AdaptiveAvgPool3d(output_size=(1, 1, 1))
+        self.feature1_dim = 512
+        self.feature2_dim = 2304
+        self.feature2_dim = 2048
+        self.model = _trained_rgb_MFNET3D(model_path=modelPath)
+        
+        
+        self.feature_projection1 = feature_projection_tail(768, 512)
+        self.feature_projection2 = feature_projection_tail(768, 2304)
+        self.feature_projection3 = feature_projection_tail(768, 2048)
+    
+        
+        self.fc_action1 = nn.Linear(512, num_classes)
+        self.fc_action2 = nn.Linear(2304, num_classes)
+        self.fc_action3 = nn.Linear(2048, num_classes)
+        for param in self.model.parameters():
+            param.requires_grad = True
+                
+        torch.nn.init.xavier_uniform_(self.fc_action1.weight)
+        self.fc_action1.bias.data.zero_()
+        
+        torch.nn.init.xavier_uniform_(self.fc_action2.weight)
+        self.fc_action2.bias.data.zero_()
+        
+        torch.nn.init.xavier_uniform_(self.fc_action3.weight)
+        self.fc_action3.bias.data.zero_()
+ 
+   
+    def forward(self, x):
+        x = x[:, :, ::4, :, :]
+        x = self.model.forward_feature2(x)
+
+        feature1 = self.feature_projection1(x)
+        feature2 = self.feature_projection2(x)
+        feature3 = self.feature_projection3(x)
+
+        feature1 = self.avgpool(feature1)
+        feature1 = feature1.view(feature1.size(0), -1)   
+        
+        feature2 = self.avgpool(feature2)
+        feature2 = feature2.view(feature2.size(0), -1)  
+        
+        feature3 = self.avgpool(feature3)
+        feature3 = feature3.view(feature3.size(0), -1)  
+        
+        feature1 = self.dp(feature1)
+        feature2 = self.dp(feature2)
+        feature3 = self.dp(feature3)
+        
+        x1 = self.fc_action1(feature1)
+        x2 = self.fc_action2(feature2)
+        x3 = self.fc_action3(feature3)
+        
+        x = x1 + x2 + x3
+        
+        return x
+    
+    def ensemble_forward(self, x):
+        x = x[:, :, ::4, :, :]
+        x = self.model.forward_feature2(x)
+
+        feature1 = self.feature_projection1(x)
+        feature2 = self.feature_projection2(x)
+        feature3 = self.feature_projection3(x)
+        
+        feature1 = self.avgpool(feature1)
+        feature1 = feature1.view(feature1.size(0), -1)   
+        
+        feature2 = self.avgpool(feature2)
+        feature2 = feature2.view(feature2.size(0), -1)  
+        
+        feature3 = self.avgpool(feature3)
+        feature3 = feature3.view(feature3.size(0), -1)  
+        
+        feature1_dropped = self.dp(feature1)
+        feature2_dropped = self.dp(feature2)
+        feature3_dropped = self.dp(feature3)
+        
+        x1 = self.fc_action1(feature1_dropped)
+        x2 = self.fc_action2(feature2_dropped)
+        x3 = self.fc_action3(feature3_dropped)
+        
+        x = x1 + x2 + x3
+        return x, feature1, feature2, feature3
 
 class BN_AC_CONV3D(nn.Module):
 
@@ -173,7 +346,7 @@ class MFNET_3D(nn.Module):
 
         #############
         # Initialization
-        #xavier(net=self)
+        xavier(net=self)
 
 
     def forward(self, x):
@@ -192,6 +365,33 @@ class MFNET_3D(nn.Module):
 
         h = h.view(h.shape[0], -1)
         h = self.classifier(h)
+
+        return h
+    
+    def forward_feature(self, x):
+        assert x.shape[2] == 16
+
+        h = self.conv1(x)   # x224 -> x112
+        h = self.maxpool(h) # x112 ->  x56
+
+        h = self.conv2(h)   #  x56 ->  x56
+        h = self.conv3(h)   #  x56 ->  x28
+        h = self.conv4(h)   #  x28 ->  x14
+        h = self.conv5(h)   #  x14 ->   x7
+
+        h = self.tail(h)
+        return h
+    
+    def forward_feature2(self, x):
+        assert x.shape[2] == 16
+
+        h = self.conv1(x)   # x224 -> x112
+        h = self.maxpool(h) # x112 ->  x56
+
+        h = self.conv2(h)   #  x56 ->  x56
+        h = self.conv3(h)   #  x56 ->  x28
+        h = self.conv4(h)   #  x28 ->  x14
+        h = self.conv5(h)   #  x14 ->   x7
 
         return h
     
@@ -229,7 +429,8 @@ def xavier(net):
     def weights_init(m):
         classname = m.__class__.__name__
         if classname.find('Conv') != -1 and hasattr(m, 'weight'):
-            torch.nn.init.xavier_uniform(m.weight.data, gain=1.)
+            #torch.nn.init.xavier_uniform(m.weight.data, gain=1.)
+            torch.nn.init.kaiming_normal_(m.weight.data)
             if m.bias is not None:
                 m.bias.data.zero_()
         elif classname.find('BatchNorm') != -1:
@@ -237,7 +438,7 @@ def xavier(net):
             if m.bias is not None:
                 m.bias.data.zero_()
         elif classname.find('Linear') != -1:
-            torch.nn.init.xavier_uniform(m.weight.data, gain=1.)
+            torch.nn.init.xavier_uniform_(m.weight.data, gain=1.)
             if m.bias is not None:
                 m.bias.data.zero_()
         elif classname in ['Sequential', 'AvgPool3d', 'MaxPool3d', \

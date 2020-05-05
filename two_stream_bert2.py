@@ -13,8 +13,8 @@ import shutil
 import numpy as np
 
 
-# os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-# os.environ["CUDA_VISIBLE_DEVICES"]="0"
+os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"]="1"
 
 import torch
 import torch.nn as nn
@@ -30,8 +30,9 @@ import models
 import datasets
 import swats
 from opt.AdamW import AdamW
+from weights.model_path import rgb_3d_model_path_selection
 
-
+#slowfast 7 flow_resnext 8 batch size
 model_names = sorted(name for name in models.__dict__
     if not name.startswith("__")
     and callable(models.__dict__[name]))
@@ -50,7 +51,7 @@ parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51", "smtV2", "window"],
                     help='dataset: ucf101 | hmdb51 | smtV2')
 
-parser.add_argument('--arch', '-a', default='rgb_resneXt3D64f101_bert10XY',
+parser.add_argument('--arch', '-a', default='rgb_resneXt3D64f101_bert10XY2',
                     choices=model_names,
                     help='model architecture: ' +
                         ' | '.join(model_names) +
@@ -58,15 +59,15 @@ parser.add_argument('--arch', '-a', default='rgb_resneXt3D64f101_bert10XY',
 
 parser.add_argument('-s', '--split', default=1, type=int, metavar='S',
                     help='which split of data to work on (default: 1)')
-parser.add_argument('-j', '--workers', default=1, type=int, metavar='N',
+parser.add_argument('-j', '--workers', default=2, type=int, metavar='N',
                     help='number of data loading workers (default: 4)')
-parser.add_argument('--epochs', default=150, type=int, metavar='N',
+parser.add_argument('--epochs', default=200, type=int, metavar='N',
                     help='number of total epochs to run')
-parser.add_argument('-b', '--batch-size', default=16, type=int,
+parser.add_argument('-b', '--batch-size', default=9, type=int,
                     metavar='N', help='mini-batch size (default: 50)')
-parser.add_argument('--iter-size', default=8, type=int,
+parser.add_argument('--iter-size', default=14, type=int,
                     metavar='I', help='iter size as in Caffe to reduce memory usage (default: 5)')
-parser.add_argument('--lr', '--learning-rate', default=1e-4, type=float,
+parser.add_argument('--lr', '--learning-rate', default=1e-6, type=float,
                     metavar='LR', help='initial learning rate')
 parser.add_argument('--lr_steps', default=[10], type=float, nargs="+",
                     metavar='LRSteps', help='epochs to decay learning rate by 10')
@@ -95,17 +96,25 @@ warmUpEpoch=5
 smt_pretrained = False
 
 HALF = False
-
+training_continue = True
 
 
 def main():
     global args, best_prec1,model,writer,best_loss, length, width, height, input_size
     args = parser.parse_args()
     
-    if 'I3D' in args.arch:
-        scale = 1
+    if '3D' in args.arch:
+        if 'I3D' in args.arch or 'MFNET3D' in args.arch:
+            if '112' in args.arch:
+                scale = 0.5
+            else:
+                scale = 1
+        else:
+            scale = 0.5
+    elif 'r2plus1d' in args.arch:
+        scale = 0.5
     else:
-        scale=0.5
+        scale = 1
         
     print('scale: %.1f' %(scale))
     
@@ -123,11 +132,13 @@ def main():
     if args.evaluate:
         print("Building validation model ... ")
         model = build_model_validate()
-    elif args.contine:
+    elif training_continue:
         model, startEpoch, optimizer, best_prec1 = build_model_continue()
-        lr = None
+        args.start_epoch = startEpoch
+        lr = args.lr
         for param_group in optimizer.param_groups:
-            lr = param_group['lr']
+            #lr = param_group['lr']
+            param_group['lr'] = lr
         print("Continuing with best precision: %.3f and start epoch %d and lr: %f" %(best_prec1,startEpoch,lr))
     else:
         print("Building model ... ")
@@ -167,6 +178,8 @@ def main():
     
     scheduler = lr_scheduler.ReduceLROnPlateau(
         optimizer, 'max', patience=6, verbose=True)
+    
+    #scheduler = lr_scheduler.CyclicLR(optimizer, base_lr = args.lr * 0.001, max_lr = args.lr)
     if args.contine:
         scheduler.step(best_prec1)
         print('scheduler step with best prec %f' %(best_prec1))
@@ -187,7 +200,7 @@ def main():
     
     cudnn.benchmark = True
     modality=args.arch.split('_')[0]
-    if "3D" in args.arch:
+    if "3D" in args.arch or 'tsm' in args.arch or 'slowfast' in args.arch or 'r2plus1d' in args.arch:
         if '64f' in args.arch:
             length=64
         elif '32f' in args.arch:
@@ -207,20 +220,39 @@ def main():
             else:
                 clip_mean = [0.5, 0.5, 0.5] * args.num_seg * length
                 clip_std = [0.5, 0.5, 0.5] * args.num_seg * length
+            #clip_std = [0.25, 0.25, 0.25] * args.num_seg * length
+        elif 'MFNET3D' in args.arch:
+            clip_mean = [0.48627451, 0.45882353, 0.40784314] * args.num_seg * length
+            clip_std = [0.234, 0.234, 0.234]  * args.num_seg * length
         elif "3D" in args.arch:
             clip_mean = [114.7748, 107.7354, 99.4750] * args.num_seg * length
             clip_std = [1, 1, 1] * args.num_seg * length
+        elif "r2plus1d" in args.arch:
+            clip_mean = [0.43216, 0.394666, 0.37645] * args.num_seg * length
+            clip_std = [0.22803, 0.22145, 0.216989] * args.num_seg * length
+        elif "rep_flow" in args.arch:
+            clip_mean = [0.5, 0.5, 0.5] * args.num_seg * length
+            clip_std = [0.5, 0.5, 0.5] * args.num_seg * length      
+        elif "slowfast" in args.arch:
+            clip_mean = [0.45, 0.45, 0.45] * args.num_seg * length
+            clip_std = [0.225, 0.225, 0.225] * args.num_seg * length
         else:
             clip_mean = [0.485, 0.456, 0.406] * args.num_seg * length
             clip_std = [0.229, 0.224, 0.225] * args.num_seg * length
+    elif modality == "pose":
+        is_color = True
+        scale_ratios = [1.0, 0.875, 0.75, 0.66]
+        clip_mean = [0.485, 0.456, 0.406] * args.num_seg
+        clip_std = [0.229, 0.224, 0.225] * args.num_seg
     elif modality == "flow":
-        #length=10
         is_color = False
         scale_ratios = [1.0, 0.875, 0.75, 0.66]
         if 'I3D' in args.arch:
             clip_mean = [0.5, 0.5] * args.num_seg * length
             clip_std = [0.5, 0.5] * args.num_seg * length
-        
+        elif "3D" in args.arch:
+            clip_mean = [127.5, 127.5] * args.num_seg * length
+            clip_std = [1, 1] * args.num_seg * length        
         else:
             clip_mean = [0.5, 0.5] * args.num_seg * length
             clip_std = [0.226, 0.226] * args.num_seg * length
@@ -363,43 +395,16 @@ def main():
 def build_model():
     modality=args.arch.split('_')[0]
     if modality == "rgb":
-        model_path=''
-        if 'I3D' in args.arch:
-            if 'resnet' in args.arch:
-                if '50' in args.arch:
-                    if '32f' in args.arch:
-                        if 'NL' in args.arch:
-                            model_path='./weights/i3d_r50_nl_kinetics.pth'
-                        else:
-                            model_path='./weights/i3d_r50_kinetics.pth'
-            else:
-                model_path='./weights/rgb_imagenet.pth' #model_path = os.path.join(modelLocation,'model_best.pth.tar') 
-        elif "3D" in args.arch:
-            if 'resnet' in args.arch:
-                if '101' in args.arch:
-                    if '64f' in args.arch and not '16fweight' in args.arch:
-                        model_path='./weights/resnet-101-64f-kinetics.pth'
-                    else:
-                        model_path='./weights/resnet-101-kinetics.pth'
-                elif '18' in args.arch:
-                    if '64f' in args.arch and not '16fweight' in args.arch:
-                        model_path='./weights/resnet-18-64f-kinetics.pth'
-                    else:
-                        model_path='./weights/resnet-18-kinetics.pth'
-                    
-            elif 'resneXt' in args.arch:
-                if '101' in args.arch:
-                    if '64f' in args.arch and not '16fweight' in args.arch:
-                        model_path='./weights/resnext-101-64f-kinetics.pth'
-                    else:
-                        model_path='./weights/resnext-101-kinetics.pth'
+        model_path = rgb_3d_model_path_selection(args.arch)
         #model_path = os.path.join(modelLocation,'model_best.pth.tar') 
         
     elif modality == "flow":
         model_path=''
         if "3D" in args.arch:
             if 'I3D' in args.arch:
-                 model_path='./weights/flow_imagenet.pth'        
+                 model_path='./weights/flow_imagenet.pth'   
+            elif '3D' in args.arch:
+                 model_path='./weights/Flow_Kinetics_64f.pth'         
         #model_path = os.path.join(modelLocation,'model_best.pth.tar') 
     elif modality == "both":
         model_path='' 
@@ -451,16 +456,20 @@ def build_model_continue():
     model_path = os.path.join(modelLocation,'model_best.pth.tar') 
     params = torch.load(model_path)
     print(modelLocation)
-    model = build_model()   
+    if args.dataset=='ucf101':
+        model=models.__dict__[args.arch](modelPath='', num_classes=101,length=args.num_seg)
+    elif args.dataset=='hmdb51':
+        model=models.__dict__[args.arch](modelPath='', num_classes=51,length=args.num_seg)
+   
     model.load_state_dict(params['state_dict'])
     model = model.cuda()
     optimizer = AdamW(model.parameters(), lr= args.lr, weight_decay=args.weight_decay)
     optimizer.load_state_dict(params['optimizer'])
+    
     startEpoch = params['epoch']
     best_prec = params['best_prec1']
     return model, startEpoch, optimizer, best_prec
 
-#device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
 def train(train_loader, model, criterion, criterion2, optimizer, epoch,modality):
@@ -481,10 +490,8 @@ def train(train_loader, model, criterion, criterion2, optimizer, epoch,modality)
     totalSamplePerIter=0
     for i, (inputs, targets) in enumerate(train_loader):
         if modality == "rgb" or modality == "pose":
-            if "3D" in args.arch:
+            if "3D" in args.arch or "r2plus1d" in args.arch or 'slowfast' in args.arch:
                 inputs=inputs.view(-1,length,3,input_size,input_size).transpose(1,2)
-            else:
-                inputs=inputs.view(-1,3*length,input_size,input_size)
         elif modality == "flow":
             if "3D" in args.arch:
                 inputs=inputs.view(-1,length,2,input_size,input_size).transpose(1,2)
@@ -558,10 +565,8 @@ def validate(val_loader, model, criterion,criterion2,modality):
     with torch.no_grad():
         for i, (inputs, targets) in enumerate(val_loader):
             if modality == "rgb" or modality == "pose":
-                if "3D" in args.arch:
+                if "3D" in args.arch or "r2plus1d" in args.arch or 'slowfast' in args.arch:
                     inputs=inputs.view(-1,length,3,input_size,input_size).transpose(1,2)
-                else:
-                    inputs=inputs.view(-1,3*length,input_size,input_size)
             elif modality == "flow":
                 if "3D" in args.arch:
                     inputs=inputs.view(-1,length,2,input_size,input_size).transpose(1,2)

@@ -1,30 +1,31 @@
-*.py[cod]
-
 # C extensions
 *.so
 *.pyc
+*.pth
+*.tar
+*.pt
+
+**/__pycache__
 
 /checkpoint
 /datasets/settings
 /datasets/hmdb51_frames
 /datasets/hmdb51_splits
 /datasets/ucf101_splits
-/datasets/__pycache__
 /datasets/smtV2_frames
 /datasets/ucf101_frames
 /datasets/settings
 /datasets/pose_information
 /datasets/pose_information2
 /datasets/window_frames
+
 /old checkpoints
-models/__pycache__/
-models/BERT/__pycache__/
+
 /scripts/eval_ucf101_pytorch/results
 /runs
-/__pycache__
+
 /weights
 /cercop
-__pycache__/
-__pycache__*
+
 
 

@@ -183,7 +183,7 @@ def ReadSegmentFlow(path, offsets, new_height, new_width, new_length, is_color, 
     clip_input = np.concatenate(sampled_list, axis=2)
     return clip_input
 
-def ReadSegmentBoth(path, offsets, new_height, new_width, new_length, name_pattern_rgb, name_pattern_flow):
+def ReadSegmentBoth(path, offsets, new_height, new_width, new_length, name_pattern_rgb, name_pattern_flow, duration):
     cv_read_flag_rgb = cv2.IMREAD_COLOR         # > 0
     cv_read_flag_flow = cv2.IMREAD_GRAYSCALE     # = 0
     interpolation = cv2.INTER_LINEAR
@@ -192,14 +192,18 @@ def ReadSegmentBoth(path, offsets, new_height, new_width, new_length, name_patte
     for offset_id in range(len(offsets)):
         offset = offsets[offset_id]
         for length_id in range(1, new_length+1):
-            frame_name_x = name_pattern_flow % ("x", length_id + offset)
+            loaded_frame_index = length_id + offset
+            moded_loaded_frame_index = loaded_frame_index % (duration + 1)
+            if moded_loaded_frame_index == 0:
+                moded_loaded_frame_index = (duration + 1)
+            frame_name_x = name_pattern_flow % ("x", moded_loaded_frame_index)
             frame_path_x = path + "/" + frame_name_x
             cv_img_origin_x = cv2.imread(frame_path_x, cv_read_flag_flow)
-            frame_name_y = name_pattern_flow % ("y", length_id + offset)
+            frame_name_y = name_pattern_flow % ("y", moded_loaded_frame_index)
             frame_path_y = path + "/" + frame_name_y
             cv_img_origin_y = cv2.imread(frame_path_y, cv_read_flag_flow)
 
-            frame_name = name_pattern_rgb % (length_id + offset)
+            frame_name = name_pattern_rgb % (moded_loaded_frame_index)
             frame_path = path + "/" + frame_name
             cv_img_origin = cv2.imread(frame_path, cv_read_flag_rgb)
             
@@ -240,7 +244,8 @@ class hmdb51(data.Dataset):
                  new_height=0,
                  transform=None,
                  target_transform=None,
-                 video_transform=None):
+                 video_transform=None,
+                 ensemble_training = False):
 
         classes, class_to_idx = find_classes(root)
         clips = make_dataset(root, source)
@@ -257,6 +262,7 @@ class hmdb51(data.Dataset):
         self.classes = classes
         self.class_to_idx = class_to_idx
         self.clips = clips
+        self.ensemble_training = ensemble_training
 
         if name_pattern:
             self.name_pattern = name_pattern
@@ -342,7 +348,8 @@ class hmdb51(data.Dataset):
                                         self.new_width,
                                         self.new_length,
                                         self.name_pattern_rgb,
-                                        self.name_pattern_flow
+                                        self.name_pattern_flow,
+                                        duration
                                         )
         elif self.modality == "pose":
             clip_input = ReadSegmentRGB(path,
@@ -371,14 +378,26 @@ class hmdb51(data.Dataset):
         else:
             print("No such modality %s" % (self.modality))
 
-        if self.transform is not None:
-            clip_input = self.transform(clip_input)
-        if self.target_transform is not None:
-            target = self.target_transform(target)
-        if self.video_transform is not None:
-            clip_input = self.video_transform(clip_input)
-
-        return clip_input, target
+        if not self.ensemble_training:
+            if self.transform is not None:
+                clip_input = self.transform(clip_input)
+            if self.target_transform is not None:
+                target = self.target_transform(target)
+            if self.video_transform is not None:
+                clip_input = self.video_transform(clip_input)   
+            return clip_input, target
+    
+        else:
+            if self.transform is not None:
+                clip_input = self.transform(clip_input)
+            if self.target_transform is not None:
+                target = self.target_transform(target)
+            clip_input_list = []
+            for video_transform in self.video_transform:
+                transformed_clip = video_transform(clip_input)
+                clip_input_list.append(transformed_clip)
+            return  clip_input_list[0], clip_input_list[1], clip_input_list[2], clip_input_list[3], target
+                
 
 
     def __len__(self):

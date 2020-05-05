@@ -35,61 +35,128 @@ def VideoSpatialPrediction3D(
         start_frame=0,
         num_frames=0,
         length = 16,
-        extension = 'img_{0:05d}.jpg'
+        extension = 'img_{0:05d}.jpg',
+        ten_crop = False
         ):
 
     if num_frames == 0:
         imglist = os.listdir(vid_name)
         newImageList=[]
-        for item in imglist:
-            if 'img' in item:
-               newImageList.append(item) 
+        if 'rgb' in architecture_name or 'pose' in architecture_name:
+            for item in imglist:
+                if 'img' in item:
+                   newImageList.append(item) 
+        elif 'flow' in architecture_name:
+            for item in imglist:
+                if 'flow_x' in item:
+                   newImageList.append(item) 
         duration = len(newImageList)
     else:
         duration = num_frames
     
-    if 'I3D' in architecture_name:
-        
-        if not 'resnet' in architecture_name:
+    if 'rgb' in architecture_name:
+        if 'I3D' in architecture_name:
+            
+            if not 'resnet' in architecture_name:
+                clip_mean = [0.5, 0.5, 0.5] 
+                clip_std = [0.5, 0.5, 0.5]
+            else:
+                clip_mean = [0.45, 0.45, 0.45]
+                clip_std = [0.225, 0.225, 0.225] 
+            normalize = video_transforms.Normalize(mean=clip_mean,
+                                     std=clip_std)
+            val_transform = video_transforms.Compose([
+                    video_transforms.ToTensor(),
+                    normalize,
+                ])
+            if '112' in architecture_name:
+                scale = 0.5
+            else:
+                scale = 1
+        elif 'MFNET3D' in architecture_name:
+            clip_mean = [0.48627451, 0.45882353, 0.40784314]
+            clip_std = [0.234, 0.234, 0.234] 
+            normalize = video_transforms.Normalize(mean=clip_mean,
+                                     std=clip_std)
+            val_transform = video_transforms.Compose([
+                    video_transforms.ToTensor(),
+                    normalize])
+            if '112' in architecture_name:
+                scale = 0.5
+            else:
+                scale = 1
+        elif 'tsm' in architecture_name:
+            clip_mean = [0.485, 0.456, 0.406]
+            clip_std = [0.229, 0.224, 0.225] 
+            normalize = video_transforms.Normalize(mean=clip_mean,
+                                     std=clip_std)
+            val_transform = video_transforms.Compose([
+                    video_transforms.ToTensor(),
+                    normalize])
+            scale = 1
+        elif "r2plus1d" in architecture_name:
+            clip_mean = [0.43216, 0.394666, 0.37645]
+            clip_std = [0.22803, 0.22145, 0.216989]
+            normalize = video_transforms.Normalize(mean=clip_mean,
+                                     std=clip_std)
+            val_transform = video_transforms.Compose([
+                    video_transforms.ToTensor(),
+                    normalize])
+            scale = 0.5
+        elif 'rep_flow' in architecture_name:
             clip_mean = [0.5, 0.5, 0.5] 
             clip_std = [0.5, 0.5, 0.5]
-        else:
+    
+            normalize = video_transforms.Normalize(mean=clip_mean,
+                                     std=clip_std)
+            val_transform = video_transforms.Compose([
+                    video_transforms.ToTensor(),
+                    normalize,
+                ])
+            scale = 1
+        elif "slowfast" in architecture_name:
             clip_mean = [0.45, 0.45, 0.45]
             clip_std = [0.225, 0.225, 0.225] 
-        normalize = video_transforms.Normalize(mean=clip_mean,
-                                 std=clip_std)
-        val_transform = video_transforms.Compose([
-                video_transforms.ToTensor(),
-                normalize,
-            ])
-        if '112' in architecture_name:
-            scale = 0.5
-        else:
+            normalize = video_transforms.Normalize(mean=clip_mean,
+                                     std=clip_std)
+            val_transform = video_transforms.Compose([
+                    video_transforms.ToTensor(),
+                    normalize,       
+                ])
             scale = 1
-    elif 'MFNET3D' in architecture_name:
-        clip_mean = [0.48627451, 0.45882353, 0.40784314]
-        clip_std = [0.234, 0.234, 0.234] 
-        normalize = video_transforms.Normalize(mean=clip_mean,
-                                 std=clip_std)
-        val_transform = video_transforms.Compose([
-                video_transforms.ToTensor(),
-                normalize])
-        if '112' in architecture_name:
-            scale = 0.5
         else:
+            scale = 0.5
+            clip_mean = [114.7748, 107.7354, 99.4750]
+            clip_std = [1, 1, 1]
+            normalize = video_transforms.Normalize(mean=clip_mean,
+                                     std=clip_std)
+            val_transform = video_transforms.Compose([
+                    video_transforms.ToTensor2(),
+                    normalize,
+                ])
+    elif 'flow' in architecture_name:
+        if 'I3D' in architecture_name:
+            clip_mean = [0.5] * 2
+            clip_std = [0.5] * 2
+            normalize = video_transforms.Normalize(mean=clip_mean,
+                                             std=clip_std)
+            
+            val_transform = video_transforms.Compose([
+                    video_transforms.ToTensor(),
+                    normalize,
+                ])
             scale = 1
-    else:
-        scale = 0.5
-        clip_mean = [114.7748, 107.7354, 99.4750]
-        clip_std = [1, 1, 1]
-        normalize = video_transforms.Normalize(mean=clip_mean,
-                                 std=clip_std)
-        val_transform = video_transforms.Compose([
-                video_transforms.ToTensor2(),
-                normalize,
-            ])
-    
-
+        else:
+            scale = 0.5
+            clip_mean = [127.5, 127.5]
+            clip_std = [1, 1]
+            normalize = video_transforms.Normalize(mean=clip_mean,
+                                     std=clip_std)
+            val_transform = video_transforms.Compose([
+                    video_transforms.ToTensor2(),
+                    normalize,
+                ])
+        
     # selection
     #step = int(math.floor((duration-1)/(num_samples-1)))
     dims2 = (224,224,3,duration)
@@ -135,14 +202,25 @@ def VideoSpatialPrediction3D(
     interpolation = cv2.INTER_LINEAR
     
     for index in offsets:
-        img_file = os.path.join(vid_name, extension.format(index))
-        img = cv2.imread(img_file, cv2.IMREAD_UNCHANGED)
-
-        img = cv2.resize(img, dims[1::-1],interpolation)
-
-        #img2 = cv2.resize(img, dims2[1::-1],interpolation)
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        img_flip = img[:,::-1,:].copy()
+        if 'rgb' in architecture_name or 'pose' in architecture_name:
+            img_file = os.path.join(vid_name, extension.format(index))
+            img = cv2.imread(img_file, cv2.IMREAD_UNCHANGED)
+    
+            img = cv2.resize(img, dims[1::-1],interpolation)
+    
+            #img2 = cv2.resize(img, dims2[1::-1],interpolation)
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            img_flip = img[:,::-1,:].copy()
+        elif 'flow' in architecture_name:
+            flow_x_file = os.path.join(vid_name, extension.format('x',index))
+            flow_y_file = os.path.join(vid_name, extension.format('y',index))
+            img_x = cv2.imread(flow_x_file, cv2.IMREAD_GRAYSCALE)
+            img_y = cv2.imread(flow_y_file, cv2.IMREAD_GRAYSCALE)
+            img_x = np.expand_dims(img_x,-1)
+            img_y = np.expand_dims(img_y,-1)
+            img = np.concatenate((img_x,img_y),2)    
+            img = cv2.resize(img, dims[1::-1],interpolation)
+            img_flip = img[:,::-1,:].copy()
         #img_flip2 = img2[:,::-1,:].copy()
         #imageList1.append(img[int(16 * scale):int(16 * scale + imageSize), int(16 * scale) : int(16 * scale + imageSize), :])
         imageList1.append(img[int(16 * scale):int(16 * scale + imageSize), int(58 * scale) : int(58 * scale + imageSize), :])
@@ -158,10 +236,10 @@ def VideoSpatialPrediction3D(
 #        imageList11.append(img2)
 #        imageList12.append(img_flip2)
 
-
-    #imageList=imageList1+imageList2+imageList3+imageList4+imageList5+imageList6+imageList7+imageList8+imageList9+imageList10
-    
-    imageList=imageList1
+    if ten_crop:
+        imageList=imageList1+imageList2+imageList3+imageList4+imageList5+imageList6+imageList7+imageList8+imageList9+imageList10
+    else:
+        imageList=imageList1
     
     #imageList=imageList11+imageList12
     
@@ -173,7 +251,10 @@ def VideoSpatialPrediction3D(
         rgb_list.append(np.expand_dims(cur_img_tensor.numpy(), 0))
          
     input_data=np.concatenate(rgb_list,axis=0)   
-    input_data = input_data.reshape(-1,length,3,imageSize,imageSize)
+    if 'rgb' in architecture_name or 'pose' in architecture_name:
+        input_data = input_data.reshape(-1,length,3,imageSize,imageSize)
+    elif 'flow' in architecture_name:
+        input_data = input_data.reshape(-1,length,2,imageSize,imageSize)
 
     batch_size = 10
     result = np.zeros([input_data.shape[0],num_categories])
@@ -184,9 +265,18 @@ def VideoSpatialPrediction3D(
             span = range(batch_size*bb, min(input_data.shape[0],batch_size*(bb+1)))
             input_data_batched = input_data[span,:,:,:,:]
             imgDataTensor = torch.from_numpy(input_data_batched).type(torch.FloatTensor).cuda()
-            imgDataTensor = imgDataTensor.view(-1,length,3,imageSize,imageSize).transpose(1,2)
-            #output = net(imgDataTensor)
-            output,_,_,_ = net(imgDataTensor)
+            if 'rgb' in architecture_name or 'pose' in architecture_name:
+                if 'tsm' in architecture_name:
+                    imgDataTensor = imgDataTensor.view(-1,length,3,imageSize,imageSize)
+                else:
+                    imgDataTensor = imgDataTensor.view(-1,length,3,imageSize,imageSize).transpose(1,2)
+            elif 'flow' in architecture_name:
+                imgDataTensor = imgDataTensor.view(-1,length,2,imageSize,imageSize).transpose(1,2)
+                    
+            if 'bert' in architecture_name:
+                output, input_vectors, sequenceOut, maskSample = net(imgDataTensor)
+            else:
+                output = net(imgDataTensor)
             #span = range(sample_size*bb, min(int(input_data.shape[0]/length),sample_size*(bb+1)))
             result[span,:] = output.data.cpu().numpy()
         mean_result=np.mean(result,0)

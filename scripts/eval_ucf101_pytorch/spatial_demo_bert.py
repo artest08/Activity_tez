@@ -48,7 +48,7 @@ parser = argparse.ArgumentParser(description='PyTorch Two-Stream Action Recognit
 parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51"],
                     help='dataset: ucf101 | hmdb51')
-parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_I3D64f_bert10',
+parser.add_argument('--arch', '-a', metavar='ARCH', default='flow_resneXt3D64f101_bert10XY',
                     choices=model_names)
 
 parser.add_argument('-s', '--split', default=1, type=int, metavar='S',
@@ -65,6 +65,7 @@ parser.add_argument('-v', '--val', dest='window_val', action='store_true',
 
 multiGPUTest = False
 multiGPUTrain=False
+ten_crop_enabled = False
 num_seg=16
 num_seg_3D=1
 
@@ -109,6 +110,8 @@ def main():
         length=64
     elif '32f' in args.arch:
         length=32
+    elif '8f' in args.arch:
+        length=8    
     else:
         length=16
         
@@ -129,15 +132,21 @@ def main():
         frameFolderName = "window_frames"
     data_dir=os.path.join(datasetFolder,frameFolderName)
     
-    if args.window_val:
-        val_fileName = "window%d.txt" %(args.window)
-    else:
-        val_fileName = "val_rgb_split%d.txt" %(args.split)
 
     if 'rgb' in args.arch:
         extension = 'img_{0:05d}.jpg'
+        if args.window_val:
+            val_fileName = "window%d.txt" %(args.window)
+        else:
+            val_fileName = "val_rgb_split%d.txt" %(args.split)
     elif 'pose' in args.arch:
         extension = 'pose1_{0:05d}.jpg'
+    elif 'flow' in args.arch:
+        val_fileName = "val_flow_split%d.txt" %(args.split)
+        if 'ucf101' in args.dataset or 'window' in args.dataset:
+            extension = 'flow_{0}_{1:05d}.jpg'
+        elif 'hmdb51' in args.dataset:
+            extension = 'flow_{0}_{1:05d}'
 
     val_file=os.path.join(datasetFolder,'settings',args.dataset,val_fileName)
     
@@ -158,9 +167,9 @@ def main():
     model_time = model_end_time - model_start_time
     print("Action recognition model is loaded in %4.4f seconds." % (model_time))
     
-    flops, params = get_model_complexity_info(spatial_net, (3, length, 224, 224), as_strings=True, print_per_layer_stat=False)
-    print('{:<30}  {:<8}'.format('Computational complexity: ', flops))
-    print('{:<30}  {:<8}'.format('Number of parameters: ', params))
+    # flops, params = get_model_complexity_info(spatial_net, (3,length, 112, 112), as_strings=True, print_per_layer_stat=False)
+    # print('{:<30}  {:<8}'.format('Computational complexity: ', flops))
+    # print('{:<30}  {:<8}'.format('Number of parameters: ', params))
     
     f_val = open(val_file, "r")
     val_list = f_val.readlines()
@@ -183,16 +192,9 @@ def main():
             input_video_label = int(line_info[2]) 
             
             start = time.time()
-            if not '3D' in args.arch:
-                spatial_prediction = VideoSpatialPrediction_bert(
-                        clip_path,
-                        spatial_net,
-                        num_categories,
-                        start_frame,
-                        duration,
-                        num_seg=num_seg,
-                        extension = extension)
-            else:
+            
+            if '3D' in args.arch or 'tsm' in args.arch or 'r2plus1d' in args.arch \
+                or 'rep_flow' in args.arch or 'slowfast':
                 spatial_prediction = VideoSpatialPrediction3D_bert(
                     clip_path,
                     spatial_net,
@@ -202,9 +204,19 @@ def main():
                     duration,
                     num_seg=num_seg_3D ,
                     length = length, 
-                    extension = extension)
-                
+                    extension = extension,
+                    ten_crop = ten_crop_enabled)
             
+            else:
+                spatial_prediction = VideoSpatialPrediction_bert(
+                        clip_path,
+                        spatial_net,
+                        num_categories,
+                        start_frame,
+                        duration,
+                        num_seg=num_seg,
+                        extension = extension)
+                
             end = time.time()
             estimatedTime=end-start
             timeList.append(estimatedTime)
@@ -234,6 +246,11 @@ def main():
         print(modelLocation)
         print("Mean Estimated Time %0.4f" % (np.mean(timeList)))  
         print('one clips')
+        if ten_crop_enabled:
+            print('10 crops')
+        else:
+            print('single crop')
+            
         
         resultDict={'y_true':y_true,'y_pred':y_pred}
         

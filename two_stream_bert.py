@@ -507,11 +507,11 @@ def train(train_loader, model, criterion, criterion2, optimizer, epoch,setMseCoe
             if "3D" in args.arch:
                 inputs=inputs.view(-1,length,3,224,224).transpose(1,2)
             else:
-                inputs=inputs.view(-1,3*length,224,224)
+                inputs=inputs.view(-1,3,224,224)
         elif modality == "flow":
-            inputs=inputs.view(-1,2*length,224,224)            
+            inputs=inputs.view(-1,2,224,224)            
         elif modality == "both":
-            inputs=inputs.view(-1,5*length,224,224)
+            inputs=inputs.view(-1,5,224,224)
             
         if HALF:
             inputs = inputs.to(device).half()
@@ -649,9 +649,9 @@ def validate(val_loader, model, criterion,criterion2,modality):
                 else:
                     inputs=inputs.view(-1,3,224,224)
             elif modality == "flow":
-                inputs=inputs.view(-1,2*length,224,224)
+                inputs=inputs.view(-1,2,224,224)
             elif modality == "both":
-                inputs=inputs.view(-1,5*length,224,224)
+                inputs=inputs.view(-1,5,224,224)
                 
             if HALF:
                 inputs = inputs.to(device).half()

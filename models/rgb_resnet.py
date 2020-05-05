@@ -7,6 +7,7 @@ from .poseNet.poseNet import openPoseL2Part
 from .convGRU.convGRU import ConvGRU
 from .BERT.bert import BERT3, BERT4, BERT5, BERT6, BERT7
 from .TSM.temporal_shift import make_temporal_shift
+from .TSM.non_local import make_non_local
 from .NLB.NLBlockND import NLBlockND
 from .BERT.embedding import BERTEmbedding
 import torch
@@ -29,7 +30,8 @@ __all__ = ['ResNet', 'rgb_resnet18', 'rgb_resnet34', 'rgb_resnet50', 'rgb_resnet
            'rgb_resnet18_bert17','rgb_resnet18_bert10Y',
            'rgb_resnet34_bert10','rgb_resnet50_bert10X','rgb_resnet152_bert10X','rgb_resnet152_bert10XX',
            'rgb_resnet18_NLB10','rgb_resnet18_RankingBert10','rgb_resnet18_RankingBert8','rgb_resnet18_RankingBert8Seg3'
-           ,'rgb_resnet18_unpre_bert10', 'rgb_resnet152_bert10_light','rgb_tsm_resnet50']
+           ,'rgb_resnet18_unpre_bert10', 'rgb_resnet152_bert10_light',
+           'rgb_tsm_resnet50', 'rgb_tsm_resnet50_64f', 'rgb_tsm_resnet50_64f_bert10','rgb_tsm_resnet50_8f']
 
 
 model_urls = {
@@ -2446,7 +2448,7 @@ def _trained_rgb_resnet18(model_path, **kwargs):
     model.load_state_dict(pretrained_dict)
     return model
 
-def rgb_tsm_resnet50(num_classes , length, modelPath=''):
+def rgb_tsm_resnet50(modelPath=''):
     num_segments = 8
     shift_div = 8
     shift_place = 'blockres'
@@ -2471,11 +2473,168 @@ def rgb_tsm_resnet50(num_classes , length, modelPath=''):
         model_dict.update(kinetics_dict_new) 
         # 3. load the new state dict
         model.load_state_dict(model_dict)
-    model.fc_action = nn.Linear(2048, num_classes)
-    
-    torch.nn.init.xavier_uniform_(model.fc_action.weight)
-    model.fc_action.bias.data.zero_()
     return model
 
+def rgb_tsm_resnet50NL(modelPath=''):
+    num_segments = 8
+    shift_div = 8
+    shift_place = 'blockres'
+    temporal_pool = False
+    model = ResNet(Bottleneck, [3, 4, 6, 3], num_classes=400)    
+    make_temporal_shift(model, num_segments,
+        n_div=shift_div, place=shift_place, temporal_pool=temporal_pool)
+    
+    make_non_local(model, num_segments)
+    if modelPath != '':
+        params = torch.load(modelPath)
+        kinetics_dict = params['state_dict']
+        
+        model_dict = model.state_dict()
+        kinetics_dict_new = {}
+    
+        # 1. filter out unnecessary keys
+        for k, v in kinetics_dict.items():
+            if 'module.base_model.' in k:
+                kinetics_dict_new.update({k[18:]:v})
+    
+        # 2. overwrite entries in the existing state dict
+        model_dict.update(kinetics_dict_new) 
+        # 3. load the new state dict
+        model.load_state_dict(model_dict)
+    return model
+
+
+
+class rgb_tsm_resnet50_64f(nn.Module):
+    def __init__(self, num_classes , length, modelPath=''):
+        super(rgb_tsm_resnet50_64f, self).__init__()
+        self.dp = nn.Dropout(p=0.8)
+        self.length = 64
+        self.avgpool = nn.AvgPool2d(7)
+        self.tsm_selection = np.array(range(0, 64, 8)) + 4
+    
+        self.features=nn.Sequential(*list(rgb_tsm_resnet50(modelPath).children())[:-3])
+        self.fc_action = nn.Linear(2048, num_classes)
+            
+        for param in self.features.parameters():
+            param.requires_grad = True
+
+                
+        torch.nn.init.xavier_uniform_(self.fc_action.weight)
+        self.fc_action.bias.data.zero_()
+        
+    def forward(self, x):
+        x = x.view(-1, self.length, 3, 224, 224)
+        x = x[:, self.tsm_selection]
+        x = x.view(-1, 3, 224, 224)
+        x = self.features(x)
+        x = self.avgpool(x)
+        x = x.view(-1, 2048) 
+        x = self.dp(x)
+        output = self.fc_action(x)
+        output = output.view(-1,8,output.shape[1])
+        output = torch.mean(output, 1)
+        return output
+    
+class rgb_tsm_resnet50_8f(nn.Module):
+    def __init__(self, num_classes , length, modelPath=''):
+        super(rgb_tsm_resnet50_8f, self).__init__()
+        self.dp = nn.Dropout(p=0.8)
+        self.length = 8
+        self.avgpool = nn.AvgPool2d(7)
+    
+        self.features=nn.Sequential(*list(rgb_tsm_resnet50(modelPath).children())[:-3])
+        self.fc_action = nn.Linear(2048, num_classes)
+            
+        for param in self.features.parameters():
+            param.requires_grad = True
+
+                
+        torch.nn.init.xavier_uniform_(self.fc_action.weight)
+        self.fc_action.bias.data.zero_()
+        
+    def forward(self, x):
+        x = x.view(-1, 3, 224, 224)
+        x = self.features(x)
+        x = self.avgpool(x)
+        x = x.view(-1, 2048) 
+        x = self.dp(x)
+        output = self.fc_action(x)
+        output = output.view(-1,8,output.shape[1])
+        output = torch.mean(output, 1)
+        return output
+    
+    
+class rgb_tsm_resnet50_seg(nn.Module):
+    def __init__(self, num_classes , length, modelPath=''):
+        super(rgb_tsm_resnet50_seg, self).__init__()
+        self.dp = nn.Dropout(p=0.8)
+        self.length = length
+        self.avgpool = nn.AvgPool2d(7)
+        self.tsm_selection = np.array(range(0, 64, 8)) + 4
+    
+        self.features=nn.Sequential(*list(rgb_tsm_resnet50(modelPath).children())[:-3])
+        self.fc_action = nn.Linear(2048, num_classes)
+            
+        for param in self.features.parameters():
+            param.requires_grad = True
+
+                
+        torch.nn.init.xavier_uniform_(self.fc_action.weight)
+        self.fc_action.bias.data.zero_()
+        
+    def forward(self, x):
+        x = x.view(-1, self.length, 3, 224, 224)
+        x = x[:, self.tsm_selection]
+        x = x.view(-1, 3, 224, 224)
+        x = self.features(x)
+        x = self.avgpool(x)
+        x = x.view(-1, 2048) 
+        x = self.dp(x)
+        output = self.fc_action(x)
+        output = output.view(-1,8,output.shape[1])
+        output = torch.mean(output, 1)
+        return output
+    
+class rgb_tsm_resnet50_64f_bert10(nn.Module):
+    def __init__(self, num_classes , length, modelPath=''):
+        super(rgb_tsm_resnet50_64f_bert10, self).__init__()
+        self.hidden_size=2048
+        self.n_layers=1
+        self.attn_heads=8
+        self.dp = nn.Dropout(p=0.8)
+        self.avgpool = nn.AvgPool2d(7)
+        self.tsm_selection = np.array(range(0, 64, 8)) + 4
+    
+        self.bert = BERT5(self.hidden_size, 8, hidden=self.hidden_size, 
+                          n_layers=self.n_layers, attn_heads=self.attn_heads)
+        
+        self.features=nn.Sequential(*list(rgb_tsm_resnet50(modelPath).children())[:-3])
+        self.fc_action = nn.Linear(2048, num_classes)
+            
+        for param in self.features.parameters():
+            param.requires_grad = True
+
+                
+        torch.nn.init.xavier_uniform_(self.fc_action.weight)
+        self.fc_action.bias.data.zero_()
+        
+    def forward(self, x):
+        x = x.view(-1, 64, 3, 224, 224)
+        x = x[:, self.tsm_selection]
+        x = x.view(-1, 3, 224, 224)
+        x = self.features(x)
+        x = self.avgpool(x)
+        x = x.view(-1, self.hidden_size) 
+        x = x.view(-1, 8, self.hidden_size)
+        input_vectors=x
+        output , maskSample = self.bert(x)
+        classificationOut = output[:,0,:]
+        sequenceOut=output[:,1:,:]
+        output=self.dp(classificationOut)
+        x = self.fc_action(output)
+        return x, input_vectors, sequenceOut, maskSample
+    
+    
 
 
