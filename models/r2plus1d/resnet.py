@@ -4,7 +4,8 @@ import torch.hub
 
 
 __all__ = ['r3d_18', 'mc3_18', 'r2plus1d_18', 
-           'r2plus1d_34_8_ig65m', "r2plus1d_34_32_ig65m", "r2plus1d_34_8_kinetics", "r2plus1d_34_32_kinetics"]
+           'r2plus1d_34_8_ig65m', "r2plus1d_34_32_ig65m", "r2plus1d_34_8_kinetics", "r2plus1d_34_32_kinetics",
+           "flow_r2plus1d_34_32_ig65m"]
 
 model_urls = {
     'r3d_18': 'https://download.pytorch.org/models/r3d_18-b3b3357e.pth',
@@ -190,6 +191,8 @@ class R2Plus1dStem(nn.Sequential):
                       bias=False),
             nn.BatchNorm3d(64),
             nn.ReLU(inplace=True))
+        
+    
 
 
 class VideoResNet(nn.Module):
@@ -386,6 +389,18 @@ def r2plus1d_34_32_kinetics(num_classes, pretrained=False, progress=False):
                        pretrained=pretrained, progress=progress)
 
 
+def flow_r2plus1d_34_32_ig65m(num_classes, pretrained=False, progress=False):
+    """R(2+1)D 34-layer IG65M-Kinetics model for clips of length 32 frames.
+    Args:
+      num_classes: Number of classes in last classification layer
+      pretrained: If True, loads IG65M weights fine-tuned on Kinetics videos
+      progress: If True, displays a progress bar of the download to stderr
+    """
+    assert not pretrained or num_classes == 359, "pretrained on 400 classes"
+    return flow_r2plus1d_34(num_classes=num_classes, arch="r2plus1d_34_32_ig65m",
+                       pretrained=pretrained, progress=progress)
+
+
 def r2plus1d_34(num_classes, pretrained=False, progress=False, arch=None):
     model = VideoResNet(block=BasicBlock,
                         conv_makers=[Conv2Plus1D] * 4,
@@ -410,6 +425,43 @@ def r2plus1d_34(num_classes, pretrained=False, progress=False, arch=None):
     if pretrained:
         state_dict = torch.hub.load_state_dict_from_url(model_urls[arch],
                                                         progress=progress)
+        model.load_state_dict(state_dict)
+
+    return model
+
+
+
+def flow_r2plus1d_34(num_classes, pretrained=False, progress=False, arch=None):
+    model = VideoResNet(block=BasicBlock,
+                        conv_makers=[Conv2Plus1D] * 4,
+                        layers=[3, 4, 6, 3],
+                        stem=R2Plus1dStem)
+    
+    model.stem[0] = nn.Conv3d(2, 45, kernel_size=(1, 7, 7),
+                      stride=(1, 2, 2), padding=(0, 3, 3),
+                      bias=False)
+    model.fc = nn.Linear(model.fc.in_features, out_features=num_classes)
+
+    # Fix difference in PyTorch vs Caffe2 architecture
+    # https://github.com/facebookresearch/VMZ/issues/89
+    # https://github.com/pytorch/vision/issues/1265
+    model.layer2[0].conv2[0] = Conv2Plus1D(128, 128, 288)
+    model.layer3[0].conv2[0] = Conv2Plus1D(256, 256, 576)
+    model.layer4[0].conv2[0] = Conv2Plus1D(512, 512, 1152)
+
+    # We need exact Caffe2 momentum for BatchNorm scaling
+    for m in model.modules():
+        if isinstance(m, nn.BatchNorm3d):
+            m.eps = 1e-3
+            m.momentum = 0.9
+
+    if pretrained:
+        state_dict = torch.hub.load_state_dict_from_url(model_urls[arch],
+                                                        progress=progress)
+        
+        stem_weight = state_dict['stem.0.weight'].mean(1, keepdim=True).repeat(1,2,1,1,1)
+        stem_weight = stem_weight * 1.5
+        state_dict['stem.0.weight'] = stem_weight
         model.load_state_dict(state_dict)
 
     return model

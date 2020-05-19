@@ -34,7 +34,7 @@ from VideoSpatialPrediction3D import VideoSpatialPrediction3D
 from VideoSpatialPrediction3D_bert import VideoSpatialPrediction3D_bert
 
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   
-os.environ["CUDA_VISIBLE_DEVICES"]="1"
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 model_names = sorted(name for name in models.__dict__
     if not name.startswith("__")
@@ -49,7 +49,7 @@ parser.add_argument('--dataset', '-d', default='hmdb51',
                     help='dataset: ucf101 | hmdb51')
 parser.add_argument('--arch_flow', '-a', metavar='ARCH', default='flow_resneXt3D64f101',
                     choices=model_names)
-parser.add_argument('--arch_rgb', '-b', metavar='ARCH', default='rgb_resneXt3D64f101_bert10XY',
+parser.add_argument('--arch_rgb', '-b', metavar='ARCH', default='rgb_r2plus1d_64f_34_bert10',
                     choices=model_names)
 parser.add_argument('--arch_pose', '-c', metavar='ARCH', default='pose_resnet18_bert10',
                     choices=model_names)
@@ -75,7 +75,7 @@ num_seg_rgb=16
 num_seg_pose=16
 num_seg_flow=16
 len_flow=1
-poseEnabled = True
+poseEnabled = False
 num_seg_3D = 1
 length_3D = 64
 

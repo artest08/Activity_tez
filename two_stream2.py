@@ -53,7 +53,7 @@ parser.add_argument('--settings', metavar='DIR', default='./datasets/settings',
 parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51", "smtV2"],
                     help='dataset: ucf101 | hmdb51')
-parser.add_argument('--arch', '-a', metavar='ARCH', default='flow_I3D64f',
+parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_r2plus1d_32f_34',
                     choices=model_names,
                     help='model architecture: ' +
                         ' | '.join(model_names) +
@@ -71,7 +71,7 @@ parser.add_argument('-b', '--batch-size', default=6, type=int,
                     metavar='N', help='mini-batch size (default: 50)')
 parser.add_argument('--iter-size', default=21, type=int,
                     metavar='I', help='iter size as in Caffe to reduce memory usage (default: 5)')
-parser.add_argument('--lr', '--learning-rate', default=1e-1, type=float,
+parser.add_argument('--lr', '--learning-rate', default=1e-2, type=float,
                     metavar='LR', help='initial learning rate')
 parser.add_argument('--lr_steps', default=[15], type=float, nargs="+",
                     metavar='LRSteps', help='epochs to decay learning rate by 10')

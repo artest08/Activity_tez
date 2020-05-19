@@ -146,7 +146,7 @@ def VideoSpatialPrediction3D(
                     normalize,
                 ])
             scale = 1
-        else:
+        elif "3D" in architecture_name:
             scale = 0.5
             clip_mean = [127.5, 127.5]
             clip_std = [1, 1]
@@ -156,6 +156,17 @@ def VideoSpatialPrediction3D(
                     video_transforms.ToTensor2(),
                     normalize,
                 ])
+        elif "r2plus1d" in architecture_name:
+            clip_mean = [0.5] * 2
+            clip_std = [0.226] * 2
+            normalize = video_transforms.Normalize(mean=clip_mean,
+                                             std=clip_std)
+            
+            val_transform = video_transforms.Compose([
+                    video_transforms.ToTensor(),
+                    normalize,
+                ])
+            scale = 0.5
         
     # selection
     #step = int(math.floor((duration-1)/(num_samples-1)))

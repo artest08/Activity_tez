@@ -20,10 +20,11 @@ from .non_local.models.resnet import I3Res50, I3Res50_8x8
 from .BERT.bert import BERT, BERT2, BERT3, BERT4, BERT5, BERT6
 
 
-__all__ = ['rgb_I3D64f_bert10','flow_I3D64f_bert10','rgb_I3D64f', 'flow_I3D64f', 'rgb_I3D64f_bert10X','pose_I3D64f_bert10'
+__all__ = ['rgb_I3D64f_bert10','flow_I3D64f_bert10','rgb_I3D64f', 'flow_I3D64f', 'rgb_I3D64f_bert4X','pose_I3D64f_bert10'
            ,'rgb_resnet50I3D32fNL', 'rgb_resnet50I3D32fNL_bert10', 'rgb_resnet50I3D32f', 'rgb_resnet50I3D32f_bert10'
            ,'rgb_resnet50I3D32f_112','rgb_resnet50I3D64f','rgb_resnet50I3D64fNL', 'rgb_resnet50I3D64f_8x8'
-           ,'rgb_resnet50I3D64f_stride2', 'rgb_resnet50I3D64fNL_stride2']
+           ,'rgb_resnet50I3D64f_stride2', 'rgb_resnet50I3D64fNL_stride2', 'rgb_I3D64f_bert4', 'rgb_I3D64f_bert4XX',
+           'rgb_I3D64f_bert2', 'flow_I3D64f_bert2']
 
 
 
@@ -500,9 +501,9 @@ class rgb_I3D64f_bert10(nn.Module):
         return x, input_vectors, sequenceOut, maskSample
     
     
-class rgb_I3D64f_bert10X(nn.Module):
+class rgb_I3D64f_bert4(nn.Module):
     def __init__(self, num_classes , length, modelPath=''):
-        super(rgb_I3D64f_bert10X, self).__init__()
+        super(rgb_I3D64f_bert4, self).__init__()
         self.hidden_size=1024
         self.n_layers=1
         self.attn_heads=8
@@ -511,33 +512,183 @@ class rgb_I3D64f_bert10X(nn.Module):
         self.dp = nn.Dropout(p=0.8)
         
 
-        self.features1=nn.Sequential(*list(_inception(model_path=modelPath).children())[3:-11])
+        self.features=nn.Sequential(*list(_inception(model_path=modelPath).children())[3:])
         
-        for param in self.features1.parameters():
-            param.requires_grad = True
-            
-        self.features2=nn.Sequential(*list(_inception(model_path=modelPath).children())[-11:])
-        
-        for param in self.features2.parameters():
+        for param in self.features.parameters():
             param.requires_grad = True
         
-        self.bert = BERT5(self.hidden_size, 8*length , hidden=self.hidden_size, n_layers=self.n_layers, attn_heads=self.attn_heads)
+       
+        self.bert = BERT4(self.hidden_size, 4 , hidden=self.hidden_size, n_layers=self.n_layers, attn_heads=self.attn_heads)
         print(sum(p.numel() for p in self.bert.parameters() if p.requires_grad))
         self.fc_action = nn.Linear(self.hidden_size, num_classes)
-        self.avgpool = nn.AvgPool3d((1, 7, 7), stride=1)
-        
-
+        self.avgpool = nn.AdaptiveAvgPool3d(output_size=(4, 1, 1))
                 
         torch.nn.init.xavier_uniform_(self.fc_action.weight)
         self.fc_action.bias.data.zero_()
         
     def forward(self, x):
-        x = self.features1(x)
-        x = self.features2(x)
+        x = self.features(x)
         x = self.avgpool(x)
         x = x.view(x.size(0), self.hidden_size,-1)
-        x = x.transpose(1,2).contiguous()
-        x = x.view(-1, 8 * self.length, self.hidden_size)
+        x = x.transpose(1,2)
+        input_vectors=x
+        output , maskSample = self.bert(x)
+        classificationOut = output[:,0,:]
+        sequenceOut=output[:,1:,:]
+        output=self.dp(classificationOut)
+        x = self.fc_action(output)
+        return x, input_vectors, sequenceOut, maskSample
+    
+class rgb_I3D64f_bert4XX(nn.Module):
+    def __init__(self, num_classes , length, modelPath=''):
+        super(rgb_I3D64f_bert4XX, self).__init__()
+        self.hidden_size=1024
+        self.n_layers=1
+        self.attn_heads=8
+        self.num_classes=num_classes
+        self.length=length
+        self.dp = nn.Dropout(p=0.8)
+        
+
+        self.features=nn.Sequential(*list(_inception(model_path=modelPath).children())[3:])
+        
+        for param in self.features.parameters():
+            param.requires_grad = True
+        
+       
+        self.bert = BERT4(self.hidden_size, 8 , hidden=self.hidden_size, n_layers=self.n_layers, attn_heads=self.attn_heads)
+        print(sum(p.numel() for p in self.bert.parameters() if p.requires_grad))
+        self.fc_action = nn.Linear(self.hidden_size, num_classes)
+        self.avgpool = nn.AdaptiveAvgPool3d(output_size=(8, 1, 1))
+                
+        torch.nn.init.xavier_uniform_(self.fc_action.weight)
+        self.fc_action.bias.data.zero_()
+        
+    def forward(self, x):
+        x = self.features(x)
+        x = self.avgpool(x)
+        x = x.view(x.size(0), self.hidden_size,8)
+        x = x.transpose(1,2)
+        input_vectors=x
+        output , maskSample = self.bert(x)
+        classificationOut = output[:,0,:]
+        sequenceOut=output[:,1:,:]
+        output=self.dp(classificationOut)
+        x = self.fc_action(output)
+        return x, input_vectors, sequenceOut, maskSample
+    
+class rgb_I3D64f_bert2(nn.Module):
+    def __init__(self, num_classes , length, modelPath=''):
+        super(rgb_I3D64f_bert2, self).__init__()
+        self.hidden_size=1024
+        self.n_layers=1
+        self.attn_heads=8
+        self.num_classes=num_classes
+        self.length=length
+        self.dp = nn.Dropout(p=0.8)
+        
+
+        self.features=nn.Sequential(*list(_inception(model_path=modelPath).children())[3:])
+        
+        for param in self.features.parameters():
+            param.requires_grad = True
+        
+       
+        self.bert = BERT2(self.hidden_size, 8 , hidden=self.hidden_size, n_layers=self.n_layers, attn_heads=self.attn_heads)
+        print(sum(p.numel() for p in self.bert.parameters() if p.requires_grad))
+        self.fc_action = nn.Linear(self.hidden_size, num_classes)
+        self.avgpool = nn.AdaptiveAvgPool3d(output_size=(8, 1, 1))
+                
+        torch.nn.init.xavier_uniform_(self.fc_action.weight)
+        self.fc_action.bias.data.zero_()
+        
+    def forward(self, x):
+        x = self.features(x)
+        x = self.avgpool(x)
+        x = x.view(x.size(0), self.hidden_size,8)
+        x = x.transpose(1,2)
+        norm = x.norm(p=2, dim = -1, keepdim=True)
+        x = x.div(norm)
+        input_vectors=x
+        output , maskSample = self.bert(x)
+        classificationOut = output[:,0,:]
+        sequenceOut=output[:,1:,:]
+        output=self.dp(classificationOut)
+        x = self.fc_action(output)
+        return x, input_vectors, sequenceOut, maskSample
+    
+    
+class flow_I3D64f_bert2(nn.Module):
+    def __init__(self, num_classes , length, modelPath=''):
+        super(flow_I3D64f_bert2, self).__init__()
+        self.hidden_size=1024
+        self.n_layers=1
+        self.attn_heads=8
+        self.num_classes=num_classes
+        self.length=length
+        self.dp = nn.Dropout(p=0.8)
+        
+
+        self.features=nn.Sequential(*list(_inception_flow(model_path=modelPath).children())[3:])
+        
+        for param in self.features.parameters():
+            param.requires_grad = True
+        
+       
+        self.bert = BERT2(self.hidden_size, 8 , hidden=self.hidden_size, n_layers=self.n_layers, attn_heads=self.attn_heads)
+        print(sum(p.numel() for p in self.bert.parameters() if p.requires_grad))
+        self.fc_action = nn.Linear(self.hidden_size, num_classes)
+        self.avgpool = nn.AdaptiveAvgPool3d(output_size=(8, 1, 1))
+                
+        torch.nn.init.xavier_uniform_(self.fc_action.weight)
+        self.fc_action.bias.data.zero_()
+        
+    def forward(self, x):
+        x = self.features(x)
+        x = self.avgpool(x)
+        x = x.view(x.size(0), self.hidden_size,8)
+        x = x.transpose(1,2)
+        norm = x.norm(p=2, dim = -1, keepdim=True)
+        x = x.div(norm)
+        input_vectors=x
+        output , maskSample = self.bert(x)
+        classificationOut = output[:,0,:]
+        sequenceOut=output[:,1:,:]
+        output=self.dp(classificationOut)
+        x = self.fc_action(output)
+        return x, input_vectors, sequenceOut, maskSample
+    
+    
+class rgb_I3D64f_bert4X(nn.Module):
+    def __init__(self, num_classes , length, modelPath=''):
+        super(rgb_I3D64f_bert4X, self).__init__()
+        self.hidden_size=1024
+        self.n_layers=1
+        self.attn_heads=8
+        self.num_classes=num_classes
+        self.length=length
+        self.dp = nn.Dropout(p=0.7)
+        
+
+        self.features=nn.Sequential(*list(_inception(model_path=modelPath).children())[3:])
+        
+        for param in self.features.parameters():
+            param.requires_grad = True
+        
+       
+        self.bert = BERT4(self.hidden_size, 4 , hidden=self.hidden_size, n_layers=self.n_layers, attn_heads=self.attn_heads)
+        print(sum(p.numel() for p in self.bert.parameters() if p.requires_grad))
+        self.fc_action = nn.Linear(self.hidden_size, num_classes)
+        self.avgpool = nn.AdaptiveAvgPool3d(output_size=(4, 1, 1))
+                
+        torch.nn.init.xavier_uniform_(self.fc_action.weight)
+        self.fc_action.bias.data.zero_()
+        
+    def forward(self, x):
+        x = self.features(x)
+        x = self.avgpool(x)
+        x = x.view(x.size(0), self.hidden_size,-1)
+        x = x.transpose(1,2)
         input_vectors=x
         output , maskSample = self.bert(x)
         classificationOut = output[:,0,:]

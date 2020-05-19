@@ -23,7 +23,8 @@ from .BERT.bert import BERT, BERT2, BERT3, BERT4, BERT5, BERT6
 from .SlowFast.slowfast_connector import slowfast_50
 
 
-__all__ = ['rgb_slowfast64f_50', 'rgb_slowfast64f_50_bert10']
+__all__ = ['rgb_slowfast64f_50', 'rgb_slowfast64f_50_bert10', 'rgb_slowfast64f_50_bert10X', 'rgb_slowfast64f_50_bert9'
+           ,'rgb_slowfast64f_50_bert10XX', 'rgb_slowfast64f_50_bert2']
 
 class rgb_slowfast64f_50(nn.Module):
     def __init__(self, num_classes , length, modelPath=''):
@@ -102,4 +103,324 @@ class rgb_slowfast64f_50_bert10(nn.Module):
         output=self.dp(classificationOut)
         x = self.fc_action(output)
         return x, input_vectors, sequenceOut, maskSample
+    
+class rgb_slowfast64f_50_bert10X(nn.Module):
+    def __init__(self, num_classes , length, modelPath=''):
+        super(rgb_slowfast64f_50_bert10X, self).__init__()
+        self.hidden_size_fast=256
+        self.hidden_size_slow=512
+        self.n_layers=1
+        self.attn_heads=8
+        self.num_classes=num_classes
+        self.length=length
+        self.dp = nn.Dropout(p=0.8)
+        
+        self.avgpool = nn.AvgPool3d((1, 7, 7), stride=1)
+        
+        self.model = slowfast_50(modelPath)   
+        self.model.head.dropout = nn.Dropout(0.8)
+        
+        self.bert_fast = BERT5(self.hidden_size_fast, 32 , hidden=self.hidden_size_fast, 
+                               n_layers=self.n_layers, attn_heads=self.attn_heads)
+        
+        self.bert_slow = BERT5(self.hidden_size_slow, 8 , hidden=self.hidden_size_slow, 
+                               n_layers=self.n_layers, attn_heads=self.attn_heads)
+        
+        downsample = nn.Sequential(
+            nn.Conv3d(2048, 512,
+                      kernel_size=1, stride=1, bias=False),
+            nn.BatchNorm3d(512)
+        )
+
+
+        self.mapper = Bottleneck(2048, 256, stride = 1, downsample = downsample)
+
+        for m in self.mapper.modules():
+            if isinstance(m, nn.Conv3d):
+                nn.init.kaiming_normal_(m.weight)
+                #m.weight = nn.init.kaiming_normal(m.weight, mode='fan_out')
+            elif isinstance(m, nn.BatchNorm3d):
+                m.weight.data.fill_(1)
+                m.bias.data.zero_()           
+        self.fc_action = nn.Linear(self.hidden_size_fast + self.hidden_size_slow, num_classes)
+            
+        for param in self.model.parameters():
+            param.requires_grad = True
+
+        torch.nn.init.xavier_uniform_(self.fc_action.weight)
+        self.fc_action.bias.data.zero_()
+        
+    def forward(self, x):
+        fast_input = x[:, :, ::2, :, :]
+        slow_input = x[:, :, ::8, :, :]
+        x = self.model.forward_feature([slow_input, fast_input])
+        slow_feature = x[0]
+        fast_feature = x[1]
+        slow_feature = self.mapper(slow_feature)
+        slow_feature = self.avgpool(slow_feature)
+        fast_feature = self.avgpool(fast_feature)
+        
+        slow_feature = slow_feature.view(slow_feature.size(0), self.hidden_size_slow, 8)
+        slow_feature = slow_feature.transpose(1,2)   
+        output_slow , maskSample = self.bert_slow(slow_feature)
+        slow_feature_out = output_slow[:,0,:]
+        
+        fast_feature = fast_feature.view(fast_feature.size(0), self.hidden_size_fast, 32)
+        fast_feature = fast_feature.transpose(1,2)
+        input_vectors = fast_feature
+        output_fast , maskSample = self.bert_fast(fast_feature)
+        fast_feature_out = output_fast[:,0,:]
+        
+        sequenceOut=output_fast[:,1:,:]
+        classificationOut = torch.cat([slow_feature_out, fast_feature_out], 1)
+        output=self.dp(classificationOut)
+        x = self.fc_action(output)
+        return x, input_vectors, sequenceOut, maskSample
+    
+class rgb_slowfast64f_50_bert10XX(nn.Module):
+    def __init__(self, num_classes , length, modelPath=''):
+        super(rgb_slowfast64f_50_bert10XX, self).__init__()
+        self.hidden_size_fast=256
+        self.hidden_size_slow=512
+        self.n_layers=1
+        self.attn_heads=8
+        self.num_classes=num_classes
+        self.length=length
+        self.dp = nn.Dropout(p=0.8)
+        
+        self.avgpool_slow = nn.AdaptiveAvgPool3d(output_size=(4, 1, 1))
+        self.avgpool_fast = nn.AdaptiveAvgPool3d(output_size=(16, 1, 1))
+        
+        self.model = slowfast_50(modelPath)   
+        self.model.head.dropout = nn.Dropout(0.8)
+        
+        self.bert_fast = BERT5(self.hidden_size_fast, 16 , hidden=self.hidden_size_fast, 
+                               n_layers=self.n_layers, attn_heads=self.attn_heads)
+        
+        self.bert_slow = BERT5(self.hidden_size_slow, 4 , hidden=self.hidden_size_slow, 
+                               n_layers=self.n_layers, attn_heads=self.attn_heads)
+        
+        downsample = nn.Sequential(
+            nn.Conv3d(2048, 512,
+                      kernel_size=1, stride=1, bias=False),
+            nn.BatchNorm3d(512)
+        )
+
+
+        self.mapper = Bottleneck(2048, 256, stride = 1, downsample = downsample)
+
+        for m in self.mapper.modules():
+            if isinstance(m, nn.Conv3d):
+                nn.init.kaiming_normal_(m.weight)
+                #m.weight = nn.init.kaiming_normal(m.weight, mode='fan_out')
+            elif isinstance(m, nn.BatchNorm3d):
+                m.weight.data.fill_(1)
+                m.bias.data.zero_()           
+        self.fc_action = nn.Linear(self.hidden_size_fast + self.hidden_size_slow, num_classes)
+            
+        for param in self.model.parameters():
+            param.requires_grad = True
+
+        torch.nn.init.xavier_uniform_(self.fc_action.weight)
+        self.fc_action.bias.data.zero_()
+        
+    def forward(self, x):
+        fast_input = x[:, :, ::2, :, :]
+        slow_input = x[:, :, ::8, :, :]
+        x = self.model.forward_feature([slow_input, fast_input])
+        slow_feature = x[0]
+        fast_feature = x[1]
+        slow_feature = self.mapper(slow_feature)
+        slow_feature = self.avgpool_slow(slow_feature)
+        fast_feature = self.avgpool_fast(fast_feature)
+        
+        slow_feature = slow_feature.view(slow_feature.size(0), self.hidden_size_slow, 4)
+        slow_feature = slow_feature.transpose(1,2)   
+        output_slow , maskSample = self.bert_slow(slow_feature)
+        slow_feature_out = output_slow[:,0,:]
+        
+        fast_feature = fast_feature.view(fast_feature.size(0), self.hidden_size_fast, 16)
+        fast_feature = fast_feature.transpose(1,2)
+        input_vectors = fast_feature
+        output_fast , maskSample = self.bert_fast(fast_feature)
+        fast_feature_out = output_fast[:,0,:]
+        
+        sequenceOut=output_fast[:,1:,:]
+        classificationOut = torch.cat([slow_feature_out, fast_feature_out], 1)
+        output=self.dp(classificationOut)
+        x = self.fc_action(output)
+        return x, input_vectors, sequenceOut, maskSample
+    
+class rgb_slowfast64f_50_bert9(nn.Module):
+    def __init__(self, num_classes , length, modelPath=''):
+        super(rgb_slowfast64f_50_bert9, self).__init__()
+        self.hidden_size_fast=256
+        self.hidden_size_slow=2048
+        self.n_layers=1
+        self.attn_heads=8
+        self.num_classes=num_classes
+        self.length=length
+        self.dp = nn.Dropout(p=0.8)
+        
+        self.avgpool = nn.AvgPool3d((1, 7, 7), stride=1)
+        
+        self.model = slowfast_50(modelPath)   
+        self.model.head.dropout = nn.Dropout(0.8)
+        
+        self.bert_fast = BERT5(self.hidden_size_fast, 32 , hidden=self.hidden_size_fast, 
+                               n_layers=self.n_layers, attn_heads=self.attn_heads)
+        
+        self.bert_slow = BERT5(self.hidden_size_slow, 8 , hidden=self.hidden_size_slow, 
+                               n_layers=self.n_layers, attn_heads=self.attn_heads)
+               
+        self.fc_action = nn.Linear(self.hidden_size_fast + self.hidden_size_slow, num_classes)
+            
+        for param in self.model.parameters():
+            param.requires_grad = True
+
+        torch.nn.init.xavier_uniform_(self.fc_action.weight)
+        self.fc_action.bias.data.zero_()
+        
+    def forward(self, x):
+        fast_input = x[:, :, ::2, :, :]
+        slow_input = x[:, :, ::8, :, :]
+        x = self.model.forward_feature([slow_input, fast_input])
+        slow_feature = x[0]
+        fast_feature = x[1]
+        slow_feature = self.avgpool(slow_feature)
+        fast_feature = self.avgpool(fast_feature)
+        
+        slow_feature = slow_feature.view(slow_feature.size(0), self.hidden_size_slow, 8)
+        slow_feature = slow_feature.transpose(1,2)   
+        output_slow , maskSample = self.bert_slow(slow_feature)
+        slow_feature_out = output_slow[:,0,:]
+        
+        fast_feature = fast_feature.view(fast_feature.size(0), self.hidden_size_fast, 32)
+        fast_feature = fast_feature.transpose(1,2)
+        input_vectors = fast_feature
+        output_fast , maskSample = self.bert_fast(fast_feature)
+        fast_feature_out = output_fast[:,0,:]
+        
+        sequenceOut=output_fast[:,1:,:]
+        classificationOut = torch.cat([slow_feature_out, fast_feature_out], 1)
+        output=self.dp(classificationOut)
+        x = self.fc_action(output)
+        return x, input_vectors, sequenceOut, maskSample
+    
+    
+class rgb_slowfast64f_50_bert2(nn.Module):
+    def __init__(self, num_classes , length, modelPath=''):
+        super(rgb_slowfast64f_50_bert2, self).__init__()
+        self.hidden_size_fast=256
+        self.hidden_size_slow=512
+        self.n_layers=1
+        self.attn_heads=8
+        self.num_classes=num_classes
+        self.length=length
+        self.dp = nn.Dropout(p=0.8)
+        
+        self.avgpool = nn.AvgPool3d((1, 7, 7), stride=1)
+        
+        self.model = slowfast_50(modelPath)   
+        self.model.head.dropout = nn.Dropout(0.8)
+        
+        self.bert_fast = BERT2(self.hidden_size_fast, 32 , hidden=self.hidden_size_fast, 
+                               n_layers=self.n_layers, attn_heads=self.attn_heads)
+        
+        self.bert_slow = BERT2(self.hidden_size_slow, 8 , hidden=self.hidden_size_slow, 
+                               n_layers=self.n_layers, attn_heads=self.attn_heads)
+        
+        downsample = nn.Sequential(
+            nn.Conv3d(2048, 512,
+                      kernel_size=1, stride=1, bias=False),
+            nn.BatchNorm3d(512)
+        )
+
+
+        self.mapper = Bottleneck(2048, 256, stride = 1, downsample = downsample)
+
+        for m in self.mapper.modules():
+            if isinstance(m, nn.Conv3d):
+                nn.init.kaiming_normal_(m.weight)
+                #m.weight = nn.init.kaiming_normal(m.weight, mode='fan_out')
+            elif isinstance(m, nn.BatchNorm3d):
+                m.weight.data.fill_(1)
+                m.bias.data.zero_()           
+        self.fc_action = nn.Linear(self.hidden_size_fast + self.hidden_size_slow, num_classes)
+            
+        for param in self.model.parameters():
+            param.requires_grad = True
+
+        torch.nn.init.xavier_uniform_(self.fc_action.weight)
+        self.fc_action.bias.data.zero_()
+        
+    def forward(self, x):
+        fast_input = x[:, :, ::2, :, :]
+        slow_input = x[:, :, ::8, :, :]
+        x = self.model.forward_feature([slow_input, fast_input])
+        slow_feature = x[0]
+        fast_feature = x[1]
+        slow_feature = self.mapper(slow_feature)
+        slow_feature = self.avgpool(slow_feature)
+        fast_feature = self.avgpool(fast_feature)
+        
+        slow_feature = slow_feature.view(slow_feature.size(0), self.hidden_size_slow, 8)
+        slow_feature = slow_feature.transpose(1,2)   
+        norm = slow_feature.norm(p=2, dim = -1, keepdim=True)
+        slow_feature = slow_feature.div(norm)
+        output_slow , maskSample = self.bert_slow(slow_feature)
+        slow_feature_out = output_slow[:,0,:]
+        
+        fast_feature = fast_feature.view(fast_feature.size(0), self.hidden_size_fast, 32)
+        fast_feature = fast_feature.transpose(1,2)
+        norm = fast_feature.norm(p=2, dim = -1, keepdim=True)
+        fast_feature = fast_feature.div(norm)
+        input_vectors = fast_feature
+        output_fast , maskSample = self.bert_fast(fast_feature)
+        fast_feature_out = output_fast[:,0,:]
+        
+        sequenceOut=output_fast[:,1:,:]
+        classificationOut = torch.cat([slow_feature_out, fast_feature_out], 1)
+        output=self.dp(classificationOut)
+        x = self.fc_action(output)
+        return x, input_vectors, sequenceOut, maskSample
+        
+    
+class Bottleneck(nn.Module):
+    expansion = 2
+
+    def __init__(self, inplanes, planes, stride=1, downsample=None):
+        super(Bottleneck, self).__init__()
+        self.conv1 = nn.Conv3d(inplanes, planes, kernel_size=1, bias=False)
+        self.bn1 = nn.BatchNorm3d(planes)
+        self.conv2 = nn.Conv3d(planes, planes, kernel_size=3, stride=stride,
+                               padding=1, bias=False)
+        self.bn2 = nn.BatchNorm3d(planes)
+        self.conv3 = nn.Conv3d(planes, planes * 2, kernel_size=1, bias=False)
+        self.bn3 = nn.BatchNorm3d(planes * 2)
+        self.relu = nn.ReLU(inplace=True)
+        self.downsample = downsample
+        self.stride = stride
+
+    def forward(self, x):
+        residual = x
+
+        out = self.conv1(x)
+        out = self.bn1(out)
+        out = self.relu(out)
+
+        out = self.conv2(out)
+        out = self.bn2(out)
+        out = self.relu(out)
+
+        out = self.conv3(out)
+        out = self.bn3(out)
+
+        if self.downsample is not None:
+            residual = self.downsample(x)
+
+        out += residual
+        out = self.relu(out)
+
+        return out
         

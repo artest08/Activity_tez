@@ -14,7 +14,7 @@ import numpy as np
 
 
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]="1"
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 import torch
 import torch.nn as nn
@@ -32,7 +32,7 @@ import swats
 from opt.AdamW import AdamW
 from weights.model_path import rgb_3d_model_path_selection
 
-#slowfast 7 flow_resnext 8 batch size
+
 model_names = sorted(name for name in models.__dict__
     if not name.startswith("__")
     and callable(models.__dict__[name]))
@@ -51,7 +51,7 @@ parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51", "smtV2", "window"],
                     help='dataset: ucf101 | hmdb51 | smtV2')
 
-parser.add_argument('--arch', '-a', default='rgb_resneXt3D64f101_bert10XY2',
+parser.add_argument('--arch', '-a', default='flow_I3D64f_bert2',
                     choices=model_names,
                     help='model architecture: ' +
                         ' | '.join(model_names) +
@@ -63,11 +63,11 @@ parser.add_argument('-j', '--workers', default=2, type=int, metavar='N',
                     help='number of data loading workers (default: 4)')
 parser.add_argument('--epochs', default=200, type=int, metavar='N',
                     help='number of total epochs to run')
-parser.add_argument('-b', '--batch-size', default=9, type=int,
+parser.add_argument('-b', '--batch-size', default=6, type=int,
                     metavar='N', help='mini-batch size (default: 50)')
-parser.add_argument('--iter-size', default=14, type=int,
+parser.add_argument('--iter-size', default=21, type=int,
                     metavar='I', help='iter size as in Caffe to reduce memory usage (default: 5)')
-parser.add_argument('--lr', '--learning-rate', default=1e-6, type=float,
+parser.add_argument('--lr', '--learning-rate', default=1e-5, type=float,
                     metavar='LR', help='initial learning rate')
 parser.add_argument('--lr_steps', default=[10], type=float, nargs="+",
                     metavar='LRSteps', help='epochs to decay learning rate by 10')
@@ -75,7 +75,7 @@ parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
                     help='momentum')
 parser.add_argument('--weight-decay', '--wd', default=1e-3, type=float,
                     metavar='W', help='weight decay (default: 5e-4)')
-parser.add_argument('--print-freq', default=200, type=int,
+parser.add_argument('--print-freq', default=400, type=int,
                     metavar='N', help='print frequency (default: 50)')
 parser.add_argument('--save-freq', default=1, type=int,
                     metavar='N', help='save frequency (default: 25)')
@@ -100,7 +100,7 @@ training_continue = True
 
 
 def main():
-    global args, best_prec1,model,writer,best_loss, length, width, height, input_size
+    global args, best_prec1,model,writer,best_loss, length, width, height, input_size, scheduler
     args = parser.parse_args()
     
     if '3D' in args.arch:
@@ -177,9 +177,9 @@ def main():
     #optimizer = torch.optim.Adam(model.parameters(), args.lr)
     
     scheduler = lr_scheduler.ReduceLROnPlateau(
-        optimizer, 'max', patience=6, verbose=True)
+        optimizer, 'min', patience=5, verbose=True)
     
-    #scheduler = lr_scheduler.CyclicLR(optimizer, base_lr = args.lr * 0.001, max_lr = args.lr)
+    #scheduler = lr_scheduler.CyclicLR(optimizer, base_lr = args.lr * 0.001, max_lr = args.lr, cycle_momentum=False)
     if args.contine:
         scheduler.step(best_prec1)
         print('scheduler step with best prec %f' %(best_prec1))
@@ -356,7 +356,7 @@ def main():
             writer.add_scalar('data/top1_validation', prec1, epoch)
             writer.add_scalar('data/top3_validation', prec3, epoch)
             writer.add_scalar('data/classification_loss_validation', lossClassification, epoch)
-            scheduler.step(prec1)
+            scheduler.step(lossClassification)
         # remember best prec@1 and save checkpoint
         
         is_best = prec1 >= best_prec1
@@ -493,7 +493,7 @@ def train(train_loader, model, criterion, criterion2, optimizer, epoch,modality)
             if "3D" in args.arch or "r2plus1d" in args.arch or 'slowfast' in args.arch:
                 inputs=inputs.view(-1,length,3,input_size,input_size).transpose(1,2)
         elif modality == "flow":
-            if "3D" in args.arch:
+            if "3D" in args.arch or "r2plus1d" in args.arch:
                 inputs=inputs.view(-1,length,2,input_size,input_size).transpose(1,2)
             else:
                 inputs=inputs.view(-1,2*length,input_size,input_size)          
@@ -543,6 +543,7 @@ def train(train_loader, model, criterion, criterion2, optimizer, epoch,modality)
             acc_mini_batch = 0
             acc_mini_batch_top3 = 0.0
             totalSamplePerIter = 0.0
+            #scheduler.step()
             
         if (i+1) % args.print_freq == 0:
             print('[%d] time: %.3f loss: %.4f' %(i,batch_time.avg,lossesClassification.avg))
@@ -568,7 +569,7 @@ def validate(val_loader, model, criterion,criterion2,modality):
                 if "3D" in args.arch or "r2plus1d" in args.arch or 'slowfast' in args.arch:
                     inputs=inputs.view(-1,length,3,input_size,input_size).transpose(1,2)
             elif modality == "flow":
-                if "3D" in args.arch:
+                if "3D" in args.arch or "r2plus1d" in args.arch:
                     inputs=inputs.view(-1,length,2,input_size,input_size).transpose(1,2)
                 else:
                     inputs=inputs.view(-1,2*length,input_size,input_size)

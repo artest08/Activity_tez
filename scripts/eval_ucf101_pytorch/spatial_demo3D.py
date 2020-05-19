@@ -46,7 +46,7 @@ parser = argparse.ArgumentParser(description='PyTorch Two-Stream Action Recognit
 parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51"],
                     help='dataset: ucf101 | hmdb51')
-parser.add_argument('--arch', '-a', metavar='ARCH', default='flow_resneXt3D64f101_bert10XY',
+parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_slowfast64f_50_bert2',
                     choices=model_names)
 
 parser.add_argument('-s', '--split', default=1, type=int, metavar='S',
@@ -67,11 +67,11 @@ num_seg_3D=1
 result_dict = {}
 
 def buildModel(model_path,num_categories):
+    params = torch.load(model_path)
     if not '3D' in args.arch:
         model=models.__dict__[args.arch](modelPath='', num_classes=num_categories,length=num_seg)
     else:
         model=models.__dict__[args.arch](modelPath='', num_classes=num_categories,length=num_seg_3D)
-    params = torch.load(model_path)
     if args.tsn:
         new_dict = {k[7:]: v for k, v in params['state_dict'].items()} 
         model_dict=model.state_dict() 

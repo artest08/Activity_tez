@@ -49,7 +49,7 @@ parser.add_argument('--dataset', '-d', default='hmdb51',
                     help='dataset: ucf101 | hmdb51')
 parser.add_argument('--arch1', '-a', metavar='ARCH', default='rgb_r2plus1d_32f_34',
                     choices=model_names)
-parser.add_argument('--arch2', '-b', metavar='ARCH', default='rgb_slowfast64f_50',
+parser.add_argument('--arch2', '-b', metavar='ARCH', default='rgb_r2plus1d_32f_34_bert10',
                     choices=model_names)
 parser.add_argument('--arch3', '-c', metavar='ARCH', default='rgb_resneXt3D64f101_student_mars',
                     choices=model_names)
@@ -69,7 +69,9 @@ multiGPUTest=False
 multiGPUTrain=False
 
 ten_crop_enabled = False
-multiple_clips_enabled = False
+multiple_clips_enabled = True
+
+third_enabled = False
 
 num_seg_rgb=16
 num_seg_pose=16
@@ -237,17 +239,18 @@ def main():
                                            extension = arch2_extension,
                                            ten_crop = ten_crop_enabled)
             
-            _ , arch3_result, _ = VideoSpatialPrediction3D_bert(
-                                           clip_path,
-                                           arch3_net,
-                                           num_categories,
-                                           args.arch3,
-                                           start_frame,
-                                           duration,
-                                           num_seg=num_seg_3D ,
-                                           length = arch3_length, 
-                                           extension = arch3_extension,
-                                           ten_crop = ten_crop_enabled)    
+            if third_enabled:
+                _ , arch3_result, _ = VideoSpatialPrediction3D_bert(
+                                               clip_path,
+                                               arch3_net,
+                                               num_categories,
+                                               args.arch3,
+                                               start_frame,
+                                               duration,
+                                               num_seg=num_seg_3D ,
+                                               length = arch3_length, 
+                                               extension = arch3_extension,
+                                               ten_crop = ten_crop_enabled)    
     
     
         else:
@@ -272,27 +275,31 @@ def main():
                                            length = arch2_length, 
                                            extension = arch2_extension,
                                            ten_crop = ten_crop_enabled)
-            _ , arch3_result, _ = VideoSpatialPrediction3D(
-                                           clip_path,
-                                           arch3_net,
-                                           num_categories,
-                                           args.arch3,
-                                           start_frame,
-                                           duration,
-                                           length = arch3_length, 
-                                           extension = arch3_extension,
-                                           ten_crop = ten_crop_enabled)
+            if third_enabled:
+                _ , arch3_result, _ = VideoSpatialPrediction3D(
+                                               clip_path,
+                                               arch3_net,
+                                               num_categories,
+                                               args.arch3,
+                                               start_frame,
+                                               duration,
+                                               length = arch3_length, 
+                                               extension = arch3_extension,
+                                               ten_crop = ten_crop_enabled)
                          
             
         end = time.time()
         estimatedTime=end-start
         timeList.append(estimatedTime)
         
-        # arch1_result = arch1_result / LA.norm(arch1_result)
-        # arch2_result = arch2_result / LA.norm(arch2_result)
-        # arch3_result = arch3_result / LA.norm(arch3_result)
+        arch1_result = arch1_result / LA.norm(arch1_result)
+        arch2_result = arch2_result / LA.norm(arch2_result)
         
-        combined_result = arch1_result + arch2_result + arch3_result
+        if third_enabled:
+            arch3_result = arch3_result / LA.norm(arch3_result)
+            combined_result = arch1_result + arch2_result + arch3_result
+        else:
+            combined_result = arch1_result + arch2_result
         pred_index = np.argmax(combined_result)
         top3 = combined_result.argsort()[::-1][:3]
         
@@ -315,7 +322,8 @@ def main():
     print("top3 accuracy %4.4f" % (float(match_count_top3)/len(val_list)))
     print(modelLocationARCH1)
     print(modelLocationARCH2)
-    print(modelLocationARCH3)
+    if third_enabled:
+        print(modelLocationARCH3)
     print("Mean Estimated Time %0.4f" % (np.mean(timeList)))  
     if multiple_clips_enabled:
         print('multiple clips')

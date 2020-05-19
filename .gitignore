@@ -4,6 +4,7 @@
 *.pth
 *.tar
 *.pt
+*.csv
 
 **/__pycache__
 

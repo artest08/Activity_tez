@@ -5,7 +5,7 @@ import math
 
 class PositionalEmbedding(nn.Module):
 
-    def __init__(self, d_model, max_len=512, freq=10000):
+    def __init__(self, d_model, max_len=512, freq=64):
         super().__init__()
 
         # Compute the positional encodings once in log space.
@@ -45,3 +45,19 @@ class LearnedPositionalEmbedding2(nn.Module):
 
     def forward(self, x):
         return self.pe[:, :x.size(1)]
+    
+class LearnedPositionalEmbedding(nn.Module):
+
+    def __init__(self, d_model, max_len=512):
+        super().__init__()
+
+        # Compute the positional encodings once in log space.
+        pe = torch.zeros(max_len, d_model).float().to(device='cuda')
+        pe.require_grad = True
+        pe = pe.unsqueeze(0)
+        self.pe=nn.Parameter(pe)
+        torch.nn.init.normal_(self.pe,std = d_model ** -0.5)
+
+    def forward(self, x):
+        return self.pe[:, :x.size(1)]
+    
