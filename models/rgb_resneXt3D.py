@@ -18,10 +18,10 @@ from .BERT.embedding import BERTEmbedding
 __all__ = ['rgb_resneXt3D64f101','rgb_resneXt3D64f101_bert10XX','rgb_resneXt3D64f101_bert10XY','rgb_resneXt3D16f101'
            ,'rgb_resneXt3D64f101_bert10XYY','rgb_resneXt3D64f101_bert10XY2','rgb_resneXt3D64f101_bert10XY3'
            ,'rgb_resneXt3D64f101_16fweight','rgb_resneXt3D64f101_bert10XY_16fweight','rgb_resneXt3D64f101_bert10XY_nonPreTrained',
-           'rgb_mars_resnext3D64f101', 'flow_mars_resnext3D64f101', 'flow_resneXt3D64f101', 
+           'rgb_mars_resnext3D64f101', 'flow_mars_resnext3D64f101', 'flow_resneXt3D64f101', 'rgb_resneXt3D64f101_224', 
            'rgb_resneXt3D64f101_student_mars',
            'flow_resneXt3D64f101_bert10XY',
-           'rgb_resneXt3D64f101_bert10XYS', 'rgb_resneXt3D64f101_bert2S']
+           'rgb_resneXt3D64f101_bert10XYS', 'rgb_resneXt3D64f101_bert2S', 'flow_resneXt3D64f101_bert2S']
 
 
 class rgb_resneXt3D64f101(nn.Module):
@@ -46,6 +46,32 @@ class rgb_resneXt3D64f101(nn.Module):
         x = self.dp(x)
         x = self.fc_action(x)
         return x
+    
+    
+class rgb_resneXt3D64f101_224(nn.Module):
+    def __init__(self, num_classes , length, modelPath=''):
+        super(rgb_resneXt3D64f101_224, self).__init__()
+        self.num_classes=num_classes
+        self.dp = nn.Dropout(p=0.8)
+        
+
+        self.features=nn.Sequential(*list(_trained_resnext101(model_path=modelPath, sample_size=224, sample_duration=64).children())[:-1])
+        
+        self.fc_action = nn.Linear(2048, num_classes)
+        for param in self.features.parameters():
+            param.requires_grad = True
+                
+        torch.nn.init.xavier_uniform_(self.fc_action.weight)
+        self.fc_action.bias.data.zero_()
+        
+    def forward(self, x):
+        x = self.features(x)
+        x = x.view(x.size(0), -1)
+        x = self.dp(x)
+        x = self.fc_action(x)
+        return x
+    
+
     
 class rgb_resneXt3D64f101_student_mars(nn.Module):
     def __init__(self, num_classes , length, modelPath=''):
@@ -467,6 +493,63 @@ class rgb_resneXt3D64f101_bert2S(nn.Module):
         self.avgpool = nn.AvgPool3d((1, 4, 4), stride=1)
         self.features=nn.Sequential(*list(_trained_resnext101(model_path=modelPath, sample_size=112, sample_duration=64).children())[:-2])
         
+        downsample = nn.Sequential(
+            nn.Conv3d(
+                2048,
+                512,
+                kernel_size=1,
+                stride=1,
+                bias=False), nn.BatchNorm3d(512))
+
+        self.mapper = ResNeXtBottleneck(2048, 256, cardinality = 32, stride = 1, downsample = downsample)
+
+        for m in self.mapper.modules():
+            if isinstance(m, nn.Conv3d):
+                nn.init.kaiming_normal_(m.weight)
+                #m.weight = nn.init.kaiming_normal(m.weight, mode='fan_out')
+            elif isinstance(m, nn.BatchNorm3d):
+                m.weight.data.fill_(1)
+                m.bias.data.zero_()      
+                
+        self.bert = BERT2(self.hidden_size, 4 , hidden=self.hidden_size, n_layers=self.n_layers, attn_heads=self.attn_heads)
+        
+        self.fc_action = nn.Linear(self.hidden_size, num_classes)
+      
+        for param in self.features.parameters():
+            param.requires_grad = True
+  
+        torch.nn.init.xavier_uniform_(self.fc_action.weight)
+        self.fc_action.bias.data.zero_()
+        
+    def forward(self, x):
+        x = self.features(x)
+        x = self.mapper(x)
+        x = self.avgpool(x)
+        x = x.view(x.size(0), self.hidden_size, 4)
+        x = x.transpose(1,2)
+        norm = x.norm(p=2, dim = -1, keepdim=True)
+        x = x.div(norm)
+        input_vectors=x
+        output , maskSample = self.bert(x)
+        classificationOut = output[:,0,:]
+        sequenceOut=output[:,1:,:]
+        output=self.dp(classificationOut)
+        x = self.fc_action(output)
+        return x, input_vectors, sequenceOut, maskSample
+    
+class flow_resneXt3D64f101_bert2S(nn.Module):
+    def __init__(self, num_classes , length, modelPath=''):
+        super(flow_resneXt3D64f101_bert2S, self).__init__()
+        self.hidden_size=512
+        self.n_layers=1
+        self.attn_heads=8
+        self.num_classes=num_classes
+        self.length=length
+        self.dp = nn.Dropout(p=0.8)
+        
+        self.avgpool = nn.AvgPool3d((1, 4, 4), stride=1)
+        self.features=nn.Sequential(*list(_trained_resnext101_flow(model_path_flow=modelPath, \
+            sample_size=112, sample_duration=64).children())[:-2])
         downsample = nn.Sequential(
             nn.Conv3d(
                 2048,

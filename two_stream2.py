@@ -53,7 +53,7 @@ parser.add_argument('--settings', metavar='DIR', default='./datasets/settings',
 parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51", "smtV2"],
                     help='dataset: ucf101 | hmdb51')
-parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_r2plus1d_32f_34',
+parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resneXt3D64f101_224',
                     choices=model_names,
                     help='model architecture: ' +
                         ' | '.join(model_names) +
@@ -67,9 +67,9 @@ parser.add_argument('--epochs', default=300, type=int, metavar='N',
                     help='number of total epochs to run')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
                     help='manual epoch number (useful on restarts)')
-parser.add_argument('-b', '--batch-size', default=6, type=int,
+parser.add_argument('-b', '--batch-size', default=4, type=int,
                     metavar='N', help='mini-batch size (default: 50)')
-parser.add_argument('--iter-size', default=21, type=int,
+parser.add_argument('--iter-size', default=32, type=int,
                     metavar='I', help='iter size as in Caffe to reduce memory usage (default: 5)')
 parser.add_argument('--lr', '--learning-rate', default=1e-2, type=float,
                     metavar='LR', help='initial learning rate')
@@ -113,7 +113,10 @@ def main():
             else:
                 scale = 1
         else:
-            scale = 0.5
+            if '224' in args.arch:
+                scale = 1
+            else:
+                scale = 0.5
     elif 'r2plus1d' in args.arch:
         scale = 0.5
     else:

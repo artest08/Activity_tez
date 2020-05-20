@@ -14,7 +14,7 @@ import numpy as np
 
 
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]="0"
+os.environ["CUDA_VISIBLE_DEVICES"]="1"
 
 import torch
 import torch.nn as nn
@@ -51,7 +51,7 @@ parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51", "smtV2", "window"],
                     help='dataset: ucf101 | hmdb51 | smtV2')
 
-parser.add_argument('--arch', '-a', default='flow_I3D64f_bert2',
+parser.add_argument('--arch', '-a', default='rgb_resneXt3D64f101_bert2S',
                     choices=model_names,
                     help='model architecture: ' +
                         ' | '.join(model_names) +
@@ -63,11 +63,11 @@ parser.add_argument('-j', '--workers', default=2, type=int, metavar='N',
                     help='number of data loading workers (default: 4)')
 parser.add_argument('--epochs', default=200, type=int, metavar='N',
                     help='number of total epochs to run')
-parser.add_argument('-b', '--batch-size', default=6, type=int,
+parser.add_argument('-b', '--batch-size', default=9, type=int,
                     metavar='N', help='mini-batch size (default: 50)')
-parser.add_argument('--iter-size', default=21, type=int,
+parser.add_argument('--iter-size', default=14, type=int,
                     metavar='I', help='iter size as in Caffe to reduce memory usage (default: 5)')
-parser.add_argument('--lr', '--learning-rate', default=1e-5, type=float,
+parser.add_argument('--lr', '--learning-rate', default=1e-6, type=float,
                     metavar='LR', help='initial learning rate')
 parser.add_argument('--lr_steps', default=[10], type=float, nargs="+",
                     metavar='LRSteps', help='epochs to decay learning rate by 10')
@@ -110,7 +110,10 @@ def main():
             else:
                 scale = 1
         else:
-            scale = 0.5
+            if '224' in args.arch:
+                scale = 1
+            else:
+                scale = 0.5
     elif 'r2plus1d' in args.arch:
         scale = 0.5
     else:
