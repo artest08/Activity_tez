@@ -47,9 +47,9 @@ parser = argparse.ArgumentParser(description='PyTorch Two-Stream Action Recognit
 parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51"],
                     help='dataset: ucf101 | hmdb51')
-parser.add_argument('--arch_flow', '-a', metavar='ARCH', default='flow_I3D64f_bert2',
+parser.add_argument('--arch_flow', '-a', metavar='ARCH', default='flow_resneXt3D64f101_bert10S',
                     choices=model_names)
-parser.add_argument('--arch_rgb', '-b', metavar='ARCH', default='rgb_I3D64f_bert2',
+parser.add_argument('--arch_rgb', '-b', metavar='ARCH', default='rgb_resneXt3D64f101_bert10XY2',
                     choices=model_names)
 parser.add_argument('--arch_pose', '-c', metavar='ARCH', default='pose_resnet18_bert10',
                     choices=model_names)

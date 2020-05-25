@@ -15,7 +15,7 @@ import numpy as np
 
 
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]="0"
+os.environ["CUDA_VISIBLE_DEVICES"]="1"
 
 import torch
 import torch.nn as nn
@@ -48,11 +48,11 @@ parser.add_argument('--settings', metavar='DIR', default='./datasets/settings',
 parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51", "smtV2"],
                     help='dataset: ucf101 | hmdb51')
-parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resneXt3D64f101_student_mars',
+parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resneXt3D64f101_bert10S_MARS',
                     choices=model_names,
                     help='model architecture: ' +
                         ' | '.join(model_names))
-parser.add_argument('--arch_teacher', '-teacher', metavar='ARCH', default='flow_resneXt3D64f101',
+parser.add_argument('--arch_teacher', '-teacher', metavar='ARCH', default='flow_resneXt3D64f101_bert10S',
                     choices=model_names,
                     help='model architecture: ' +
                         ' | '.join(model_names))
@@ -64,11 +64,11 @@ parser.add_argument('--epochs', default=200, type=int, metavar='N',
                     help='number of total epochs to run')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
                     help='manual epoch number (useful on restarts)')
-parser.add_argument('-b', '--batch-size', default=8, type=int,
+parser.add_argument('-b', '--batch-size', default=9, type=int,
                     metavar='N', help='mini-batch size (default: 50)')
-parser.add_argument('--iter-size', default=16, type=int,
+parser.add_argument('--iter-size', default=14, type=int,
                     metavar='I', help='iter size as in Caffe to reduce memory usage (default: 5)')
-parser.add_argument('--lr', '--learning-rate', default=1e-2, type=float,
+parser.add_argument('--lr', '--learning-rate', default=1e-5, type=float,
                     metavar='LR', help='initial learning rate')
 parser.add_argument('--lr_steps', default=[15], type=float, nargs="+",
                     metavar='LRSteps', help='epochs to decay learning rate by 10')
@@ -95,11 +95,13 @@ learning_rate_index = 0
 max_learning_rate_decay_count = 3
 best_in_existing_learning_rate = 0
 HALF = False
+lrPlateuPrec1 = False
+teacher_rgb = True
 
-training_continue = True
-
+training_continue = False
+msecoeff = 250000
 def main():
-    global args, best_prec1,model ,writer, best_loss, length, width, height, model_teacher
+    global args, best_prec1,model ,writer, best_loss, length, width, height, model_teacher, msecoeff
     global max_learning_rate_decay_count, best_in_existing_learning_rate, learning_rate_index, input_size
     args = parser.parse_args()
     
@@ -117,7 +119,7 @@ def main():
         scale = 1
         
     print('scale: %.1f' %(scale))
-    
+    print('mse coefficient: %d' %(msecoeff))
     input_size = int(224 * scale)
     width = int(340 * scale)
     height = int(256 * scale)
@@ -152,13 +154,17 @@ def main():
     criterion = nn.CrossEntropyLoss().cuda()
     criterion_mse = nn.MSELoss().cuda()
     
-
-    optimizer = torch.optim.SGD(
-        model.parameters(),
-        lr=args.lr,
-        momentum=args.momentum,
-        dampening=0.9,
-        weight_decay=args.weight_decay)
+    if 'bert' in args.arch:
+        print("Optimizer ADAMW")
+        optimizer = AdamW(model.parameters(), lr= args.lr, weight_decay=args.weight_decay)
+    else:
+        print("Optimizer SGD")
+        optimizer = torch.optim.SGD(
+            model.parameters(),
+            lr=args.lr,
+            momentum=args.momentum,
+            dampening=0.9,
+            weight_decay=args.weight_decay)
     
     if training_continue:
         model, startEpoch, optimizer, best_prec1 = build_model_continue()
@@ -172,8 +178,12 @@ def main():
     #                   lr=args.lr,
     #                   weight_decay=args.weight_decay)
     
-    scheduler = lr_scheduler.ReduceLROnPlateau(
-        optimizer, 'max', patience=5,verbose=True)
+    if lrPlateuPrec1:
+        scheduler = lr_scheduler.ReduceLROnPlateau(
+            optimizer, 'max', patience=5, verbose=True)
+    else:
+        scheduler = lr_scheduler.ReduceLROnPlateau(
+            optimizer, 'min', patience=5, verbose=True)
     
     #optimizer = torch.optim.Adam(model.parameters(), args.lr, weight_decay=args.weight_decay)
     #optimizer = swats.SWATS(model.parameters(), args.lr)
@@ -287,7 +297,10 @@ def main():
             writer.add_scalar('data/top1_validation', prec1, epoch)
             writer.add_scalar('data/top3_validation', prec3, epoch)
             writer.add_scalar('data/classification_loss_validation', lossClassification, epoch)
-            scheduler.step(prec1)
+            if lrPlateuPrec1:
+                scheduler.step(prec1)
+            else:
+                scheduler.step(lossClassification)
         # remember best prec@1 and save checkpoint
         
         is_best = prec1 > best_prec1
@@ -385,12 +398,15 @@ def build_model_continue():
    
     model.load_state_dict(params['state_dict'])
     model = model.cuda()
-    optimizer = torch.optim.SGD(
-        model.parameters(),
-        lr=args.lr,
-        momentum=args.momentum,
-        dampening=0.9,
-        weight_decay=args.weight_decay)
+    if 'bert' in args.arch:
+        optimizer = AdamW(model.parameters(), lr= args.lr, weight_decay=args.weight_decay)
+    else:
+        optimizer = torch.optim.SGD(
+            model.parameters(),
+            lr=args.lr,
+            momentum=args.momentum,
+            dampening=0.9,
+            weight_decay=args.weight_decay)
     optimizer.load_state_dict(params['optimizer'])
     
     startEpoch = params['epoch']
@@ -405,7 +421,11 @@ def train(train_loader, model, criterion, criterion_mse, optimizer, epoch):
     top1 = AverageMeter()
     top3 = AverageMeter()
     
-    mse_loss_coeff = torch.tensor(50).cuda()
+    if 'bert' in args.arch:
+        mse_loss_coeff = torch.tensor(msecoeff).cuda()
+    else:
+        mse_loss_coeff = torch.tensor(50).cuda()
+    
     # switch to train mode
     model.train()
 
@@ -419,16 +439,23 @@ def train(train_loader, model, criterion, criterion_mse, optimizer, epoch):
     for i, (inputs, targets) in enumerate(train_loader):
         inputs=inputs.view(-1,length,5,input_size,input_size).transpose(1,2)
         inputs_student = inputs[:,:3,...]
-        inputs_teacher = inputs[:,3:5,...]
+        if teacher_rgb:
+            inputs_teacher = inputs[:,:3,...]
+        else:
+            inputs_teacher = inputs[:,3:5,...]
 
         inputs_student = inputs_student.cuda()
         inputs_teacher = inputs_teacher.cuda()
         
         targets = targets.cuda()
         
-        output, features_student = model.student_forward(inputs_student)
-        features_teacher = model_teacher.mars_forward(inputs_teacher)
-        
+        if 'bert' in args.arch:
+                output, _ , features_student, _ = model(inputs_student)
+                _ , features_teacher , _ , _ = model_teacher(inputs_teacher)
+        else:
+            output, features_student = model.student_forward(inputs_student)
+            features_teacher = model_teacher.mars_forward(inputs_teacher)
+            
         prec1, prec3 = accuracy(output.data, targets, topk=(1, 3))
         acc_mini_batch += prec1.item()
         acc_mini_batch_top3 += prec3.item()
@@ -488,15 +515,22 @@ def validate(val_loader, model, criterion, criterion_mse):
         for i, (inputs, targets) in enumerate(val_loader):
             inputs=inputs.view(-1,length,5,input_size,input_size).transpose(1,2)
             inputs_student = inputs[:,:3,...]
-            inputs_teacher = inputs[:,3:5,...]
+            if teacher_rgb:
+                inputs_teacher = inputs[:,:3,...]
+            else:
+                inputs_teacher = inputs[:,3:5,...]
     
             inputs_student = inputs_student.cuda()
             inputs_teacher = inputs_teacher.cuda()
             targets = targets.cuda()
     
             # compute output
-            output, features_student = model.student_forward(inputs_student)
-            features_teacher = model_teacher.mars_forward(inputs_teacher)
+            if 'bert' in args.arch:
+                output, _ , features_student, _ = model(inputs_student)
+                _ , features_teacher , _ , _ = model_teacher(inputs_teacher)
+            else:
+                output, features_student = model.student_forward(inputs_student)
+                features_teacher = model_teacher.mars_forward(inputs_teacher)
                 
             lossClassification = criterion(output, targets)
             lossMSE = criterion_mse(features_student, features_teacher)

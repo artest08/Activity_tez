@@ -168,6 +168,10 @@ def VideoSpatialPrediction3D(
                 ])
             scale = 0.5
         
+    if '224' in architecture_name:
+        scale = 1
+    if '112' in architecture_name:
+        scale = 0.5
     # selection
     #step = int(math.floor((duration-1)/(num_samples-1)))
     dims2 = (224,224,3,duration)
