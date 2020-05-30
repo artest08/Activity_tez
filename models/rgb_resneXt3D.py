@@ -23,7 +23,8 @@ __all__ = ['rgb_resneXt3D64f101','rgb_resneXt3D64f101_bert10XX','rgb_resneXt3D64
            'flow_resneXt3D64f101_bert10XY', 'flow_resneXt3D64f101_bert10S', 
            'rgb_resneXt3D64f101_bert10XYS', 'rgb_resneXt3D64f101_bert2S', 'flow_resneXt3D64f101_bert2S', 
            'rgb_resneXt3D64f101_bert', 'rgb_resneXt3D64f101_bert10S_MARS', 
-           'rgb_resneXt3D64f101_bert10B_MARS', 'rgb_resneXt3D64f101_bert10S_MARS2']
+           'rgb_resneXt3D64f101_bert10B_MARS', 'rgb_resneXt3D64f101_bert10S_MARS2', 'rgb_resneXt3D64f101_bert10S_MARS3'
+           ,'rgb_resneXt3D64f101_bert10S_MARS4']
 
 
 class rgb_resneXt3D64f101(nn.Module):
@@ -508,9 +509,13 @@ class rgb_resneXt3D64f101_bert10XY2(nn.Module):
         x = x.view(x.size(0), self.hidden_size, 4)
         x = x.transpose(1,2)
         input_vectors=x
+        norm = input_vectors.norm(p=2, dim = -1, keepdim=True)
+        input_vectors = input_vectors.div(norm)
         output , maskSample = self.bert(x)
         classificationOut = output[:,0,:]
         sequenceOut=output[:,1:,:]
+        norm = sequenceOut.norm(p=2, dim = -1, keepdim=True)
+        sequenceOut = sequenceOut.div(norm)
         output=self.dp(classificationOut)
         x = self.fc_action(output)
         return x, input_vectors, sequenceOut, maskSample
@@ -867,7 +872,220 @@ class rgb_resneXt3D64f101_bert10S_MARS2(nn.Module):
         x = self.fc_action(output)
         return x, input_vectors, sequenceOut, maskSample
     
+class rgb_resneXt3D64f101_bert10S_MARS3(nn.Module):
+    def __init__(self, num_classes , length, modelPath=''):
+        super(rgb_resneXt3D64f101_bert10S_MARS3, self).__init__()
+        self.hidden_size=512
+        self.n_layers=1
+        self.attn_heads=8
+        self.num_classes=num_classes
+        self.length=length
+        self.dp = nn.Dropout(p=0.8)
+        
+        self.avgpool = nn.AvgPool3d((1, 4, 4), stride=1)
+        self.features=nn.Sequential(*list(_trained_resnext101(model_path=modelPath, sample_size=112, sample_duration=64).children())[:-2])
+        
+        downsample = nn.Sequential(
+            nn.Conv3d(
+                2048,
+                512,
+                kernel_size=1,
+                stride=1,
+                bias=False), nn.BatchNorm3d(512))
+
+        self.mapper = ResNeXtBottleneck(2048, 256, cardinality = 32, stride = 1, downsample = downsample)
+
+        for m in self.mapper.modules():
+            if isinstance(m, nn.Conv3d):
+                nn.init.kaiming_normal_(m.weight)
+                #m.weight = nn.init.kaiming_normal(m.weight, mode='fan_out')
+            elif isinstance(m, nn.BatchNorm3d):
+                m.weight.data.fill_(1)
+                m.bias.data.zero_()      
+                
+        self.bert = BERT5(self.hidden_size, 4 , hidden=self.hidden_size, n_layers=self.n_layers, attn_heads=self.attn_heads)
+        
+        self.bert_mars = BERT5(self.hidden_size, 4 , hidden=self.hidden_size, n_layers=self.n_layers, attn_heads=self.attn_heads)
+        
+        self.fc_action_mars = nn.Linear(self.hidden_size, num_classes)
+        self.fc_action = nn.Linear(self.hidden_size, num_classes)
+      
+        for param in self.features.parameters():
+            param.requires_grad = True
+  
+        torch.nn.init.xavier_uniform_(self.fc_action.weight)
+        self.fc_action.bias.data.zero_()
+        
+        torch.nn.init.xavier_uniform_(self.fc_action_mars.weight)
+        self.fc_action_mars.bias.data.zero_()
+        
+    def forward(self, x):
+        x = self.features(x)
+        x = self.mapper(x)
+        x = self.avgpool(x)
+        x = x.view(x.size(0), self.hidden_size, 4)
+        x = x.transpose(1,2)
+        input_vectors=x
+        norm = input_vectors.norm(p=2, dim = -1, keepdim=True)
+        input_vectors = input_vectors.div(norm)
+        
+        output_mars , maskSample = self.bert_mars(x)
+        classificationOut_mars = output_mars[:,0,:]
+        sequenceOut_mars = output_mars[:,1:,:]
+        norm = sequenceOut_mars.norm(p=2, dim = -1, keepdim=True)
+        sequenceOut_mars = sequenceOut_mars.div(norm)
+        output_mars = self.dp(classificationOut_mars)
+        x_mars = self.fc_action_mars(output_mars)
+        
+        output , maskSample = self.bert(x)
+        classificationOut = output[:,0,:]
+        output = self.dp(classificationOut)
+        x = self.fc_action_mars(output)
+        
+        out = x + x_mars
+        
+        return out, input_vectors, sequenceOut_mars, maskSample
     
+    
+class rgb_resneXt3D64f101_bert10S_MARS4(nn.Module):
+    def __init__(self, num_classes , length, modelPath=''):
+        super(rgb_resneXt3D64f101_bert10S_MARS4, self).__init__()
+        self.teacher_size = 512
+        self.student_self_size = 256
+        self.hidden_size = self.teacher_size + self.student_self_size
+        self.n_layers=1
+        self.attn_heads=8
+        self.num_classes=num_classes
+        self.length=length
+        self.dp = nn.Dropout(p=0.8)
+        
+        self.avgpool = nn.AvgPool3d((1, 4, 4), stride=1)
+        self.features=nn.Sequential(*list(_trained_resnext101(model_path=modelPath, sample_size=112, sample_duration=64).children())[:-2])
+        
+        downsample = nn.Sequential(
+            nn.Conv3d(
+                2048,
+                self.hidden_size,
+                kernel_size=1,
+                stride=1,
+                bias=False), nn.BatchNorm3d(self.hidden_size))
+
+        self.mapper = ResNeXtBottleneck(2048, int(self.hidden_size / 2), cardinality = 32, stride = 1, downsample = downsample)
+
+        for m in self.mapper.modules():
+            if isinstance(m, nn.Conv3d):
+                nn.init.kaiming_normal_(m.weight)
+                #m.weight = nn.init.kaiming_normal(m.weight, mode='fan_out')
+            elif isinstance(m, nn.BatchNorm3d):
+                m.weight.data.fill_(1)
+                m.bias.data.zero_()      
+                
+        self.bert = BERT5(self.hidden_size, 4 , hidden=self.hidden_size, n_layers=self.n_layers, attn_heads=self.attn_heads)
+        print(sum(p.numel() for p in self.bert.parameters() if p.requires_grad))
+        
+        self.fc_action = nn.Linear(self.hidden_size, num_classes)
+      
+        for param in self.features.parameters():
+            param.requires_grad = True
+  
+        torch.nn.init.xavier_uniform_(self.fc_action.weight)
+        self.fc_action.bias.data.zero_()
+        
+    def forward(self, x):
+        x = self.features(x)
+        x = self.mapper(x)
+        x = self.avgpool(x)
+        x = x.view(x.size(0), self.hidden_size, 4)
+        x = x.transpose(1,2)
+        input_vectors=x
+        norm = input_vectors.norm(p=2, dim = -1, keepdim=True)
+        input_vectors = input_vectors.div(norm)
+        output , maskSample = self.bert(x)
+        classificationOut = output[:,0,:]
+        sequenceOut=output[:,1:,:self.teacher_size]
+        norm = sequenceOut.norm(p=2, dim = -1, keepdim=True)
+        sequenceOut = sequenceOut.div(norm)
+        output=self.dp(classificationOut)
+        x = self.fc_action(output)
+        return x, input_vectors, sequenceOut, maskSample
+    
+class rgb_resneXt3D64f101_bert10S_MARS5(nn.Module):
+    def __init__(self, num_classes , length, modelPath=''):
+        super(rgb_resneXt3D64f101_bert10S_MARS5, self).__init__()
+        self.hidden_size=512
+        self.n_layers=1
+        self.attn_heads=8
+        self.num_classes=num_classes
+        self.length=length
+        self.dp = nn.Dropout(p=0.8)
+        
+        self.avgpool = nn.AvgPool3d((1, 4, 4), stride=1)
+        self.features=nn.Sequential(*list(_trained_resnext101(model_path=modelPath, sample_size=112, sample_duration=64).children())[:-2])
+        
+        downsample = nn.Sequential(
+            nn.Conv3d(
+                2048,
+                512,
+                kernel_size=1,
+                stride=1,
+                bias=False), nn.BatchNorm3d(512))
+
+        self.mapper = ResNeXtBottleneck(2048, 256, cardinality = 32, stride = 1, downsample = downsample)
+
+        for m in self.mapper.modules():
+            if isinstance(m, nn.Conv3d):
+                nn.init.kaiming_normal_(m.weight)
+                #m.weight = nn.init.kaiming_normal(m.weight, mode='fan_out')
+            elif isinstance(m, nn.BatchNorm3d):
+                m.weight.data.fill_(1)
+                m.bias.data.zero_()      
+                
+        self.bert_mars1 = BERT5(self.hidden_size, 4 , hidden=self.hidden_size, n_layers=self.n_layers, attn_heads=self.attn_heads)
+        
+        self.bert_mars2 = BERT5(self.hidden_size, 4 , hidden=self.hidden_size, n_layers=self.n_layers, attn_heads=self.attn_heads)
+        
+        self.fc_action_mars1 = nn.Linear(self.hidden_size, num_classes)
+        self.fc_action_mars2 = nn.Linear(self.hidden_size, num_classes)
+      
+        for param in self.features.parameters():
+            param.requires_grad = True
+  
+        torch.nn.init.xavier_uniform_(self.fc_action_mars1.weight)
+        self.fc_action_mars1.bias.data.zero_()
+        
+        torch.nn.init.xavier_uniform_(self.fc_action_mars2.weight)
+        self.fc_action_mars2.bias.data.zero_()
+        
+    def forward(self, x):
+        x = self.features(x)
+        x = self.mapper(x)
+        x = self.avgpool(x)
+        x = x.view(x.size(0), self.hidden_size, 4)
+        x = x.transpose(1,2)
+        input_vectors=x
+        norm = input_vectors.norm(p=2, dim = -1, keepdim=True)
+        input_vectors = input_vectors.div(norm)
+        
+        output_mars1 , maskSample = self.bert_mars1(x)
+        classificationOut_mars1 = output_mars1[:,0,:]
+        sequenceOut_mars1 = output_mars1[:,1:,:]
+        norm = sequenceOut_mars1.norm(p=2, dim = -1, keepdim=True)
+        sequenceOut_mars1 = sequenceOut_mars1.div(norm)
+        output_mars1 = self.dp(classificationOut_mars1)
+        x_mars1 = self.fc_action_mars(output_mars1)
+        
+        output_mars2 , maskSample = self.bert_mars2(x)
+        classificationOut_mars2 = output_mars2[:,0,:]
+        sequenceOut_mars2 = output_mars2[:,1:,:]
+        norm = sequenceOut_mars2.norm(p=2, dim = -1, keepdim=True)
+        sequenceOut_mars2 = sequenceOut_mars2.div(norm)
+        output_mars2 = self.dp(classificationOut_mars2)
+        x_mars2 = self.fc_action_mars(output_mars2)
+        
+        out = x_mars1 + x_mars2
+        
+        sequenceOut_mars = torch.cat((sequenceOut_mars1, sequenceOut_mars2), -1)
+        return out, input_vectors, sequenceOut_mars, maskSample   
 class rgb_resneXt3D64f101_bert10S_mars(nn.Module):
     def __init__(self, num_classes , length, modelPath=''):
         super(rgb_resneXt3D64f101_bert10S_mars, self).__init__()

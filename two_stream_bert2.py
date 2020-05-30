@@ -51,7 +51,7 @@ parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51", "smtV2", "window"],
                     help='dataset: ucf101 | hmdb51 | smtV2')
 
-parser.add_argument('--arch', '-a', default='rgb_slowfast64f_50_bert10S',
+parser.add_argument('--arch', '-a', default='rgb_slowfast64f_50_bert10B',
                     choices=model_names,
                     help='model architecture: ' +
                         ' | '.join(model_names) +
@@ -67,7 +67,7 @@ parser.add_argument('-b', '--batch-size', default=7, type=int,
                     metavar='N', help='mini-batch size (default: 50)')
 parser.add_argument('--iter-size', default=18, type=int,
                     metavar='I', help='iter size as in Caffe to reduce memory usage (default: 5)')
-parser.add_argument('--lr', '--learning-rate', default=1e-4, type=float,
+parser.add_argument('--lr', '--learning-rate', default=1e-5, type=float,
                     metavar='LR', help='initial learning rate')
 parser.add_argument('--lr_steps', default=[10], type=float, nargs="+",
                     metavar='LRSteps', help='epochs to decay learning rate by 10')
@@ -97,6 +97,8 @@ smt_pretrained = False
 
 HALF = False
 training_continue = False
+
+
 
 
 def main():

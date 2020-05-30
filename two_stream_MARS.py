@@ -48,7 +48,7 @@ parser.add_argument('--settings', metavar='DIR', default='./datasets/settings',
 parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51", "smtV2"],
                     help='dataset: ucf101 | hmdb51')
-parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resneXt3D64f101_bert10S_MARS',
+parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resneXt3D64f101_bert10S_MARS3',
                     choices=model_names,
                     help='model architecture: ' +
                         ' | '.join(model_names))
@@ -64,11 +64,11 @@ parser.add_argument('--epochs', default=200, type=int, metavar='N',
                     help='number of total epochs to run')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
                     help='manual epoch number (useful on restarts)')
-parser.add_argument('-b', '--batch-size', default=9, type=int,
+parser.add_argument('-b', '--batch-size', default=8, type=int,
                     metavar='N', help='mini-batch size (default: 50)')
-parser.add_argument('--iter-size', default=14, type=int,
+parser.add_argument('--iter-size', default=16, type=int,
                     metavar='I', help='iter size as in Caffe to reduce memory usage (default: 5)')
-parser.add_argument('--lr', '--learning-rate', default=1e-5, type=float,
+parser.add_argument('--lr', '--learning-rate', default=1e-6, type=float,
                     metavar='LR', help='initial learning rate')
 parser.add_argument('--lr_steps', default=[15], type=float, nargs="+",
                     metavar='LRSteps', help='epochs to decay learning rate by 10')
@@ -96,9 +96,12 @@ max_learning_rate_decay_count = 3
 best_in_existing_learning_rate = 0
 HALF = False
 lrPlateuPrec1 = False
-teacher_rgb = True
+teacher_rgb = False
+save_everything = True
 
-training_continue = False
+cosine_similarity_enabled = False
+
+training_continue = True
 msecoeff = 250000
 def main():
     global args, best_prec1,model ,writer, best_loss, length, width, height, model_teacher, msecoeff
@@ -152,7 +155,12 @@ def main():
 
     # define loss function (criterion) and optimizer
     criterion = nn.CrossEntropyLoss().cuda()
-    criterion_mse = nn.MSELoss().cuda()
+    if cosine_similarity_enabled:
+        print("cosine similarity enabled")
+        criterion_mse = nn.CosineEmbeddingLoss().cuda()
+    else:
+        print("MSE enabled")
+        criterion_mse = nn.MSELoss().cuda()
     
     if 'bert' in args.arch:
         print("Optimizer ADAMW")
@@ -167,11 +175,12 @@ def main():
             weight_decay=args.weight_decay)
     
     if training_continue:
-        model, startEpoch, optimizer, best_prec1 = build_model_continue()
+        model, startEpoch, optimizer , best_prec1 = build_model_continue()
         args.start_epoch = startEpoch
-        lr = None
+        lr = args.lr
         for param_group in optimizer.param_groups:
-            lr = param_group['lr']
+            #lr = param_group['lr']
+            param_group['lr'] = lr
         print("Continuing with best precision: %.3f and start epoch %d and lr: %f" %(best_prec1,startEpoch,lr))
     
     # optimizer = AdamW(model.parameters(),
@@ -180,10 +189,10 @@ def main():
     
     if lrPlateuPrec1:
         scheduler = lr_scheduler.ReduceLROnPlateau(
-            optimizer, 'max', patience=5, verbose=True)
+            optimizer, 'max', patience=10, verbose=True)
     else:
         scheduler = lr_scheduler.ReduceLROnPlateau(
-            optimizer, 'min', patience=5, verbose=True)
+            optimizer, 'min', patience=10, verbose=True)
     
     #optimizer = torch.optim.Adam(model.parameters(), args.lr, weight_decay=args.weight_decay)
     #optimizer = swats.SWATS(model.parameters(), args.lr)
@@ -317,8 +326,9 @@ def main():
 
         if (epoch + 1) % args.save_freq == 0:
             checkpoint_name = "%03d_%s" % (epoch + 1, "checkpoint.pth.tar")
-            if is_best:
-                print("Model son iyi olarak kaydedildi")
+            if is_best or save_everything:
+                if is_best:
+                    print("Model son iyi olarak kaydedildi")
                 save_checkpoint({
                     'epoch': epoch + 1,
                     'arch': args.arch,
@@ -328,15 +338,7 @@ def main():
                     'optimizer' : optimizer.state_dict(),
                 }, is_best, checkpoint_name, saveLocation)
     
-    checkpoint_name = "%03d_%s" % (epoch + 1, "checkpoint.pth.tar")
-    save_checkpoint({
-        'epoch': epoch + 1,
-        'arch': args.arch,
-        'state_dict': model.state_dict(),
-        'best_prec1': best_prec1,
-        'best_loss': best_loss,
-        'optimizer' : optimizer.state_dict(),
-    }, is_best, checkpoint_name, saveLocation)
+
     writer.export_scalars_to_json("./all_scalars.json")
     writer.close()
 
@@ -426,6 +428,7 @@ def train(train_loader, model, criterion, criterion_mse, optimizer, epoch):
     else:
         mse_loss_coeff = torch.tensor(50).cuda()
     
+    c = torch.tensor(1).float().cuda()
     # switch to train mode
     model.train()
 
@@ -463,7 +466,11 @@ def train(train_loader, model, criterion, criterion_mse, optimizer, epoch):
         
         #lossRanking = criterion(out_rank, targetRank)
         lossClassification = criterion(output, targets)
-        lossMSE = criterion_mse(features_student, features_teacher)
+        if cosine_similarity_enabled:
+            lossMSE = criterion_mse(features_student.transpose(1,2),
+                                   features_teacher.transpose(1,2),c) / (features_student.shape[-1] / 2)
+        else:
+            lossMSE = criterion_mse(features_student, features_teacher)
         
         lossClassification = lossClassification / args.iter_size
         lossMSE = lossMSE / args.iter_size
@@ -491,12 +498,12 @@ def train(train_loader, model, criterion, criterion_mse, optimizer, epoch):
             acc_mini_batch_top3 = 0.0
             totalSamplePerIter = 0.0
         if (i+1) % args.print_freq == 0:
-            print('[%d] time: %.3f classification loss: %.4f, mse loss: %.4f' %(i,
+            print('[%d] time: %.3f classification loss: %.4f, mse loss: %.6f' %(i,
                 batch_time.avg, lossesClassification.avg, lossesMSE.avg))
 
           
     print(' * Epoch: {epoch} Prec@1 {top1.avg:.3f} Prec@3 {top3.avg:.3f} Classification Loss {lossClassification.avg:.4f} '
-          'MSE Loss {lossMSE.avg:.4f}\n'
+          'MSE Loss {lossMSE.avg:.6f}\n'
           .format(epoch = epoch, top1=top1, top3=top3, lossClassification=lossesClassification, lossMSE=lossesMSE))
           
     writer.add_scalar('data/classification_loss_training', lossesClassification.avg, epoch)
@@ -511,6 +518,7 @@ def validate(val_loader, model, criterion, criterion_mse):
     # switch to evaluate mode
     model.eval()
     end = time.time()
+    c = torch.tensor(1).float().cuda()
     with torch.no_grad():
         for i, (inputs, targets) in enumerate(val_loader):
             inputs=inputs.view(-1,length,5,input_size,input_size).transpose(1,2)
@@ -533,7 +541,11 @@ def validate(val_loader, model, criterion, criterion_mse):
                 features_teacher = model_teacher.mars_forward(inputs_teacher)
                 
             lossClassification = criterion(output, targets)
-            lossMSE = criterion_mse(features_student, features_teacher)
+            if cosine_similarity_enabled:
+                lossMSE = criterion_mse(features_student.transpose(1,2),
+                                       features_teacher.transpose(1,2),c) / (features_student.shape[-1] / 2)
+            else:
+                lossMSE = criterion_mse(features_student, features_teacher)
     
             # measure accuracy and record loss
             prec1, prec3 = accuracy(output.data, targets, topk=(1, 3))
@@ -550,7 +562,7 @@ def validate(val_loader, model, criterion, criterion_mse):
     
     
         print(' * * Prec@1 {top1.avg:.3f} Prec@3 {top3.avg:.3f} Classification Loss {lossClassification.avg:.4f} ' 
-              'MSE Loss {lossMSE.avg:.4f}\n'
+              'MSE Loss {lossMSE.avg:.6f}\n'
               .format(top1=top1, top3=top3, lossClassification=lossesClassification, lossMSE=lossesMSE))
 
     return top1.avg, top3.avg, lossesClassification.avg

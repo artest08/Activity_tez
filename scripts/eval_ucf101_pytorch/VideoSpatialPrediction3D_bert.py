@@ -161,7 +161,10 @@ def VideoSpatialPrediction3D_bert(
 
     # selection
     #step = int(math.floor((duration-1)/(num_samples-1)))
-
+    if '224' in architecture_name:
+        scale = 1
+    if '112' in architecture_name:
+        scale = 0.5
 
     imageSize=int(224 * scale)
     dims = (int(256 * scale),int(340 * scale),3,duration)
