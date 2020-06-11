@@ -13,8 +13,8 @@ import shutil
 import numpy as np
 
 
-os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]="0"
+# os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
+# os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 import torch
 import torch.nn as nn
@@ -51,7 +51,7 @@ parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51", "smtV2", "window"],
                     help='dataset: ucf101 | hmdb51 | smtV2')
 
-parser.add_argument('--arch', '-a', default='rgb_slowfast64f_50_bert10B',
+parser.add_argument('--arch', '-a', default='rgb_resneXt3D64f101_bert10S',
                     choices=model_names,
                     help='model architecture: ' +
                         ' | '.join(model_names) +
@@ -59,15 +59,15 @@ parser.add_argument('--arch', '-a', default='rgb_slowfast64f_50_bert10B',
 
 parser.add_argument('-s', '--split', default=1, type=int, metavar='S',
                     help='which split of data to work on (default: 1)')
-parser.add_argument('-j', '--workers', default=2, type=int, metavar='N',
+parser.add_argument('-j', '--workers', default=4, type=int, metavar='N',
                     help='number of data loading workers (default: 4)')
 parser.add_argument('--epochs', default=200, type=int, metavar='N',
                     help='number of total epochs to run')
-parser.add_argument('-b', '--batch-size', default=7, type=int,
+parser.add_argument('-b', '--batch-size', default=20, type=int,
                     metavar='N', help='mini-batch size (default: 50)')
-parser.add_argument('--iter-size', default=18, type=int,
+parser.add_argument('--iter-size', default=6, type=int,
                     metavar='I', help='iter size as in Caffe to reduce memory usage (default: 5)')
-parser.add_argument('--lr', '--learning-rate', default=1e-5, type=float,
+parser.add_argument('--lr', '--learning-rate', default=1e-6, type=float,
                     metavar='LR', help='initial learning rate')
 parser.add_argument('--lr_steps', default=[10], type=float, nargs="+",
                     metavar='LRSteps', help='epochs to decay learning rate by 10')
@@ -96,7 +96,7 @@ warmUpEpoch=5
 smt_pretrained = False
 
 HALF = False
-training_continue = False
+training_continue = True
 
 
 
@@ -466,6 +466,9 @@ def build_model_continue():
     elif args.dataset=='hmdb51':
         model=models.__dict__[args.arch](modelPath='', num_classes=51,length=args.num_seg)
    
+    if torch.cuda.device_count() > 1:
+        model=torch.nn.DataParallel(model) 
+        
     model.load_state_dict(params['state_dict'])
     model = model.cuda()
     optimizer = AdamW(model.parameters(), lr= args.lr, weight_decay=args.weight_decay)

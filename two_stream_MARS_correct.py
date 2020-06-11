@@ -34,6 +34,7 @@ import swats
 
 from opt.AdamW import AdamW
 from utils.model_path import rgb_3d_model_path_selection
+from utils.architecture_transform import determine_architecture_transform2
 
 
 model_names = sorted(name for name in models.__dict__
@@ -48,11 +49,11 @@ parser.add_argument('--settings', metavar='DIR', default='./datasets/settings',
 parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51", "smtV2"],
                     help='dataset: ucf101 | hmdb51')
-parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_r2plus1d_64f_34_bert10_stride2_MARS',
+parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resneXt3D64f101_bert10S_MARS2',
                     choices=model_names,
                     help='model architecture: ' +
                         ' | '.join(model_names))
-parser.add_argument('--arch_teacher', '-teacher', metavar='ARCH', default='flow_resneXt3D64f101_bert10S',
+parser.add_argument('--arch_teacher', '-teacher', metavar='ARCH', default='rgb_slowfast64f_50_bert10S',
                     choices=model_names,
                     help='model architecture: ' +
                         ' | '.join(model_names))
@@ -64,9 +65,9 @@ parser.add_argument('--epochs', default=200, type=int, metavar='N',
                     help='number of total epochs to run')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
                     help='manual epoch number (useful on restarts)')
-parser.add_argument('-b', '--batch-size', default=10, type=int,
+parser.add_argument('-b', '--batch-size', default=16, type=int,
                     metavar='N', help='mini-batch size (default: 50)')
-parser.add_argument('--iter-size', default=10, type=int,
+parser.add_argument('--iter-size', default=8, type=int,
                     metavar='I', help='iter size as in Caffe to reduce memory usage (default: 5)')
 parser.add_argument('--lr', '--learning-rate', default=1e-5, type=float,
                     metavar='LR', help='initial learning rate')
@@ -102,30 +103,17 @@ save_everything = True
 cosine_similarity_enabled = False
 
 training_continue = False
-msecoeff = 2500
+msecoeff = 250000
 def main():
     global args, best_prec1,model ,writer, best_loss, length, width, height, model_teacher, msecoeff
     global max_learning_rate_decay_count, best_in_existing_learning_rate, learning_rate_index, input_size, teacher_rgb
     args = parser.parse_args()
     
-    if '3D' in args.arch:
-        if 'I3D' in args.arch or 'MFNET3D' in args.arch:
-            if '112' in args.arch:
-                scale = 0.5
-            else:
-                scale = 1
-        else:
-            scale = 0.5
-    elif 'r2plus1d' in args.arch:
-        scale = 0.5
-    else:
-        scale = 1
         
-    print('scale: %.1f' %(scale))
     print('mse coefficient: %d' %(msecoeff))
-    input_size = int(224 * scale)
-    width = int(340 * scale)
-    height = int(256 * scale)
+    input_size = 224
+    width = 340
+    height = 256
     
     saveLocation="./checkpoint/"+args.dataset+"_"+args.arch+"_split"+str(args.split)
     if not os.path.exists(saveLocation):
@@ -186,7 +174,8 @@ def main():
             weight_decay=args.weight_decay)
     
     if training_continue:
-        model, startEpoch, optimizer , best_prec1 = build_model_continue()
+        #model, startEpoch, optimizer , best_prec1 = build_model_continue()
+        model, startEpoch, _ , best_prec1 = build_model_continue()
         args.start_epoch = startEpoch
         lr = args.lr
         for param_group in optimizer.param_groups:
@@ -200,10 +189,10 @@ def main():
     
     if lrPlateuPrec1:
         scheduler = lr_scheduler.ReduceLROnPlateau(
-            optimizer, 'max', patience=10, verbose=True)
+            optimizer, 'max', patience=6, verbose=True)
     else:
         scheduler = lr_scheduler.ReduceLROnPlateau(
-            optimizer, 'min', patience=10, verbose=True)
+            optimizer, 'min', patience=6, verbose=True)
     
     #optimizer = torch.optim.Adam(model.parameters(), args.lr, weight_decay=args.weight_decay)
     #optimizer = swats.SWATS(model.parameters(), args.lr)
@@ -232,33 +221,27 @@ def main():
     print('length %d' %(length))
     # Data transforming
 
-    clip_mean = [114.7748, 107.7354, 99.4750, 127.5, 127.5] * args.num_seg * length
-    clip_std = [1, 1, 1, 1, 1] * args.num_seg * length
     scale_ratios = [1.0, 0.875, 0.75, 0.66]
     is_color = True
     
-    normalize = video_transforms.Normalize(mean=clip_mean,
-                                           std=clip_std)
-
-
-    train_transform = video_transforms.Compose([
+    train_common_transform = video_transforms.Compose([
             video_transforms.MultiScaleCrop((input_size, input_size), scale_ratios),
             video_transforms.RandomHorizontalFlip(),
-            video_transforms.ToTensor2(),
-            normalize,
         ])
-
-    val_transform = video_transforms.Compose([
+    
+    val_common_transform = video_transforms.Compose([
             video_transforms.CenterCrop((input_size)),
-            video_transforms.ToTensor2(),
-            normalize,
         ])
+    
+    architecture_name_list= [args.arch, args.arch_teacher]
 
+
+    transform_list = determine_architecture_transform2(architecture_name_list, args.num_seg, length)
 
     # data loading
-    train_setting_file = "train_%s_split%d.txt" % ('both', args.split)
+    train_setting_file = "train_%s_split%d.txt" % ("both", args.split)
     train_split_file = os.path.join(args.settings, args.dataset, train_setting_file)
-    val_setting_file = "val_%s_split%d.txt" % ('both', args.split)
+    val_setting_file = "val_%s_split%d.txt" % ("both", args.split)
     val_split_file = os.path.join(args.settings, args.dataset, val_setting_file)
     if not os.path.exists(train_split_file) or not os.path.exists(val_split_file):
         print("No split file exists in %s directory. Preprocess the dataset first" % (args.settings))
@@ -266,24 +249,28 @@ def main():
     train_dataset = datasets.__dict__[args.dataset](root=dataset,
                                                     source=train_split_file,
                                                     phase="train",
-                                                    modality = 'both',
+                                                    modality = "both",
                                                     is_color=is_color,
                                                     new_length=length,
                                                     new_width=width,
                                                     new_height=height,
-                                                    video_transform=train_transform,
-                                                    num_segments=args.num_seg)
+                                                    transform = train_common_transform,
+                                                    video_transform=transform_list,
+                                                    num_segments=args.num_seg,
+                                                    ensemble_training = True)
     
     val_dataset = datasets.__dict__[args.dataset](root=dataset,
                                                   source=val_split_file,
                                                   phase="val",
-                                                  modality = 'both',
+                                                  modality = "both",
                                                   is_color=is_color,
                                                   new_length=length,
                                                   new_width=width,
                                                   new_height=height,
-                                                  video_transform=val_transform,
-                                                  num_segments=args.num_seg)
+                                                  transform = val_common_transform,
+                                                  video_transform=transform_list,
+                                                  num_segments=args.num_seg,
+                                                  ensemble_training = True)
 
     print('{} samples found, {} train samples and {} test samples.'.format(len(val_dataset)+len(train_dataset),
                                                                            len(train_dataset),
@@ -409,6 +396,8 @@ def build_model_continue():
     elif args.dataset=='hmdb51':
         model=models.__dict__[args.arch](modelPath='', num_classes=51,length=args.num_seg)
    
+    if torch.cuda.device_count() > 1:
+        model=torch.nn.DataParallel(model) 
     model.load_state_dict(params['state_dict'])
     model = model.cuda()
     if 'bert' in args.arch:
@@ -450,13 +439,14 @@ def train(train_loader, model, criterion, criterion_mse, optimizer, epoch):
     acc_mini_batch = 0.0
     acc_mini_batch_top3 = 0.0
     totalSamplePerIter=0
-    for i, (inputs, targets) in enumerate(train_loader):
-        inputs=inputs.view(-1,length,5,input_size,input_size).transpose(1,2)
-        inputs_student = inputs[:,:3,...]
+    for i, (input_student, input_teacher, targets) in enumerate(train_loader):
+        input_student = input_student.view(-1,length,5,input_student.shape[-1],input_student.shape[-1]).transpose(1,2)
+        input_teacher = input_teacher.view(-1,length,5,input_teacher.shape[-1],input_teacher.shape[-1]).transpose(1,2)
+        inputs_student = input_student[:,:3,...]
         if teacher_rgb:
-            inputs_teacher = inputs[:,:3,...]
+            inputs_teacher = input_teacher[:,:3,...]
         else:
-            inputs_teacher = inputs[:,3:5,...]
+            inputs_teacher = input_teacher[:,3:5,...]
 
         inputs_student = inputs_student.cuda()
         inputs_teacher = inputs_teacher.cuda()
@@ -531,13 +521,14 @@ def validate(val_loader, model, criterion, criterion_mse):
     end = time.time()
     c = torch.tensor(1).float().cuda()
     with torch.no_grad():
-        for i, (inputs, targets) in enumerate(val_loader):
-            inputs=inputs.view(-1,length,5,input_size,input_size).transpose(1,2)
-            inputs_student = inputs[:,:3,...]
+        for i, (input_student, input_teacher, targets) in enumerate(val_loader):
+            input_student = input_student.view(-1,length,5,input_student.shape[-1],input_student.shape[-1]).transpose(1,2)
+            input_teacher = input_teacher.view(-1,length,5,input_teacher.shape[-1],input_teacher.shape[-1]).transpose(1,2)
+            inputs_student = input_student[:,:3,...]
             if teacher_rgb:
-                inputs_teacher = inputs[:,:3,...]
+                inputs_teacher = input_teacher[:,:3,...]
             else:
-                inputs_teacher = inputs[:,3:5,...]
+                inputs_teacher = input_teacher[:,3:5,...]
     
             inputs_student = inputs_student.cuda()
             inputs_teacher = inputs_teacher.cuda()

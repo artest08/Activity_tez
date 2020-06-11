@@ -2634,6 +2634,9 @@ Mean Estimated Time 1.9248
 multiple clips
 10 crops
 
+Computational complexity:       111.44 GMac
+Number of parameters:           24.95 M 
+
 --------------
 
 Accuracy with mean calculation is 0.7824
@@ -2804,6 +2807,9 @@ top3 accuracy 0.9471
 Mean Estimated Time 0.3332
 one clips
 single crop
+
+
+
 
 ----------------
 
@@ -3225,6 +3231,9 @@ Mean Estimated Time 0.2386
 one clips
 single crop
 
+Computational complexity:       51.88 GMac
+Number of parameters:           40.17 M 
+
 
 -----------------------------
 
@@ -3319,6 +3328,9 @@ Mean Estimated Time 0.1883
 one clips
 single crop
 
+Computational complexity:       52.39 GMac
+Number of parameters:           43.17 M 
+
 
 ------------------------------------------
 
@@ -3364,7 +3376,7 @@ single crop
 -----------------------------------
 
 
-epoch 92 (Best Top1)
+epoch 92 (Best Top1) distillation with itself
 Accuracy with mean calculation is 0.7752
 top3 accuracy 0.9111
 ./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10S_MARS2_split1
@@ -3374,7 +3386,7 @@ single crop
 
 ----
 
-epoch 144
+epoch 144 distillation with itself
 Accuracy with mean calculation is 0.7758
 top3 accuracy 0.9170
 ./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10S_MARS2_split1
@@ -3405,9 +3417,343 @@ Mean Estimated Time 1.0035
 multiple clips
 10 crops
 
+---------------------------------------
+
+epoch 24 sonrasi tekrar runda 1e-6da cikan best, flow distil 250 000, 
+Accuracy with mean calculation is 0.7830
+top3 accuracy 0.9111
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10S_MARS3_split1
+Mean Estimated Time 0.1895
+multiple clips
+single crop
+
+1e-5 flow distil 250 000
+Accuracy with mean calculation is 0.7882
+top3 accuracy 0.9098
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10S_MARS3_split1
+Mean Estimated Time 0.1657
+multiple clips
+single crop
+
+1e-5 flow distil 1e-5
+Accuracy with mean calculation is 0.7882
+top3 accuracy 0.9078
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10S_MARS4_split1
+Mean Estimated Time 0.1527
+multiple clips
+single crop
 
 
 
+---------------------------
+
+
+Action recognition model is loaded in 3.1328 seconds.
+Computational complexity:       38.71 GMac
+Number of parameters:           55.65 M 
+
+epoch 58 lr 1e-5 then 1e-6 continue from best loss (epoch 38)
+Accuracy with mean calculation is 0.7980
+top3 accuracy 0.9235
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10S_MARS5_split1
+Mean Estimated Time 0.1546
+multiple clips
+single crop
+
+
+joint flow and r2plus1 distillation 250 000 lr 1e-5 model best
+Accuracy with mean calculation is 0.8052
+top3 accuracy 0.9281
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10S_MARS5_split1
+Mean Estimated Time 0.1756
+multiple clips
+single crop
+
+Accuracy with mean calculation is 0.7987
+top3 accuracy 0.9248
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10S_MARS5_split1
+Mean Estimated Time 0.1270
+one clips
+single crop
+
+
+Accuracy with mean calculation is 0.8059
+top3 accuracy 0.9340
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10S_MARS5_split1
+Mean Estimated Time 0.4630
+one clips
+10 crops
+
+Accuracy with mean calculation is 0.8105
+top3 accuracy 0.9373
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10S_MARS5_split1
+Mean Estimated Time 0.6489
+multiple clips
+10 crops
+
+----------------------------------
+
+Computational complexity:       38.88 GMac
+Number of parameters:           64.07 M 
+
+lr 1e-5 best top1, ditilled wirh r2plus1d and flow
+Accuracy with mean calculation is 0.7967
+top3 accuracy 0.9235
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10S_MARS6_split1
+Mean Estimated Time 0.1634
+multiple clips
+single crop
+
+lr 1e-5 epoch 53, ditilled wirh r2plus1d and flow
+Accuracy with mean calculation is 0.7980
+top3 accuracy 0.9314
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10S_MARS6_split1
+Mean Estimated Time 0.1544
+multiple clips
+single crop
+
+lr 1e-5 epoch 53, ditilled wirh r2plus1d and flow
+Accuracy with mean calculation is 0.7954
+top3 accuracy 0.9288
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10S_MARS6_split1
+Mean Estimated Time 0.4834
+one clips
+10 crops
+
+Accuracy with mean calculation is 0.7961
+top3 accuracy 0.9294
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10S_MARS6_split1
+Mean Estimated Time 0.1242
+one clips
+single crop
+
+Accuracy with mean calculation is 0.7974
+top3 accuracy 0.9327
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10S_MARS6_split1
+Mean Estimated Time 0.6684
+multiple clips
+10 crops
+
+---------------------------------
+
+Computational complexity:       38.37 GMac
+Number of parameters:           47.38 M 
+
+lr 1e-5 then 1e-6 from epoch 13
+Accuracy with mean calculation is 0.7601
+top3 accuracy 0.9092
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10S_split1
+Mean Estimated Time 0.1626
+multiple clips
+single crop
+
+lr 1e-5 then 1e-6 from epoch 13
+Accuracy with mean calculation is 0.7621
+top3 accuracy 0.9190
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10S_split1
+Mean Estimated Time 0.6236
+multiple clips
+10 crops
+
+
+lr 1e-5 epoch 25
+
+Accuracy with mean calculation is 0.7686
+top3 accuracy 0.9007
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10S_split1
+Mean Estimated Time 0.1537
+multiple clips
+single crop
+
+
+
+lr 1e-5 epoch 37
+Accuracy with mean calculation is 0.7739
+top3 accuracy 0.9007
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10S_split1
+Mean Estimated Time 0.1508
+multiple clips
+single crop
+
+lr 1e-5 epoch 37
+Accuracy with mean calculation is 0.7712
+top3 accuracy 0.9131
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10S_split1
+Mean Estimated Time 0.6370
+multiple clips
+10 crops
+
+
+Accuracy with mean calculation is 0.7712
+top3 accuracy 0.8961
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10S_split1
+Mean Estimated Time 0.1236
+one clips
+single crop
+
+
+Accuracy with mean calculation is 0.7680
+top3 accuracy 0.9111
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10S_split1
+Mean Estimated Time 0.4465
+one clips
+10 crops
+
+---------------
+
+correct data normalization r2plus1d
+
+Accuracy with mean calculation is 0.7876
+top3 accuracy 0.9190
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10S_MARS2_split1
+Mean Estimated Time 0.1982
+multiple clips
+single crop
+
+Accuracy with mean calculation is 0.7922
+top3 accuracy 0.9294
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10S_MARS2_split1
+Mean Estimated Time 0.8045
+multiple clips
+10 crops
+
+Accuracy with mean calculation is 0.7830
+top3 accuracy 0.9150
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10S_MARS2_split1
+Mean Estimated Time 0.1334
+one clips
+single crop
+
+Accuracy with mean calculation is 0.7948
+top3 accuracy 0.9294
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10S_MARS2_split1
+Mean Estimated Time 0.6310
+one clips
+10 crops
+
+-------------------------------
+
+lr 1e-5 correct r2plus1d input normalization, with flow 250 000 best model
+Accuracy with mean calculation is 0.7941
+top3 accuracy 0.9209
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10S_MARS5_split1
+Mean Estimated Time 0.1961
+multiple clips
+single crop
+
+lr 1e-5 correct r2plus1d input normalization, with flow 250 000 Epoch
+Accuracy with mean calculation is 0.7961
+top3 accuracy 0.9222
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10S_MARS5_split1
+Mean Estimated Time 0.1552
+multiple clips
+single crop
+
+lr 1e-5 correct r2plus1d input normalization, with flow 250 000 Epoch
+Accuracy with mean calculation is 0.8039
+top3 accuracy 0.9275
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10S_MARS5_split1
+Mean Estimated Time 0.6462
+multiple clips
+10 crops
+
+lr 1e-5 correct r2plus1d input normalization, with flow 250 000 Epoch
+Accuracy with mean calculation is 0.8039
+top3 accuracy 0.9242
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10S_MARS5_split1
+Mean Estimated Time 0.5000
+one clips
+10 crops
+
+Accuracy with mean calculation is 0.7928
+top3 accuracy 0.9190
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10S_MARS5_split1
+Mean Estimated Time 0.1271
+one clips
+single crop
+
+--------------------------
+
+lr 1e-5 correct r2plus1d input normalization, with flow 250 000 , Epoch 63
+Accuracy with mean calculation is 0.7948
+top3 accuracy 0.9275
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10S_MARS7_split1
+Mean Estimated Time 0.1549
+multiple clips
+single crop
+
+lr 1e-5 correct r2plus1d input normalization, with flow 250 000 , Epoch 63
+Accuracy with mean calculation is 0.8000
+top3 accuracy 0.9281
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10S_MARS7_split1
+Mean Estimated Time 0.6233
+multiple clips
+10 crops
+
+lr 1e-5 correct r2plus1d input normalization, with flow 250 000 , Best
+Accuracy with mean calculation is 0.7954
+top3 accuracy 0.9261
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10S_MARS7_split1
+Mean Estimated Time 0.2009
+multiple clips
+single crop
+
+lr 1e-5 correct r2plus1d input normalization, with flow 250 000 , Best
+Accuracy with mean calculation is 0.8020
+top3 accuracy 0.9268
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10S_MARS7_split1
+Mean Estimated Time 0.6318
+multiple clips
+10 crops
+
+
+lr 1e-5 correct r2plus1d input normalization, with flow 250 000 , Best
+Accuracy with mean calculation is 0.7889
+top3 accuracy 0.9222
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10S_MARS7_split1
+Mean Estimated Time 0.1356
+one clips
+single crop
+
+lr 1e-5 correct r2plus1d input normalization, with flow 250 000 , Best
+Accuracy with mean calculation is 0.7993
+top3 accuracy 0.9255
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10S_MARS7_split1
+Mean Estimated Time 0.5038
+one clips
+10 crops
+
+-------------------------------
+
+
+Accuracy with mean calculation is 0.7941
+top3 accuracy 0.9196
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10S_MARS6_split1
+Mean Estimated Time 0.1347
+one clips
+single crop
+
+
+Accuracy with mean calculation is 0.8033
+top3 accuracy 0.9314
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10S_MARS6_split1
+Mean Estimated Time 0.6179
+multiple clips
+10 crops
+
+Accuracy with mean calculation is 0.8000
+top3 accuracy 0.9222
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10S_MARS6_split1
+Mean Estimated Time 0.1580
+multiple clips
+single crop
+
+Accuracy with mean calculation is 0.7967
+top3 accuracy 0.9301
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10S_MARS6_split1
+Mean Estimated Time 0.4883
+one clips
+10 crops
 
 
 

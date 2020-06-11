@@ -35,7 +35,7 @@ from VideoSpatialPrediction_bert import VideoSpatialPrediction_bert
 from VideoSpatialPrediction3D_bert import VideoSpatialPrediction3D_bert
 
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   
-os.environ["CUDA_VISIBLE_DEVICES"]="0"
+os.environ["CUDA_VISIBLE_DEVICES"]="1"
 
 model_names = sorted(name for name in models.__dict__
     if not name.startswith("__")
@@ -48,7 +48,7 @@ parser = argparse.ArgumentParser(description='PyTorch Two-Stream Action Recognit
 parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51"],
                     help='dataset: ucf101 | hmdb51')
-parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resneXt3D64f101_bert10S_MARS2',
+parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resneXt3D64f101_bert10S_MARS6',
                     choices=model_names)
 
 parser.add_argument('-s', '--split', default=1, type=int, metavar='S',
@@ -64,7 +64,7 @@ parser.add_argument('-v', '--val', dest='window_val', action='store_true',
                     help='Window Validation Selection')
 
 multiGPUTest = False
-multiGPUTrain=False
+multiGPUTrain = True
 ten_crop_enabled = True
 num_seg=16
 num_seg_3D=1
@@ -167,9 +167,9 @@ def main():
     model_time = model_end_time - model_start_time
     print("Action recognition model is loaded in %4.4f seconds." % (model_time))
     
-    # flops, params = get_model_complexity_info(spatial_net, (3,length, 224, 224), as_strings=True, print_per_layer_stat=False)
-    # print('{:<30}  {:<8}'.format('Computational complexity: ', flops))
-    # print('{:<30}  {:<8}'.format('Number of parameters: ', params))
+    flops, params = get_model_complexity_info(spatial_net, (3,length, 112, 112), as_strings=True, print_per_layer_stat=False)
+    print('{:<30}  {:<8}'.format('Computational complexity: ', flops))
+    print('{:<30}  {:<8}'.format('Number of parameters: ', params))
     
     f_val = open(val_file, "r")
     val_list = f_val.readlines()

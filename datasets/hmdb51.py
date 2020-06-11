@@ -396,7 +396,12 @@ class hmdb51(data.Dataset):
             for video_transform in self.video_transform:
                 transformed_clip = video_transform(clip_input)
                 clip_input_list.append(transformed_clip)
-            return  clip_input_list[0], clip_input_list[1], clip_input_list[2], clip_input_list[3], target
+            if len(clip_input_list )== 4:
+                return  clip_input_list[0], clip_input_list[1], clip_input_list[2], clip_input_list[3], target
+            elif len(clip_input_list) == 3:
+                return  clip_input_list[0], clip_input_list[1], clip_input_list[2], target
+            elif len(clip_input_list) == 2:
+                return  clip_input_list[0], clip_input_list[1], target
                 
 
 

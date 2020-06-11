@@ -188,22 +188,13 @@ class Scale(object):
             new_w = self.size[0]
             new_h = self.size[1]
 
-        is_color = False
-        if c % 3 == 0:
-            is_color = True
 
-        if is_color:
-            num_imgs = int(c / 3)
-            scaled_clips = np.zeros((new_h,new_w,c))
-            for frame_id in range(num_imgs):
-                cur_img = clips[:,:,frame_id*3:frame_id*3+3]
-                scaled_clips[:,:,frame_id*3:frame_id*3+3] = cv2.resize(cur_img, (new_w, new_h), self.interpolation)
-        else:
-            num_imgs = int(c / 1)
-            scaled_clips = np.zeros((new_h,new_w,c))
-            for frame_id in range(num_imgs):
-                cur_img = clips[:,:,frame_id:frame_id+1]
-                scaled_clips[:,:,frame_id:frame_id+1] = cv2.resize(cur_img, (new_w, new_h), self.interpolation)
+        num_imgs = int(c / 1)
+        scaled_clips = np.zeros((new_h,new_w,c))
+        for frame_id in range(num_imgs):
+            cur_img = clips[:,:,frame_id:frame_id+1]
+            scaled_clips[:,:,frame_id:frame_id+1] = np.expand_dims(
+                cv2.resize(cur_img, (new_w, new_h), self.interpolation), axis=2)          
         return scaled_clips
 
 
@@ -225,28 +216,15 @@ class CenterCrop(object):
         x1 = int(round((w - tw) / 2.))
         y1 = int(round((h - th) / 2.))
 
-        is_color = False
-        if c % 3 == 0:
-            is_color = True
 
-        if is_color:
-            num_imgs = int(c / 3)
-            scaled_clips = np.zeros((th,tw,c))
-            for frame_id in range(num_imgs):
-                cur_img = clips[:,:,frame_id*3:frame_id*3+3]
-                crop_img = cur_img[y1:y1+th, x1:x1+tw, :]
-                assert(crop_img.shape == (th, tw, 3))
-                scaled_clips[:,:,frame_id*3:frame_id*3+3] = crop_img
-            return scaled_clips
-        else:
-            num_imgs = int(c / 1)
-            scaled_clips = np.zeros((th,tw,c))
-            for frame_id in range(num_imgs):
-                cur_img = clips[:,:,frame_id:frame_id+1]
-                crop_img = cur_img[y1:y1+th, x1:x1+tw, :]
-                assert(crop_img.shape == (th, tw, 1))
-                scaled_clips[:,:,frame_id:frame_id+1] = crop_img
-            return scaled_clips
+        num_imgs = int(c / 1)
+        scaled_clips = np.zeros((th,tw,c))
+        for frame_id in range(num_imgs):
+            cur_img = clips[:,:,frame_id:frame_id+1]
+            crop_img = cur_img[y1:y1+th, x1:x1+tw, :]
+            assert(crop_img.shape == (th, tw, 1))
+            scaled_clips[:,:,frame_id:frame_id+1] = crop_img
+        return scaled_clips
 
 class RandomHorizontalFlip(object):
     """Randomly horizontally flips the given numpy array with a probability of 0.5
