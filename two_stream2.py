@@ -53,7 +53,7 @@ parser.add_argument('--settings', metavar='DIR', default='./datasets/settings',
 parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51", "smtV2"],
                     help='dataset: ucf101 | hmdb51')
-parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resneXt3D64f101_224',
+parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_r2plus1d_32f_34_unpretrained',
                     choices=model_names,
                     help='model architecture: ' +
                         ' | '.join(model_names) +
