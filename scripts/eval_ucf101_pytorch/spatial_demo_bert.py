@@ -45,10 +45,10 @@ dataset_names = sorted(name for name in datasets.__all__)
 
 parser = argparse.ArgumentParser(description='PyTorch Two-Stream Action Recognition RGB Test Case')
 
-parser.add_argument('--dataset', '-d', default='hmdb51',
+parser.add_argument('--dataset', '-d', default='ucf101',
                     choices=["ucf101", "hmdb51"],
                     help='dataset: ucf101 | hmdb51')
-parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resneXt3D64f101_bert10S_MARS6',
+parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_r2plus1d_32f_34_bert10',
                     choices=model_names)
 
 parser.add_argument('-s', '--split', default=1, type=int, metavar='S',
@@ -64,8 +64,8 @@ parser.add_argument('-v', '--val', dest='window_val', action='store_true',
                     help='Window Validation Selection')
 
 multiGPUTest = False
-multiGPUTrain = True
-ten_crop_enabled = True
+multiGPUTrain = False
+ten_crop_enabled = False
 num_seg=16
 num_seg_3D=1
 

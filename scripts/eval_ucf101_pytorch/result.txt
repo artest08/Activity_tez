@@ -3755,6 +3755,255 @@ Mean Estimated Time 0.4883
 one clips
 10 crops
 
+--------------------------------------------------------
+
+Epoch 107, 250 000, slowfast-S distilation, rgb_slowfast64f_50_bert10S
+
+Accuracy with mean calculation is 0.7686
+top3 accuracy 0.9131
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10S_MARS2_split1
+Mean Estimated Time 0.2523
+multiple clips
+single crop
+
+Accuracy with mean calculation is 0.7647
+top3 accuracy 0.9105
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10S_MARS2_split1
+Mean Estimated Time 0.1800
+one clips
+single crop
+
+Accuracy with mean calculation is 0.7699
+top3 accuracy 0.9268
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10S_MARS2_split1
+Mean Estimated Time 0.7135
+multiple clips
+10 crops
+
+Accuracy with mean calculation is 0.7680
+top3 accuracy 0.9255
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10S_MARS2_split1
+Mean Estimated Time 0.5386
+one clips
+10 crops
+
+------------------------------
+
+Accuracy with mean calculation is 0.8157
+top3 accuracy 0.9307
+./checkpoint/hmdb51_rgb_r2plus1d_32f_34_split2
+Mean Estimated Time 0.1171
+one clips
+single crop
+
+Accuracy with mean calculation is 0.8176
+top3 accuracy 0.9366
+./checkpoint/hmdb51_rgb_r2plus1d_32f_34_split2
+Mean Estimated Time 0.2784
+multiple clips
+single crop
+
+Accuracy with mean calculation is 0.8157
+top3 accuracy 0.9366
+./checkpoint/hmdb51_rgb_r2plus1d_32f_34_split2
+Mean Estimated Time 0.6240
+one clips
+10 crops
+
+Accuracy with mean calculation is 0.8203
+top3 accuracy 0.9399
+./checkpoint/hmdb51_rgb_r2plus1d_32f_34_split2
+Mean Estimated Time 1.6507
+multiple clips
+10 crops
+
+
+
+------------------------------
+
+Accuracy with mean calculation is 0.7987
+top3 accuracy 0.9203
+./checkpoint/hmdb51_rgb_r2plus1d_32f_34_split3
+Mean Estimated Time 0.2593
+multiple clips
+single crop
+
+Accuracy with mean calculation is 0.8052
+top3 accuracy 0.9144
+./checkpoint/hmdb51_rgb_r2plus1d_32f_34_split3
+Mean Estimated Time 0.1036
+one clips
+single crop
+
+Accuracy with mean calculation is 0.8013
+top3 accuracy 0.9255
+./checkpoint/hmdb51_rgb_r2plus1d_32f_34_split3
+Mean Estimated Time 0.6217
+one clips
+10 crops
+
+Accuracy with mean calculation is 0.7987
+top3 accuracy 0.9307
+./checkpoint/hmdb51_rgb_r2plus1d_32f_34_split3
+Mean Estimated Time 1.6169
+multiple clips
+10 crops
+
+------------------------------------------------
+
+resnext flow distil best 
+Accuracy with mean calculation is 0.8281
+top3 accuracy 0.9248
+./checkpoint/hmdb51_rgb_r2plus1d_64f_34_bert10_stride2_MARS_split1
+Mean Estimated Time 0.2031
+multiple clips
+single crop
+
+Accuracy with mean calculation is 0.8144
+top3 accuracy 0.9261
+./checkpoint/hmdb51_rgb_r2plus1d_64f_34_bert10_stride2_MARS_split1
+Mean Estimated Time 0.7854
+one clips
+10 crops
+
+Accuracy with mean calculation is 0.8203
+top3 accuracy 0.9294
+./checkpoint/hmdb51_rgb_r2plus1d_64f_34_bert10_stride2_MARS_split1
+Mean Estimated Time 0.9188
+multiple clips
+10 crops
+
+Accuracy with mean calculation is 0.8196
+top3 accuracy 0.9209
+./checkpoint/hmdb51_rgb_r2plus1d_64f_34_bert10_stride2_MARS_split1
+Mean Estimated Time 0.1462
+one clips
+single crop
+
+---------------------------
+
+Accuracy with mean calculation is 0.9680
+top3 accuracy 0.9897
+./checkpoint/ucf101_rgb_r2plus1d_32f_34_split1
+Mean Estimated Time 0.1986
+one clips
+single crop
+
+Accuracy with mean calculation is 0.9752
+top3 accuracy 0.9915
+./checkpoint/ucf101_rgb_r2plus1d_32f_34_split1
+Mean Estimated Time 0.5774
+multiple clips
+single crop
+
+Accuracy with mean calculation is 0.9696
+top3 accuracy 0.9913
+./checkpoint/ucf101_rgb_r2plus1d_32f_34_split1
+Mean Estimated Time 0.6201
+one clips
+10 crops
+
+Accuracy with mean calculation is 0.9746
+top3 accuracy 0.9926
+./checkpoint/ucf101_rgb_r2plus1d_32f_34_split1
+Mean Estimated Time 5.6150
+multiple clips
+10 crops
+
+
+-------------------------
+
+
+Accuracy with mean calculation is 0.9815
+top3 accuracy 0.9944
+./checkpoint/ucf101_rgb_r2plus1d_32f_34_split2
+Mean Estimated Time 0.7090
+one clips
+10 crops
+
+Accuracy with mean calculation is 0.9762
+top3 accuracy 0.9928
+./checkpoint/ucf101_rgb_r2plus1d_32f_34_split2
+Mean Estimated Time 0.1038
+one clips
+single crop
+
+Accuracy with mean calculation is 0.9855
+top3 accuracy 0.9968
+./checkpoint/ucf101_rgb_r2plus1d_32f_34_split2
+Mean Estimated Time 5.8273
+multiple clips
+10 crops
+
+Accuracy with mean calculation is 0.9834
+top3 accuracy 0.9957
+./checkpoint/ucf101_rgb_r2plus1d_32f_34_split2
+Mean Estimated Time 0.6312
+multiple clips
+single crop
+
+
+
+------------------------------
+
+Accuracy with mean calculation is 0.9784
+top3 accuracy 0.9965
+./checkpoint/ucf101_rgb_r2plus1d_32f_34_split3
+Mean Estimated Time 0.1853
+one clips
+single crop
+
+Accuracy with mean calculation is 0.9786
+top3 accuracy 0.9973
+./checkpoint/ucf101_rgb_r2plus1d_32f_34_split3
+Mean Estimated Time 0.6313
+one clips
+10 crops
+
+Accuracy with mean calculation is 0.9843
+top3 accuracy 0.9981
+./checkpoint/ucf101_rgb_r2plus1d_32f_34_split3
+Mean Estimated Time 0.9710
+multiple clips
+single crop
+
+Accuracy with mean calculation is 0.9851
+top3 accuracy 0.9984
+./checkpoint/ucf101_rgb_r2plus1d_32f_34_split3
+Mean Estimated Time 3.8013
+multiple clips
+10 crops
+
+----------------------
+
+Accuracy with mean calculation is 0.9791
+top3 accuracy 0.9971
+./checkpoint/ucf101_rgb_r2plus1d_32f_34_bert10_split1
+Mean Estimated Time 0.6279
+one clips
+10 crops
+
+Accuracy with mean calculation is 0.9863
+top3 accuracy 0.9987
+./checkpoint/ucf101_rgb_r2plus1d_32f_34_bert10_split1
+Mean Estimated Time 3.5528
+multiple clips
+10 crops
+
+Accuracy with mean calculation is 0.9754
+top3 accuracy 0.9947
+./checkpoint/ucf101_rgb_r2plus1d_32f_34_bert10_split1
+Mean Estimated Time 0.1024
+one clips
+single crop
+
+Accuracy with mean calculation is 0.9852
+top3 accuracy 0.9984
+./checkpoint/ucf101_rgb_r2plus1d_32f_34_bert10_split1
+Mean Estimated Time 0.4938
+multiple clips
+single crop
+
 
 
 

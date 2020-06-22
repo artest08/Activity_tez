@@ -48,7 +48,7 @@ parser.add_argument('--settings', metavar='DIR', default='./datasets/settings',
 parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51", "smtV2"],
                     help='dataset: ucf101 | hmdb51')
-parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resneXt3D64f101_bert10S_MARS6',
+parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_r2plus1d_64f_34_bert10_stride2_MARS2',
                     choices=model_names,
                     help='model architecture: ' +
                         ' | '.join(model_names))
@@ -68,9 +68,9 @@ parser.add_argument('--epochs', default=200, type=int, metavar='N',
                     help='number of total epochs to run')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
                     help='manual epoch number (useful on restarts)')
-parser.add_argument('-b', '--batch-size', default=15, type=int,
+parser.add_argument('-b', '--batch-size', default=8, type=int,
                     metavar='N', help='mini-batch size (default: 50)')
-parser.add_argument('--iter-size', default=8, type=int,
+parser.add_argument('--iter-size', default=16, type=int,
                     metavar='I', help='iter size as in Caffe to reduce memory usage (default: 5)')
 parser.add_argument('--lr', '--learning-rate', default=1e-5, type=float,
                     metavar='LR', help='initial learning rate')
@@ -112,24 +112,10 @@ def main():
     global best_in_existing_learning_rate, learning_rate_index, input_size, teacher_rgb1, teacher_rgb2
     args = parser.parse_args()
     
-    if '3D' in args.arch:
-        if 'I3D' in args.arch or 'MFNET3D' in args.arch:
-            if '112' in args.arch:
-                scale = 0.5
-            else:
-                scale = 1
-        else:
-            scale = 0.5
-    elif 'r2plus1d' in args.arch:
-        scale = 0.5
-    else:
-        scale = 1
-        
-    print('scale: %.1f' %(scale))
     print('mse coefficient: %d' %(msecoeff))
-    input_size = int(224 * scale)
-    width = int(340 * scale)
-    height = int(256 * scale)
+    input_size = 224
+    width = 340
+    height = 256
     
     saveLocation="./checkpoint/"+args.dataset+"_"+args.arch+"_split"+str(args.split)
     if not os.path.exists(saveLocation):
@@ -472,9 +458,9 @@ def train(train_loader, model, criterion, criterion_mse, optimizer, epoch):
     acc_mini_batch_top3 = 0.0
     totalSamplePerIter=0
     for i, (input_student, input_teacher1, input_teacher2, targets) in enumerate(train_loader):
-        input_student = input_student.view(-1,length,5,input_size,input_size).transpose(1,2)
-        input_teacher1 = input_teacher1.view(-1,length,5,input_size,input_size).transpose(1,2)
-        input_teacher2 = input_teacher2.view(-1,length,5,input_size,input_size).transpose(1,2)
+        input_student = input_student.view(-1,length,5,input_student.shape[-1],input_student.shape[-1]).transpose(1,2)
+        input_teacher1 = input_teacher1.view(-1,length,5,input_teacher1.shape[-1],input_student.shape[-1]).transpose(1,2)
+        input_teacher2 = input_teacher2.view(-1,length,5,input_teacher2.shape[-1],input_student.shape[-1]).transpose(1,2)
         inputs_student = input_student[:,:3,...]
         if teacher_rgb1:
             inputs_teacher1 = input_teacher1[:,:3,...]
@@ -563,9 +549,9 @@ def validate(val_loader, model, criterion, criterion_mse):
     c = torch.tensor(1).float().cuda()
     with torch.no_grad():
         for i, (input_student, input_teacher1, input_teacher2, targets) in enumerate(val_loader):
-            input_student = input_student.view(-1,length,5,input_size,input_size).transpose(1,2)
-            input_teacher1 = input_teacher1.view(-1,length,5,input_size,input_size).transpose(1,2)
-            input_teacher2 = input_teacher2.view(-1,length,5,input_size,input_size).transpose(1,2)
+            input_student = input_student.view(-1,length,5,input_student.shape[-1],input_student.shape[-1]).transpose(1,2)
+            input_teacher1 = input_teacher1.view(-1,length,5,input_teacher1.shape[-1],input_student.shape[-1]).transpose(1,2)
+            input_teacher2 = input_teacher2.view(-1,length,5,input_teacher2.shape[-1],input_student.shape[-1]).transpose(1,2)
             inputs_student = input_student[:,:3,...]
             if teacher_rgb1:
                 inputs_teacher1 = input_teacher1[:,:3,...]

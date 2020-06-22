@@ -23,8 +23,41 @@ __all__ = ['rgb_r2plus1d_32f_34', 'rgb_r2plus1d_kinetics_32f_34', 'rgb_rep_flow_
            'rgb_r2plus1d_32f_34_bert6', 'rgb_r2plus1d_32f_34_bert10_head2','rgb_r2plus1d_64f_34_bert10',
            'flow_r2plus1d_64f_34_bert10', 'rgb_r2plus1d_32f_34_bert2', 'rgb_r2plus1d_64f_34_bert2'
            ,'rgb_r2plus1d_32f_34_bert2_notpretrained', 'rgb_r2plus1d_32f_34_bert', 'rgb_r2plus1d_64f_34_bert10_stride2'
-           ,'rgb_r2plus1d_32f_34_bert10_untrained', 'rgb_r2plus1d_64f_34_bert10_stride2_MARS']
+           ,'rgb_r2plus1d_32f_34_bert10_untrained', 'rgb_r2plus1d_64f_34_bert10_stride2_MARS'
+           , 'rgb_r2plus1d_64f_34_bert10_stride2_MARS2', 'rgb_r2plus1d_32f_34_unpretrained']
 
+
+
+class rgb_r2plus1d_32f_34_unpretrained(nn.Module):
+    def __init__(self, num_classes , length, modelPath=''):
+        super(rgb_r2plus1d_32f_34_unpretrained, self).__init__()
+        self.num_classes=num_classes
+        self.dp = nn.Dropout(p=0.8)
+        self.avgpool = nn.AdaptiveAvgPool3d(output_size=(1, 1, 1))
+        self.features=nn.Sequential(*list(
+            r2plus1d_34_32_ig65m(359, pretrained=False, progress=False).children())[:-2])
+        
+        #self.avgpool = nn.AvgPool3d((1, 7, 7), stride=1)
+        self.fc_action = nn.Linear(512, num_classes)
+        for param in self.features.parameters():
+            param.requires_grad = True
+                
+        torch.nn.init.xavier_uniform_(self.fc_action.weight)
+        self.fc_action.bias.data.zero_()
+        
+    def forward(self, x):
+        x = self.features(x)
+        x = self.avgpool(x)
+        x = x.view(x.size(0), -1)
+        x = self.dp(x)
+        x = self.fc_action(x)
+        return x
+    
+    def mars_forward(self, x):
+        x = self.features(x)
+        x = self.avgpool(x)
+        x = x.view(x.size(0), -1)
+        return x
 
 class rgb_r2plus1d_32f_34(nn.Module):
     def __init__(self, num_classes , length, modelPath=''):
@@ -666,7 +699,7 @@ class rgb_r2plus1d_64f_34_bert10_stride2_MARS(nn.Module):
         self.attn_heads=8
         self.num_classes=num_classes
         self.length=length
-        self.dp = nn.Dropout(p=0.8)
+        self.dp = nn.Dropout(p=0.5)
         
         self.avgpool = nn.AvgPool3d((1, 7, 7), stride=1)
         self.features=nn.Sequential(*list(
@@ -699,4 +732,69 @@ class rgb_r2plus1d_64f_34_bert10_stride2_MARS(nn.Module):
         output=self.dp(classificationOut)
         x = self.fc_action(output)
         return x, input_vectors, sequenceOut, maskSample
+    
+    
+    
+class rgb_r2plus1d_64f_34_bert10_stride2_MARS2(nn.Module):
+    def __init__(self, num_classes , length, modelPath=''):
+        super(rgb_r2plus1d_64f_34_bert10_stride2_MARS2, self).__init__()
+        self.hidden_size=512
+        self.n_layers=1
+        self.attn_heads=8
+        self.num_classes=num_classes
+        self.length=length
+        self.dp = nn.Dropout(p=0.8)
+        
+        self.avgpool = nn.AvgPool3d((1, 7, 7), stride=1)
+        self.features=nn.Sequential(*list(
+            r2plus1d_34_32_ig65m(359, pretrained=True, progress=True).children())[:-2]) 
+        
+        self.bert_mars1 = BERT5(self.hidden_size, 4 , hidden=self.hidden_size, n_layers=self.n_layers, attn_heads=self.attn_heads)
+        
+        self.bert_mars2 = BERT5(self.hidden_size, 4 , hidden=self.hidden_size, n_layers=self.n_layers, attn_heads=self.attn_heads)
+        
+        self.fc_action_mars1 = nn.Linear(self.hidden_size, num_classes)
+        self.fc_action_mars2 = nn.Linear(self.hidden_size, num_classes)
+      
+        for param in self.features.parameters():
+            param.requires_grad = True
+
+        torch.nn.init.xavier_uniform_(self.fc_action_mars1.weight)
+        self.fc_action_mars1.bias.data.zero_()
+        
+        torch.nn.init.xavier_uniform_(self.fc_action_mars2.weight)
+        self.fc_action_mars2.bias.data.zero_()
+        
+    def forward(self, x):
+        x = x[:, :, ::2, :, :]
+        x = self.features(x)
+        x = self.avgpool(x)
+        
+        x = x.view(x.size(0), self.hidden_size, 4)
+        x = x.transpose(1,2)
+        input_vectors=x
+        norm = input_vectors.norm(p=2, dim = -1, keepdim=True)
+        input_vectors = input_vectors.div(norm)
+        
+        output_mars1 , maskSample = self.bert_mars1(x)
+        classificationOut_mars1 = output_mars1[:,0,:]
+        sequenceOut_mars1 = output_mars1[:,1:,:]
+        norm = sequenceOut_mars1.norm(p=2, dim = -1, keepdim=True)
+        sequenceOut_mars1 = sequenceOut_mars1.div(norm)
+        output_mars1 = self.dp(classificationOut_mars1)
+        x_mars1 = self.fc_action_mars1(output_mars1)
+        
+        output_mars2 , maskSample = self.bert_mars2(x)
+        classificationOut_mars2 = output_mars2[:,0,:]
+        sequenceOut_mars2 = output_mars2[:,1:,:]
+        norm = sequenceOut_mars2.norm(p=2, dim = -1, keepdim=True)
+        sequenceOut_mars2 = sequenceOut_mars2.div(norm)
+        output_mars2 = self.dp(classificationOut_mars2)
+        x_mars2 = self.fc_action_mars2(output_mars2)
+        
+        out = x_mars1 + x_mars2
+        
+        sequenceOut_mars = torch.cat((sequenceOut_mars1, sequenceOut_mars2), -1)
+        return out, input_vectors, sequenceOut_mars, maskSample 
+    
     
