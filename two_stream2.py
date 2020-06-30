@@ -14,6 +14,7 @@ import shutil
 import numpy as np
 
 
+
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
@@ -42,24 +43,18 @@ model_names = sorted(name for name in models.__dict__
 
 dataset_names = sorted(name for name in datasets.__all__)
 
-parser = argparse.ArgumentParser(description='PyTorch Two-Stream Action Recognition')
-#parser.add_argument('--data', metavar='DIR', default='./datasets/ucf101_frames',
-#                    help='path to dataset')
+parser = argparse.ArgumentParser(description='PyTorch Two-Stream2')
 parser.add_argument('--settings', metavar='DIR', default='./datasets/settings',
-                    help='path to datset setting files')
-#parser.add_argument('--modality', '-m', metavar='MODALITY', default='rgb',
-#                    choices=["rgb", "flow"],
-#                    help='modality: rgb | flow')
+                    help='path to dataset setting files')
 parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51", "smtV2"],
                     help='dataset: ucf101 | hmdb51')
-parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_r2plus1d_32f_34_unpretrained',
+parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resneXt3D64f101',
                     choices=model_names,
                     help='model architecture: ' +
                         ' | '.join(model_names) +
                         ' (default: rgb_vgg16)')
-
-parser.add_argument('-s', '--split', default=1, type=int, metavar='S',
+parser.add_argument('-s', '--split', default=2, type=int, metavar='S',
                     help='which split of data to work on (default: 1)')
 parser.add_argument('-j', '--workers', default=2, type=int, metavar='N',
                     help='number of data loading workers (default: 4)')
@@ -73,8 +68,6 @@ parser.add_argument('--iter-size', default=32, type=int,
                     metavar='I', help='iter size as in Caffe to reduce memory usage (default: 5)')
 parser.add_argument('--lr', '--learning-rate', default=1e-2, type=float,
                     metavar='LR', help='initial learning rate')
-parser.add_argument('--lr_steps', default=[15], type=float, nargs="+",
-                    metavar='LRSteps', help='epochs to decay learning rate by 10')
 parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
                     help='momentum')
 parser.add_argument('--weight-decay', '--wd', default=1e-3, type=float,
@@ -85,10 +78,9 @@ parser.add_argument('--save-freq', default=1, type=int,
                     metavar='N', help='save frequency (default: 25)')
 parser.add_argument('--num-seg', default=1, type=int,
                     metavar='N', help='Number of segments for temporal LSTM (default: 16)')
-#parser.add_argument('--resume', default='./dene4', type=str, metavar='PATH',
-#                    help='path to latest checkpoint (default: none)')
 parser.add_argument('-e', '--evaluate', dest='evaluate', action='store_true',
                     help='evaluate model on validation set')
+
 
 
 best_prec1 = 0
@@ -100,7 +92,6 @@ best_in_existing_learning_rate = 0
 HALF = False
 
 training_continue = False
-
 def main():
     global args, best_prec1,model,writer,best_loss, length, width, height
     global max_learning_rate_decay_count, best_in_existing_learning_rate, learning_rate_index, input_size

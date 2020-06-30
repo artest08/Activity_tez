@@ -28,20 +28,26 @@ _C.DATA.STD = [0.225, 0.225, 0.225]
 dir_folder_name = os.path.dirname(os.path.realpath(__file__))
 config_folder_name = os.path.join(dir_folder_name, 'configs','Kinetics')
 
-parser = argparse.ArgumentParser(description='PyTorch Two-Stream Action Recognition')
-#parser.add_argument('--data', metavar='DIR', default='./datasets/ucf101_frames',
-#                    help='path to dataset')
-parser.add_argument('--cfg_file', metavar='DIR', default=None,
-                    help='path to datset setting files')
 
-parser.add_argument('--opts', metavar='DIR', default=None,
-                    help='path to datset setting files')
 
-args = parser.parse_args()
-
+def create_args():
+    parser = argparse.ArgumentParser(description='Slowfast')
+    #parser.add_argument('--data', metavar='DIR', default='./datasets/ucf101_frames',
+    #                    help='path to dataset')
+    parser.add_argument('--cfg_file', metavar='DIR', default=None,
+                        help='path to datset setting files')
+    
+    parser.add_argument('--opts', metavar='DIR', default=None,
+                        help='path to datset setting files')
+    
+    args = parser.parse_args()
+    del parser
+    return args
+    
 def slowfast_50(model_path):
     yaml_name = 'SLOWFAST_8x8_R50.yaml'
     yaml_file_name = os.path.join(config_folder_name, yaml_name)
+    args = create_args()
     args.cfg_file = yaml_file_name
     cfg = load_config(args)
     model = SlowFast(cfg)
@@ -49,5 +55,6 @@ def slowfast_50(model_path):
         params = torch.load(model_path)
         model.load_state_dict(params['state_dict'])
     return model
+    del args
 
 #model = slowfast_50()

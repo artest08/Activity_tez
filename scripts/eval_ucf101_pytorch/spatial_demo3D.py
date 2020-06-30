@@ -43,7 +43,7 @@ dataset_names = sorted(name for name in datasets.__all__)
 
 parser = argparse.ArgumentParser(description='PyTorch Two-Stream Action Recognition RGB Test Case')
 
-parser.add_argument('--dataset', '-d', default='ucf101',
+parser.add_argument('--dataset', '-d', default='smtV2',
                     choices=["ucf101", "hmdb51"],
                     help='dataset: ucf101 | hmdb51')
 parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_r2plus1d_32f_34_bert10',
@@ -59,8 +59,8 @@ parser.add_argument('-v', '--val', dest='window_val', action='store_true',
 
 
 multiGPUTest = False
-multiGPUTrain = False
-ten_crop_enabled = False
+multiGPUTrain = True
+ten_crop_enabled = True
 num_seg=16
 num_seg_3D=1
 
@@ -108,6 +108,8 @@ def main():
         frameFolderName = "ucf101_frames"
     elif args.dataset=='hmdb51':
         frameFolderName = "hmdb51_frames"
+    elif args.dataset=='smtV2':
+        frameFolderName = "smtV2_frames"
     data_dir=os.path.join(datasetFolder,frameFolderName)
     
     if '64f' in args.arch:
@@ -141,6 +143,8 @@ def main():
         num_categories = 101
     elif args.dataset=='hmdb51':
         num_categories = 51
+    elif args.dataset=='smtV2':
+        num_categories = 174
 
     model_start_time = time.time()
     spatial_net=buildModel(model_path,num_categories)

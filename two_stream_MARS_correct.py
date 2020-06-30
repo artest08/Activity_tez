@@ -49,11 +49,11 @@ parser.add_argument('--settings', metavar='DIR', default='./datasets/settings',
 parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51", "smtV2"],
                     help='dataset: ucf101 | hmdb51')
-parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_r2plus1d_64f_34_bert10_stride2_MARS',
+parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resneXt3D64f101_bert10S_MARS2',
                     choices=model_names,
                     help='model architecture: ' +
                         ' | '.join(model_names))
-parser.add_argument('--arch_teacher', '-teacher', metavar='ARCH', default='rgb_r2plus1d_64f_34_bert10_stride2',
+parser.add_argument('--arch_teacher', '-teacher', metavar='ARCH', default='flow_resneXt3D64f101_bert10S',
                     choices=model_names,
                     help='model architecture: ' +
                         ' | '.join(model_names))
@@ -65,9 +65,9 @@ parser.add_argument('--epochs', default=200, type=int, metavar='N',
                     help='number of total epochs to run')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
                     help='manual epoch number (useful on restarts)')
-parser.add_argument('-b', '--batch-size', default=8, type=int,
+parser.add_argument('-b', '--batch-size', default=16, type=int,
                     metavar='N', help='mini-batch size (default: 50)')
-parser.add_argument('--iter-size', default=16, type=int,
+parser.add_argument('--iter-size', default=8, type=int,
                     metavar='I', help='iter size as in Caffe to reduce memory usage (default: 5)')
 parser.add_argument('--lr', '--learning-rate', default=1e-5, type=float,
                     metavar='LR', help='initial learning rate')
@@ -455,7 +455,8 @@ def train(train_loader, model, criterion, criterion_mse, optimizer, epoch):
         
         if 'bert' in args.arch:
                 output, _ , features_student, _ = model(inputs_student)
-                _ , features_teacher , _ , _ = model_teacher(inputs_teacher)
+                #_ , features_teacher , _ , _ = model_teacher(inputs_teacher)
+                _ , _ , features_teacher , _ = model_teacher(inputs_teacher)
         else:
             output, features_student = model.student_forward(inputs_student)
             features_teacher = model_teacher.mars_forward(inputs_teacher)
@@ -537,7 +538,8 @@ def validate(val_loader, model, criterion, criterion_mse):
             # compute output
             if 'bert' in args.arch:
                 output, _ , features_student, _ = model(inputs_student)
-                _ , features_teacher , _ , _ = model_teacher(inputs_teacher)
+                #_ , features_teacher , _ , _ = model_teacher(inputs_teacher)
+                _ , _ , features_teacher , _ = model_teacher(inputs_teacher)
             else:
                 output, features_student = model.student_forward(inputs_student)
                 features_teacher = model_teacher.mars_forward(inputs_teacher)

@@ -297,5 +297,6 @@ def VideoSpatialPrediction3D(
         mean_result=np.mean(result,0)
         prediction=np.argmax(mean_result)
         top3 = mean_result.argsort()[::-1][:3]
+        top5 = mean_result.argsort()[::-1][:5]
         
     return prediction, mean_result, top3

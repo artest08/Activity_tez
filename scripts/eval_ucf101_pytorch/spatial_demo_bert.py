@@ -51,7 +51,7 @@ parser.add_argument('--dataset', '-d', default='ucf101',
 parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_r2plus1d_32f_34_bert10',
                     choices=model_names)
 
-parser.add_argument('-s', '--split', default=1, type=int, metavar='S',
+parser.add_argument('-s', '--split', default=2, type=int, metavar='S',
                     help='which split of data to work on (default: 1)')
 
 parser.add_argument('-w', '--window', default=3, type=int, metavar='V',
@@ -65,7 +65,7 @@ parser.add_argument('-v', '--val', dest='window_val', action='store_true',
 
 multiGPUTest = False
 multiGPUTrain = False
-ten_crop_enabled = False
+ten_crop_enabled = True
 num_seg=16
 num_seg_3D=1
 
