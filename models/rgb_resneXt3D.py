@@ -21,7 +21,7 @@ __all__ = ['rgb_resneXt3D64f101','rgb_resneXt3D64f101_bert10XX','rgb_resneXt3D64
            'rgb_mars_resnext3D64f101', 'flow_mars_resnext3D64f101', 'flow_resneXt3D64f101', 'rgb_resneXt3D64f101_224', 
            'rgb_resneXt3D64f101_student_mars', 'rgb_resneXt3D64f101_student_MARS',
            'flow_resneXt3D64f101_bert10XY', 'flow_resneXt3D64f101_bert10S', 'rgb_resneXt3D64f101_bert10S', 
-           'rgb_resneXt3D64f101_bert10XYS', 'rgb_resneXt3D64f101_bert2S', 'flow_resneXt3D64f101_bert2S', 'flow_resneXt3D64f101_bert10SS'
+           'rgb_resneXt3D64f101_bert10XYS', 'rgb_resneXt3D64f101_bert2S', 'flow_resneXt3D64f101_bert2S', 'flow_resneXt3D64f101_bert10SS',
            'rgb_resneXt3D64f101_bert', 'rgb_resneXt3D64f101_bert10S_MARS', 
            'rgb_resneXt3D64f101_bert10B_MARS', 'rgb_resneXt3D64f101_bert10S_MARS2', 'rgb_resneXt3D64f101_bert10S_MARS3'
            ,'rgb_resneXt3D64f101_bert10S_MARS4', 'rgb_resneXt3D64f101_bert10S_MARS5', 'rgb_resneXt3D64f101_bert10S_MARS6',
