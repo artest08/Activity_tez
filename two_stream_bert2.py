@@ -67,7 +67,7 @@ parser.add_argument('-b', '--batch-size', default=20, type=int,
                     metavar='N', help='mini-batch size (default: 50)')
 parser.add_argument('--iter-size', default=6, type=int,
                     metavar='I', help='iter size as in Caffe to reduce memory usage (default: 5)')
-parser.add_argument('--lr', '--learning-rate', default=1e-6, type=float,
+parser.add_argument('--lr', '--learning-rate', default=1e-5, type=float,
                     metavar='LR', help='initial learning rate')
 parser.add_argument('--lr_steps', default=[10], type=float, nargs="+",
                     metavar='LRSteps', help='epochs to decay learning rate by 10')
@@ -96,7 +96,7 @@ warmUpEpoch=5
 smt_pretrained = False
 
 HALF = False
-training_continue = True
+training_continue = False
 
 
 
