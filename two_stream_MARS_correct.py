@@ -38,7 +38,7 @@ from utils.architecture_transform import determine_architecture_transform2
 
 
 model_names = sorted(name for name in models.__dict__
-    if name.islower() and not name.startswith("__")
+    if not name.startswith("__")
     and callable(models.__dict__[name]))
 
 dataset_names = sorted(name for name in datasets.__all__)
@@ -102,7 +102,7 @@ save_everything = True
 
 cosine_similarity_enabled = False
 
-bert_teacher_enabled = False
+bert_teacher_enabled = True
 
 training_continue = False
 msecoeff = 250000
