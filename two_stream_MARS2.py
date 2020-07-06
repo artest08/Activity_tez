@@ -104,6 +104,7 @@ lrPlateuPrec1 = False
 save_everything = True
 
 cosine_similarity_enabled = False
+bert_teacher_enabled = False
 
 training_continue = False
 msecoeff = 250000
@@ -167,7 +168,10 @@ def main():
         for param in model_teacher2.parameters():
             param.requires_grad = False
             
-            
+    if bert_teacher_enabled:
+        print("BERT teacher enabled....")
+    else:
+        print("BERT teacher disabled....")            
     
     print("Model %s is loaded. " % (args.arch))
 
@@ -480,8 +484,12 @@ def train(train_loader, model, criterion, criterion_mse, optimizer, epoch):
         
         if 'bert' in args.arch:
                 output, _ , features_student, _ = model(inputs_student)
-                _ , features_teacher1 , _ , _ = model_teacher1(inputs_teacher1)
-                _ , features_teacher2 , _ , _ = model_teacher2(inputs_teacher2)
+                if bert_teacher_enabled:
+                    _ , _ , features_teacher1 , _ = model_teacher1(inputs_teacher1)
+                    _ , _ , features_teacher2 , _ = model_teacher2(inputs_teacher2)
+                else:
+                    _ , features_teacher1 , _ , _ = model_teacher1(inputs_teacher1)
+                    _ , features_teacher2 , _ , _ = model_teacher2(inputs_teacher2)
                 features_teacher = torch.cat((features_teacher1, features_teacher2), -1)
         else:
             output, features_student = model.student_forward(inputs_student)
@@ -571,8 +579,12 @@ def validate(val_loader, model, criterion, criterion_mse):
             
             if 'bert' in args.arch:
                     output, _ , features_student, _ = model(inputs_student)
-                    _ , features_teacher1 , _ , _ = model_teacher1(inputs_teacher1)
-                    _ , features_teacher2 , _ , _ = model_teacher2(inputs_teacher2)
+                    if bert_teacher_enabled:
+                        _ , _ , features_teacher1 , _ = model_teacher1(inputs_teacher1)
+                        _ , _ , features_teacher2 , _ = model_teacher2(inputs_teacher2)
+                    else:
+                        _ , features_teacher1 , _ , _ = model_teacher1(inputs_teacher1)
+                        _ , features_teacher2 , _ , _ = model_teacher2(inputs_teacher2)
                     features_teacher = torch.cat((features_teacher1, features_teacher2), -1)
             else:
                 output, features_student = model.student_forward(inputs_student)

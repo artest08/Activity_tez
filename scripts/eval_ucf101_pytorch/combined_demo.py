@@ -47,13 +47,13 @@ parser = argparse.ArgumentParser(description='PyTorch Two-Stream Action Recognit
 parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51"],
                     help='dataset: ucf101 | hmdb51')
-parser.add_argument('--arch_flow', '-a', metavar='ARCH', default='flow_resneXt3D64f101',
+parser.add_argument('--arch_flow', '-a', metavar='ARCH', default='flow_resneXt3D64f101_bert10S',
                     choices=model_names)
-parser.add_argument('--arch_rgb', '-b', metavar='ARCH', default='rgb_resneXt3D64f101',
+parser.add_argument('--arch_rgb', '-b', metavar='ARCH', default='rgb_resneXt3D64f101_bert10XY2',
                     choices=model_names)
 parser.add_argument('--arch_pose', '-c', metavar='ARCH', default='pose_resnet18_bert10',
                     choices=model_names)
-parser.add_argument('-s', '--split', default=3, type=int, metavar='S',
+parser.add_argument('-s', '--split', default=1, type=int, metavar='S',
                     help='which split of data to work on (default: 1)')
 
 parser.add_argument('-w', '--window', default=3, type=int, metavar='V',
@@ -68,7 +68,7 @@ parser.add_argument('-v', '--val', dest='window_val', action='store_true',
 multiGPUTest=False
 multiGPUTrain=False
 
-ten_crop_enabled = False
+ten_crop_enabled = True
 multiple_clips_enabled = True
 
 num_seg_rgb=16

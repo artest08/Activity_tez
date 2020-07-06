@@ -102,6 +102,8 @@ save_everything = True
 
 cosine_similarity_enabled = False
 
+bert_teacher_enabled = False
+
 training_continue = False
 msecoeff = 250000
 def main():
@@ -148,9 +150,13 @@ def main():
         for param in model_teacher.parameters():
             param.requires_grad = False
             
-            
+    if bert_teacher_enabled:
+        print("BERT teacher enabled....")
+    else:
+        print("BERT teacher disabled....")
     
     print("Model %s is loaded. " % (args.arch))
+    
 
     # define loss function (criterion) and optimizer
     criterion = nn.CrossEntropyLoss().cuda()
@@ -454,9 +460,12 @@ def train(train_loader, model, criterion, criterion_mse, optimizer, epoch):
         targets = targets.cuda()
         
         if 'bert' in args.arch:
-                output, _ , features_student, _ = model(inputs_student)
-                #_ , features_teacher , _ , _ = model_teacher(inputs_teacher)
+            output, _ , features_student, _ = model(inputs_student)
+            if bert_teacher_enabled:
                 _ , _ , features_teacher , _ = model_teacher(inputs_teacher)
+            else:
+                _ , features_teacher , _ , _ = model_teacher(inputs_teacher)
+                    
         else:
             output, features_student = model.student_forward(inputs_student)
             features_teacher = model_teacher.mars_forward(inputs_teacher)
@@ -538,8 +547,10 @@ def validate(val_loader, model, criterion, criterion_mse):
             # compute output
             if 'bert' in args.arch:
                 output, _ , features_student, _ = model(inputs_student)
-                #_ , features_teacher , _ , _ = model_teacher(inputs_teacher)
-                _ , _ , features_teacher , _ = model_teacher(inputs_teacher)
+                if bert_teacher_enabled:
+                    _ , _ , features_teacher , _ = model_teacher(inputs_teacher)
+                else:
+                    _ , features_teacher , _ , _ = model_teacher(inputs_teacher)
             else:
                 output, features_student = model.student_forward(inputs_student)
                 features_teacher = model_teacher.mars_forward(inputs_teacher)
