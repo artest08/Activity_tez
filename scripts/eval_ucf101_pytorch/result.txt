@@ -4498,10 +4498,10 @@ Mean Estimated Time 1.1726
 multiple clips
 10 crops
 
-Accuracy with mean calculation is 0.9002
-top3 accuracy 0.9857
+Accuracy with mean calculation is 0.9635
+top3 accuracy 0.9908
 ./checkpoint/ucf101_flow_resneXt3D64f101_split3
-Mean Estimated Time 1.2807
+Mean Estimated Time 1.2067
 multiple clips
 10 crops
 
@@ -4545,6 +4545,14 @@ Mean Estimated Time 2.3968
 multiple clips
 10 crops
 
+
+Accuracy with mean calculation is 0.9781
+top3 accuracy 0.9989
+./checkpoint/ucf101_rgb_resneXt3D64f101_split3
+./checkpoint/ucf101_flow_resneXt3D64f101_split3
+Mean Estimated Time 2.1272
+multiple clips
+10 crops
 
 --------------------------
 

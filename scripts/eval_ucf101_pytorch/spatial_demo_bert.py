@@ -45,13 +45,13 @@ dataset_names = sorted(name for name in datasets.__all__)
 
 parser = argparse.ArgumentParser(description='PyTorch Two-Stream Action Recognition RGB Test Case')
 
-parser.add_argument('--dataset', '-d', default='ucf101',
+parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51"],
                     help='dataset: ucf101 | hmdb51')
-parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_r2plus1d_32f_34_bert10',
+parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resneXt3D64f101_lstm',
                     choices=model_names)
 
-parser.add_argument('-s', '--split', default=2, type=int, metavar='S',
+parser.add_argument('-s', '--split', default=1, type=int, metavar='S',
                     help='which split of data to work on (default: 1)')
 
 parser.add_argument('-w', '--window', default=3, type=int, metavar='V',
@@ -79,25 +79,25 @@ def buildModel(model_path,num_categories):
     else:
         model=models.__dict__[args.arch](modelPath='', num_classes=num_categories,length=num_seg)
 
-       
-    params = torch.load(model_path)
-    if args.tsn:
-        new_dict = {k[7:]: v for k, v in params['state_dict'].items()} 
-        model_dict=model.state_dict() 
-        model_dict.update(new_dict)
-        model.load_state_dict(model_dict)
-    elif multiGPUTest:
-        model=torch.nn.DataParallel(model)
-        new_dict={"module."+k: v for k, v in params['state_dict'].items()} 
-        model.load_state_dict(new_dict)
+    
+    #params = torch.load(model_path)
+    # if args.tsn:
+    #     new_dict = {k[7:]: v for k, v in params['state_dict'].items()} 
+    #     model_dict=model.state_dict() 
+    #     model_dict.update(new_dict)
+    #     model.load_state_dict(model_dict)
+    # elif multiGPUTest:
+    #     model=torch.nn.DataParallel(model)
+    #     new_dict={"module."+k: v for k, v in params['state_dict'].items()} 
+    #     model.load_state_dict(new_dict)
         
-    elif multiGPUTrain:
-        new_dict = {k[7:]: v for k, v in params['state_dict'].items()} 
-        model_dict=model.state_dict() 
-        model_dict.update(new_dict)
-        model.load_state_dict(model_dict)
-    else:
-        model.load_state_dict(params['state_dict'])
+    # elif multiGPUTrain:
+    #     new_dict = {k[7:]: v for k, v in params['state_dict'].items()} 
+    #     model_dict=model.state_dict() 
+    #     model_dict.update(new_dict)
+    #     model.load_state_dict(model_dict)
+    # else:
+    #     model.load_state_dict(params['state_dict'])
     model.cuda()
     model.eval()  
     return model
@@ -168,6 +168,7 @@ def main():
     print("Action recognition model is loaded in %4.4f seconds." % (model_time))
     
     flops, params = get_model_complexity_info(spatial_net, (3,length, 112, 112), as_strings=True, print_per_layer_stat=False)
+    #flops, params = get_model_complexity_info(spatial_net, (3, 224, 224), as_strings=True, print_per_layer_stat=False)
     print('{:<30}  {:<8}'.format('Computational complexity: ', flops))
     print('{:<30}  {:<8}'.format('Number of parameters: ', params))
     
