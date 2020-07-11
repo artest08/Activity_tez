@@ -264,7 +264,7 @@ def VideoSpatialPrediction3D_bert(
         elif 'flow' in architecture_name:
             imgDataTensor = imgDataTensor.view(-1,length,2,imageSize,imageSize).transpose(1,2)
             
-        if 'bert' in architecture_name:
+        if 'bert' in architecture_name or 'pooling' in architecture_name:
             output, input_vectors, sequenceOut, maskSample = net(imgDataTensor)
         else:
             output = net(imgDataTensor)

@@ -48,7 +48,7 @@ parser = argparse.ArgumentParser(description='PyTorch Two-Stream Action Recognit
 parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51"],
                     help='dataset: ucf101 | hmdb51')
-parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resneXt3D64f101_lstm',
+parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resneXt3D64f101_bert10S_MARS6',
                     choices=model_names)
 
 parser.add_argument('-s', '--split', default=1, type=int, metavar='S',
@@ -64,8 +64,8 @@ parser.add_argument('-v', '--val', dest='window_val', action='store_true',
                     help='Window Validation Selection')
 
 multiGPUTest = False
-multiGPUTrain = False
-ten_crop_enabled = True
+multiGPUTrain = True
+ten_crop_enabled = False
 num_seg=16
 num_seg_3D=1
 
@@ -80,24 +80,24 @@ def buildModel(model_path,num_categories):
         model=models.__dict__[args.arch](modelPath='', num_classes=num_categories,length=num_seg)
 
     
-    #params = torch.load(model_path)
-    # if args.tsn:
-    #     new_dict = {k[7:]: v for k, v in params['state_dict'].items()} 
-    #     model_dict=model.state_dict() 
-    #     model_dict.update(new_dict)
-    #     model.load_state_dict(model_dict)
-    # elif multiGPUTest:
-    #     model=torch.nn.DataParallel(model)
-    #     new_dict={"module."+k: v for k, v in params['state_dict'].items()} 
-    #     model.load_state_dict(new_dict)
+    params = torch.load(model_path)
+    if args.tsn:
+        new_dict = {k[7:]: v for k, v in params['state_dict'].items()} 
+        model_dict=model.state_dict() 
+        model_dict.update(new_dict)
+        model.load_state_dict(model_dict)
+    elif multiGPUTest:
+        model=torch.nn.DataParallel(model)
+        new_dict={"module."+k: v for k, v in params['state_dict'].items()} 
+        model.load_state_dict(new_dict)
         
-    # elif multiGPUTrain:
-    #     new_dict = {k[7:]: v for k, v in params['state_dict'].items()} 
-    #     model_dict=model.state_dict() 
-    #     model_dict.update(new_dict)
-    #     model.load_state_dict(model_dict)
-    # else:
-    #     model.load_state_dict(params['state_dict'])
+    elif multiGPUTrain:
+        new_dict = {k[7:]: v for k, v in params['state_dict'].items()} 
+        model_dict=model.state_dict() 
+        model_dict.update(new_dict)
+        model.load_state_dict(model_dict)
+    else:
+        model.load_state_dict(params['state_dict'])
     model.cuda()
     model.eval()  
     return model
