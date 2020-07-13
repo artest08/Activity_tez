@@ -48,7 +48,7 @@ parser = argparse.ArgumentParser(description='PyTorch Two-Stream Action Recognit
 parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51"],
                     help='dataset: ucf101 | hmdb51')
-parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resneXt3D64f101_bert10S_MARS6',
+parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resneXt3D64f101_pooling',
                     choices=model_names)
 
 parser.add_argument('-s', '--split', default=1, type=int, metavar='S',
@@ -64,7 +64,7 @@ parser.add_argument('-v', '--val', dest='window_val', action='store_true',
                     help='Window Validation Selection')
 
 multiGPUTest = False
-multiGPUTrain = True
+multiGPUTrain = False
 ten_crop_enabled = False
 num_seg=16
 num_seg_3D=1

@@ -14,8 +14,8 @@ import shutil
 import numpy as np
 
 
-#os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-#os.environ["CUDA_VISIBLE_DEVICES"]="1"
+# os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
+# os.environ["CUDA_VISIBLE_DEVICES"]="1"
 
 import torch
 import torch.nn as nn
@@ -49,11 +49,11 @@ parser.add_argument('--settings', metavar='DIR', default='./datasets/settings',
 parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51", "smtV2"],
                     help='dataset: ucf101 | hmdb51')
-parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resneXt3D64f101_bert10S_MARS2',
+parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resneXt3D64f101_student_MARS',
                     choices=model_names,
                     help='model architecture: ' +
                         ' | '.join(model_names))
-parser.add_argument('--arch_teacher', '-teacher', metavar='ARCH', default='flow_resneXt3D64f101_bert10S',
+parser.add_argument('--arch_teacher', '-teacher', metavar='ARCH', default='flow_resneXt3D64f101',
                     choices=model_names,
                     help='model architecture: ' +
                         ' | '.join(model_names))
@@ -65,9 +65,9 @@ parser.add_argument('--epochs', default=200, type=int, metavar='N',
                     help='number of total epochs to run')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
                     help='manual epoch number (useful on restarts)')
-parser.add_argument('-b', '--batch-size', default=16, type=int,
+parser.add_argument('-b', '--batch-size', default=8, type=int,
                     metavar='N', help='mini-batch size (default: 50)')
-parser.add_argument('--iter-size', default=8, type=int,
+parser.add_argument('--iter-size', default=16, type=int,
                     metavar='I', help='iter size as in Caffe to reduce memory usage (default: 5)')
 parser.add_argument('--lr', '--learning-rate', default=1e-5, type=float,
                     metavar='LR', help='initial learning rate')
@@ -106,8 +106,9 @@ bert_teacher_enabled = True
 
 training_continue = False
 msecoeff = 250000
+multi_gpu = False
 def main():
-    global args, best_prec1,model ,writer, best_loss, length, width, height, model_teacher, msecoeff
+    global args, best_prec1,model ,writer, best_loss, length, width, height, model_teacher, msecoeff, multi_gpu
     global max_learning_rate_decay_count, best_in_existing_learning_rate, learning_rate_index, input_size, teacher_rgb
     args = parser.parse_args()
     
@@ -144,6 +145,7 @@ def main():
         if torch.cuda.device_count() > 1:
             new_dict={"module."+k: v for k, v in params['state_dict'].items()} 
             model_teacher.load_state_dict(new_dict)
+            multi_gpu = True
         else:
             model_teacher.load_state_dict(params['state_dict'])
 
@@ -467,8 +469,12 @@ def train(train_loader, model, criterion, criterion_mse, optimizer, epoch):
                 _ , features_teacher , _ , _ = model_teacher(inputs_teacher)
                     
         else:
-            output, features_student = model.student_forward(inputs_student)
-            features_teacher = model_teacher.mars_forward(inputs_teacher)
+            if multi_gpu:
+                output, features_student = model.module.student_forward(inputs_student)
+                features_teacher = model_teacher.module.mars_forward(inputs_teacher)
+            else:
+                output, features_student = model.student_forward(inputs_student)
+                features_teacher = model_teacher.mars_forward(inputs_teacher)
             
         prec1, prec3 = accuracy(output.data, targets, topk=(1, 3))
         acc_mini_batch += prec1.item()
@@ -552,8 +558,12 @@ def validate(val_loader, model, criterion, criterion_mse):
                 else:
                     _ , features_teacher , _ , _ = model_teacher(inputs_teacher)
             else:
-                output, features_student = model.student_forward(inputs_student)
-                features_teacher = model_teacher.mars_forward(inputs_teacher)
+                if multi_gpu:
+                    output, features_student = model.module.student_forward(inputs_student)
+                    features_teacher = model_teacher.module.mars_forward(inputs_teacher)
+                else:
+                    output, features_student = model.student_forward(inputs_student)
+                    features_teacher = model_teacher.mars_forward(inputs_teacher)
                 
             lossClassification = criterion(output, targets)
             if cosine_similarity_enabled:
