@@ -185,13 +185,13 @@ def main():
             weight_decay=args.weight_decay)
     
     if training_continue:
-        #model, startEpoch, optimizer , best_prec1 = build_model_continue()
-        model, startEpoch, _ , best_prec1 = build_model_continue()
+        model, startEpoch, optimizer , best_prec1 = build_model_continue()
+        #model, startEpoch, _ , best_prec1 = build_model_continue()
         args.start_epoch = startEpoch
-        lr = args.lr
+        #lr = args.lr
         for param_group in optimizer.param_groups:
-            #lr = param_group['lr']
-            param_group['lr'] = lr
+            lr = param_group['lr']
+            #param_group['lr'] = lr
         print("Continuing with best precision: %.3f and start epoch %d and lr: %f" %(best_prec1,startEpoch,lr))
     
     # optimizer = AdamW(model.parameters(),

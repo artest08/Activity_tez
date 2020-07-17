@@ -24,7 +24,7 @@ __all__ = ['rgb_I3D64f_bert10','flow_I3D64f_bert10','rgb_I3D64f', 'flow_I3D64f',
            ,'rgb_resnet50I3D32fNL', 'rgb_resnet50I3D32fNL_bert10', 'rgb_resnet50I3D32f', 'rgb_resnet50I3D32f_bert10'
            ,'rgb_resnet50I3D32f_112','rgb_resnet50I3D64f','rgb_resnet50I3D64fNL', 'rgb_resnet50I3D64f_8x8'
            ,'rgb_resnet50I3D64f_stride2', 'rgb_resnet50I3D64fNL_stride2', 'rgb_I3D64f_bert4', 'rgb_I3D64f_bert4XX',
-           'rgb_I3D64f_bert2', 'flow_I3D64f_bert2']
+           'rgb_I3D64f_bert2', 'flow_I3D64f_bert2', 'rgb_I3D64f_bert2S', 'flow_I3D64f_bert2S']
 
 
 
@@ -635,6 +635,91 @@ class flow_I3D64f_bert2(nn.Module):
             param.requires_grad = True
         
        
+        self.bert = BERT2(self.hidden_size, 8 , hidden=self.hidden_size, n_layers=self.n_layers, attn_heads=self.attn_heads)
+        print(sum(p.numel() for p in self.bert.parameters() if p.requires_grad))
+        self.fc_action = nn.Linear(self.hidden_size, num_classes)
+        self.avgpool = nn.AdaptiveAvgPool3d(output_size=(8, 1, 1))
+                
+        torch.nn.init.xavier_uniform_(self.fc_action.weight)
+        self.fc_action.bias.data.zero_()
+        
+    def forward(self, x):
+        x = self.features(x)
+        x = self.avgpool(x)
+        x = x.view(x.size(0), self.hidden_size,8)
+        x = x.transpose(1,2)
+        norm = x.norm(p=2, dim = -1, keepdim=True)
+        x = x.div(norm)
+        input_vectors=x
+        output , maskSample = self.bert(x)
+        classificationOut = output[:,0,:]
+        sequenceOut=output[:,1:,:]
+        output=self.dp(classificationOut)
+        x = self.fc_action(output)
+        return x, input_vectors, sequenceOut, maskSample
+    
+class rgb_I3D64f_bert2S(nn.Module):
+    def __init__(self, num_classes , length, modelPath=''):
+        super(rgb_I3D64f_bert2S, self).__init__()
+        self.hidden_size=512
+        self.n_layers=1
+        self.attn_heads=8
+        self.num_classes=num_classes
+        self.length=length
+        self.dp = nn.Dropout(p=0.8)
+        
+
+        self.features=nn.Sequential(*list(_inception(model_path=modelPath).children())[3:])
+        
+        for param in self.features.parameters():
+            param.requires_grad = True
+        
+        end_point = 'Mixed_5c'
+        self.features[-1] = InceptionModule(256+320+128+128, [192,96,192,24,64,64], end_point)
+        
+        self.bert = BERT2(self.hidden_size, 8 , hidden=self.hidden_size, n_layers=self.n_layers, attn_heads=self.attn_heads)
+        print(sum(p.numel() for p in self.bert.parameters() if p.requires_grad))
+        self.fc_action = nn.Linear(self.hidden_size, num_classes)
+        self.avgpool = nn.AdaptiveAvgPool3d(output_size=(8, 1, 1))
+                
+        torch.nn.init.xavier_uniform_(self.fc_action.weight)
+        self.fc_action.bias.data.zero_()
+        
+    def forward(self, x):
+        x = self.features(x)
+        x = self.avgpool(x)
+        x = x.view(x.size(0), self.hidden_size,8)
+        x = x.transpose(1,2)
+        norm = x.norm(p=2, dim = -1, keepdim=True)
+        x = x.div(norm)
+        input_vectors=x
+        output , maskSample = self.bert(x)
+        classificationOut = output[:,0,:]
+        sequenceOut=output[:,1:,:]
+        output=self.dp(classificationOut)
+        x = self.fc_action(output)
+        return x, input_vectors, sequenceOut, maskSample
+    
+    
+class flow_I3D64f_bert2S(nn.Module):
+    def __init__(self, num_classes , length, modelPath=''):
+        super(flow_I3D64f_bert2S, self).__init__()
+        self.hidden_size=512
+        self.n_layers=1
+        self.attn_heads=8
+        self.num_classes=num_classes
+        self.length=length
+        self.dp = nn.Dropout(p=0.8)
+        
+
+        self.features=nn.Sequential(*list(_inception_flow(model_path=modelPath).children())[3:])
+        
+        for param in self.features.parameters():
+            param.requires_grad = True
+        
+        end_point = 'Mixed_5c'
+        self.features[-1] = InceptionModule(256+320+128+128, [192,96,192,24,64,64], end_point)
+        
         self.bert = BERT2(self.hidden_size, 8 , hidden=self.hidden_size, n_layers=self.n_layers, attn_heads=self.attn_heads)
         print(sum(p.numel() for p in self.bert.parameters() if p.requires_grad))
         self.fc_action = nn.Linear(self.hidden_size, num_classes)
