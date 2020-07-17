@@ -1937,6 +1937,7 @@ class rgb_resneXt3D64f101_adamw_modified(nn.Module):
         super(rgb_resneXt3D64f101_adamw_modified, self).__init__()
         self.num_classes=num_classes
         self.dp = nn.Dropout(p=0.8)
+        self.hidden_size = 512
         
 
         self.features=nn.Sequential(*list(_trained_resnext101(model_path=modelPath, sample_size=112, sample_duration=64).children())[:-1])
@@ -1961,7 +1962,7 @@ class rgb_resneXt3D64f101_adamw_modified(nn.Module):
                 
         self.features[7][2] = mapper
         
-        self.fc_action = nn.Linear(2048, num_classes)
+        self.fc_action = nn.Linear(self.hidden_size, num_classes)
         for param in self.features.parameters():
             param.requires_grad = True
                 
