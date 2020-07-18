@@ -4858,6 +4858,31 @@ multiple clips
 10 crops
 
 
+Accuracy with mean calculation is 0.7529
+top3 accuracy 0.9170
+./checkpoint/hmdb51_rgb_resneXt3D64f101_adamw_modified_split1
+Mean Estimated Time 0.6466
+multiple clips
+10 crops
+
+Accuracy with mean calculation is 0.7353
+top3 accuracy 0.9065
+./checkpoint/hmdb51_rgb_resneXt3D64f101_adamw_modified_split2
+Mean Estimated Time 0.6642
+multiple clips
+10 crops
+
+Accuracy with mean calculation is 0.7608
+top3 accuracy 0.9092
+./checkpoint/hmdb51_rgb_resneXt3D64f101_adamw_modified_split3
+Mean Estimated Time 0.6617
+multiple clips
+10 crops
+
+adamw_modified
+Computational complexity:       38.36 GMac
+Number of parameters:           44.22 M 
+
 
 ---------------------------------
 

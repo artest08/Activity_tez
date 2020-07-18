@@ -49,7 +49,7 @@ parser.add_argument('--dataset', '-d', default='hmdb51',
 parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resneXt3D64f101_adamw_modified',
                     choices=model_names)
 
-parser.add_argument('-s', '--split', default=2, type=int, metavar='S',
+parser.add_argument('-s', '--split', default=3, type=int, metavar='S',
                     help='which split of data to work on (default: 1)')
 parser.add_argument('-t', '--tsn', dest='tsn', action='store_true',
                     help='TSN Mode')

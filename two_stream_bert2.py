@@ -13,8 +13,8 @@ import shutil
 import numpy as np
 
 
-# os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-# os.environ["CUDA_VISIBLE_DEVICES"]="0"
+os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 import torch
 import torch.nn as nn
@@ -51,7 +51,7 @@ parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51", "smtV2", "window"],
                     help='dataset: ucf101 | hmdb51 | smtV2')
 
-parser.add_argument('--arch', '-a', default='flow_I3D64f_bert2B',
+parser.add_argument('--arch', '-a', default='rgb_resneXt3D64f101_lstm2',
                     choices=model_names,
                     help='model architecture: ' +
                         ' | '.join(model_names) +
@@ -63,9 +63,9 @@ parser.add_argument('-j', '--workers', default=4, type=int, metavar='N',
                     help='number of data loading workers (default: 4)')
 parser.add_argument('--epochs', default=200, type=int, metavar='N',
                     help='number of total epochs to run')
-parser.add_argument('-b', '--batch-size', default=6, type=int,
+parser.add_argument('-b', '--batch-size', default=9, type=int,
                     metavar='N', help='mini-batch size (default: 50)')
-parser.add_argument('--iter-size', default=20, type=int,
+parser.add_argument('--iter-size', default=14, type=int,
                     metavar='I', help='iter size as in Caffe to reduce memory usage (default: 5)')
 parser.add_argument('--lr', '--learning-rate', default=1e-5, type=float,
                     metavar='LR', help='initial learning rate')
