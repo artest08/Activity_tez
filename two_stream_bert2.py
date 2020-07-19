@@ -14,7 +14,7 @@ import numpy as np
 
 
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]="0"
+os.environ["CUDA_VISIBLE_DEVICES"]="1"
 
 import torch
 import torch.nn as nn
@@ -51,7 +51,7 @@ parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51", "smtV2", "window"],
                     help='dataset: ucf101 | hmdb51 | smtV2')
 
-parser.add_argument('--arch', '-a', default='rgb_resneXt3D64f101_lstm2',
+parser.add_argument('--arch', '-a', default='rgb_resneXt3D64f101_NLB4',
                     choices=model_names,
                     help='model architecture: ' +
                         ' | '.join(model_names) +

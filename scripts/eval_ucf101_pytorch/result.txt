@@ -4879,10 +4879,89 @@ Mean Estimated Time 0.6617
 multiple clips
 10 crops
 
-adamw_modified
-Computational complexity:       38.36 GMac
-Number of parameters:           44.22 M 
+Accuracy with mean calculation is 0.7673
+top3 accuracy 0.9170
+./checkpoint/hmdb51_rgb_resneXt3D64f101_NLB2_split1
+Mean Estimated Time 1.1199
+multiple clips
+10 crops
 
+Accuracy with mean calculation is 0.7575
+top3 accuracy 0.9072
+./checkpoint/hmdb51_rgb_resneXt3D64f101_NLB2_split2
+Mean Estimated Time 1.1070
+multiple clips
+10 crops
+
+Accuracy with mean calculation is 0.7562
+top3 accuracy 0.9118
+./checkpoint/hmdb51_rgb_resneXt3D64f101_NLB2_split3
+Mean Estimated Time 0.9892
+multiple clips
+10 crops
+
+NLB2 average 76.03
+
+
+Accuracy with mean calculation is 0.7340
+top3 accuracy 0.8935
+./checkpoint/hmdb51_rgb_resneXt3D64f101_lstm2_split1
+Mean Estimated Time 0.6795
+multiple clips
+10 crops
+
+Accuracy with mean calculation is 0.7399
+top3 accuracy 0.8856
+./checkpoint/hmdb51_rgb_resneXt3D64f101_lstm2_split2
+Mean Estimated Time 1.0924
+multiple clips
+10 crops
+
+Accuracy with mean calculation is 0.7516
+top3 accuracy 0.8830
+./checkpoint/hmdb51_rgb_resneXt3D64f101_lstm2_split3
+Mean Estimated Time 1.1320
+multiple clips
+10 crops
+
+lstm2 average 74.18
+
+Accuracy with mean calculation is 0.7627
+top3 accuracy 0.9157
+./checkpoint/hmdb51_rgb_resneXt3D64f101_pooling2_split1
+Mean Estimated Time 0.9438
+multiple clips
+10 crops
+
+Accuracy with mean calculation is 0.7588
+top3 accuracy 0.9150
+./checkpoint/hmdb51_rgb_resneXt3D64f101_pooling2_split2
+Mean Estimated Time 1.0293
+multiple clips
+10 crops
+
+Accuracy with mean calculation is 0.7601
+top3 accuracy 0.9092
+./checkpoint/hmdb51_rgb_resneXt3D64f101_pooling2_split3
+Mean Estimated Time 0.9695
+multiple clips
+10 crops
+
+pooling2 average 76.05
+
+Accuracy with mean calculation is 0.7706
+top3 accuracy 0.9275
+./checkpoint/hmdb51_rgb_resneXt3D64f101_NLB3_split1
+Mean Estimated Time 0.6565
+multiple clips
+10 crops
+
+Accuracy with mean calculation is 0.7706
+top3 accuracy 0.9176
+./checkpoint/hmdb51_rgb_resneXt3D64f101_NLB4_split1
+Mean Estimated Time 0.5999
+multiple clips
+10 crops
 
 ---------------------------------
 
