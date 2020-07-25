@@ -43,13 +43,13 @@ dataset_names = sorted(name for name in datasets.__all__)
 
 parser = argparse.ArgumentParser(description='PyTorch Two-Stream Action Recognition RGB Test Case')
 
-parser.add_argument('--dataset', '-d', default='hmdb51',
+parser.add_argument('--dataset', '-d', default='window',
                     choices=["ucf101", "hmdb51"],
                     help='dataset: ucf101 | hmdb51')
-parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resneXt3D64f101_NLB4',
+parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_I3D64f',
                     choices=model_names)
 
-parser.add_argument('-s', '--split', default=1, type=int, metavar='S',
+parser.add_argument('-s', '--split', default=9, type=int, metavar='S',
                     help='which split of data to work on (default: 1)')
 parser.add_argument('-t', '--tsn', dest='tsn', action='store_true',
                     help='TSN Mode')
@@ -110,6 +110,8 @@ def main():
         frameFolderName = "hmdb51_frames"
     elif args.dataset=='smtV2':
         frameFolderName = "smtV2_frames"
+    elif args.dataset=='window':
+        frameFolderName = "window_frames"
     data_dir=os.path.join(datasetFolder,frameFolderName)
     
     if '64f' in args.arch:
@@ -126,11 +128,11 @@ def main():
         if args.window_val:
             val_fileName = "window%d.txt" %(args.window)
         else:
-            val_fileName = "val_rgb_split%d.txt" %(args.split)
+            val_fileName = "test_rgb_split%d.txt" %(args.split)
     elif 'pose' in args.arch:
         extension = 'pose1_{0:05d}.jpg'
     elif 'flow' in args.arch:
-        val_fileName = "val_flow_split%d.txt" %(args.split)
+        val_fileName = "test_flow_split%d.txt" %(args.split)
         if 'ucf101' in args.dataset or 'window' in args.dataset:
             extension = 'flow_{0}_{1:05d}.jpg'
         elif 'hmdb51' in args.dataset:
@@ -145,6 +147,8 @@ def main():
         num_categories = 51
     elif args.dataset=='smtV2':
         num_categories = 174
+    elif args.dataset=='window':
+        num_categories = 3
 
     model_start_time = time.time()
     spatial_net=buildModel(model_path,num_categories)

@@ -4956,6 +4956,22 @@ Mean Estimated Time 0.6565
 multiple clips
 10 crops
 
+Accuracy with mean calculation is 0.7516
+top3 accuracy 0.9020
+./checkpoint/hmdb51_rgb_resneXt3D64f101_NLB3_split2
+Mean Estimated Time 0.6531
+multiple clips
+10 crops
+
+Accuracy with mean calculation is 0.7686
+top3 accuracy 0.9098
+./checkpoint/hmdb51_rgb_resneXt3D64f101_NLB3_split3
+Mean Estimated Time 0.6706
+multiple clips
+10 crops
+
+NLB3 average 76.36 
+
 Accuracy with mean calculation is 0.7706
 top3 accuracy 0.9176
 ./checkpoint/hmdb51_rgb_resneXt3D64f101_NLB4_split1
@@ -5094,6 +5110,112 @@ top3 accuracy 0.9209
 Mean Estimated Time 1.0061
 multiple clips
 10 crops
+
+second imp
+Accuracy with mean calculation is 0.7725
+top3 accuracy 0.9183
+./checkpoint/hmdb51_rgb_slowfast64f_50_bert10SS_late_split1
+Mean Estimated Time 1.4594
+multiple clips
+10 crops
+
+Accuracy with mean calculation is 0.7889
+top3 accuracy 0.9288
+./checkpoint/hmdb51_rgb_slowfast64f_50_bert10B_split1
+Mean Estimated Time 1.0774
+multiple clips
+10 crops
+
+Accuracy with mean calculation is 0.7980
+top3 accuracy 0.9340
+./checkpoint/hmdb51_rgb_slowfast64f_50_bert10X_split1
+Mean Estimated Time 1.0550
+multiple clips
+10 crops
+
+-----------------------------------------
+1e-1
+Accuracy with mean calculation is 0.7542
+top3 accuracy 0.9033
+./checkpoint/hmdb51_flow_I3D64f_split1
+Mean Estimated Time 1.9138
+multiple clips
+10 crops
+
+
+Accuracy with mean calculation is 0.7176
+top3 accuracy 0.8889
+./checkpoint/hmdb51_rgb_I3D64f_bert2S_split1
+Mean Estimated Time 1.6188
+multiple clips
+10 crops
+
+Accuracy with mean calculation is 0.7575
+top3 accuracy 0.9111
+./checkpoint/hmdb51_rgb_I3D64f_bert2B_split1
+Mean Estimated Time 1.3043
+multiple clips
+10 crops
+
+RGB
+Computational complexity:       111.72 GMac
+Number of parameters:           16.4 M  
+
+
+Accuracy with mean calculation is 0.7725
+top3 accuracy 0.9203
+./checkpoint/hmdb51_flow_I3D64f_bert2B_split1
+Mean Estimated Time 1.0712
+multiple clips
+10 crops
+
+Flow
+Computational complexity:       102.91 GMac
+Number of parameters:           16.37 M 
+
+Accuracy with mean calculation is 0.8268
+top3 accuracy 0.9431
+./checkpoint/hmdb51_rgb_I3D64f_bert2B_split1
+./checkpoint/hmdb51_flow_I3D64f_bert2B_split1
+Mean Estimated Time 2.2637
+multiple clips
+10 crops
+
+lr1e-5
+Accuracy with mean calculation is 0.7229
+top3 accuracy 0.8928
+./checkpoint/hmdb51_rgb_I3D64f_bert2_split1
+Mean Estimated Time 1.3894
+multiple clips
+10 crops
+
+lr5e-5
+Accuracy with mean calculation is 0.7758
+top3 accuracy 0.9209
+./checkpoint/hmdb51_flow_I3D64f_bert2B_split1
+Mean Estimated Time 1.8360
+multiple clips
+10 crops
+
+lr5e-5
+Accuracy with mean calculation is 0.7464
+top3 accuracy 0.9098
+./checkpoint/hmdb51_rgb_I3D64f_bert2B_split1
+Mean Estimated Time 2.1313
+multiple clips
+10 crops
+
+lr5e-5
+Accuracy with mean calculation is 0.8235
+top3 accuracy 0.9484
+./checkpoint/hmdb51_rgb_I3D64f_bert2B_split1
+./checkpoint/hmdb51_flow_I3D64f_bert2B_split1
+Mean Estimated Time 3.4435
+multiple clips
+10 crops
+
+
+
 
 
 

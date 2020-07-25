@@ -46,15 +46,15 @@ dataset_names = sorted(name for name in datasets.__all__)
 parser = argparse.ArgumentParser(description='PyTorch Two-Stream2')
 parser.add_argument('--settings', metavar='DIR', default='./datasets/settings',
                     help='path to dataset setting files')
-parser.add_argument('--dataset', '-d', default='hmdb51',
+parser.add_argument('--dataset', '-d', default='window',
                     choices=["ucf101", "hmdb51", "smtV2"],
                     help='dataset: ucf101 | hmdb51')
-parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resneXt3D64f101',
+parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_I3D64f',
                     choices=model_names,
                     help='model architecture: ' +
                         ' | '.join(model_names) +
                         ' (default: rgb_vgg16)')
-parser.add_argument('-s', '--split', default=2, type=int, metavar='S',
+parser.add_argument('-s', '--split', default=9, type=int, metavar='S',
                     help='which split of data to work on (default: 1)')
 parser.add_argument('-j', '--workers', default=2, type=int, metavar='N',
                     help='number of data loading workers (default: 4)')
@@ -64,7 +64,7 @@ parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
                     help='manual epoch number (useful on restarts)')
 parser.add_argument('-b', '--batch-size', default=4, type=int,
                     metavar='N', help='mini-batch size (default: 50)')
-parser.add_argument('--iter-size', default=32, type=int,
+parser.add_argument('--iter-size', default=6, type=int,
                     metavar='I', help='iter size as in Caffe to reduce memory usage (default: 5)')
 parser.add_argument('--lr', '--learning-rate', default=1e-2, type=float,
                     metavar='LR', help='initial learning rate')
@@ -90,6 +90,8 @@ learning_rate_index = 0
 max_learning_rate_decay_count = 3
 best_in_existing_learning_rate = 0
 HALF = False
+
+select_according_to_best_classsification_lost = True #Otherwise select according to top1 default: False
 
 training_continue = False
 def main():
@@ -185,7 +187,7 @@ def main():
     #                   weight_decay=args.weight_decay)
     
     scheduler = lr_scheduler.ReduceLROnPlateau(
-        optimizer, 'max', patience=5,verbose=True)
+        optimizer, 'min', patience=5, verbose=True)
     
     #optimizer = torch.optim.Adam(model.parameters(), args.lr, weight_decay=args.weight_decay)
     #optimizer = swats.SWATS(model.parameters(), args.lr)
@@ -196,6 +198,8 @@ def main():
         dataset='./datasets/ucf101_frames'
     elif args.dataset=='hmdb51':
         dataset='./datasets/hmdb51_frames'
+    elif args.dataset=='window':
+        dataset='./datasets/window_frames'
     else:
         print("No convenient dataset entered, exiting....")
         return 0
@@ -361,20 +365,24 @@ def main():
             writer.add_scalar('data/top1_validation', prec1, epoch)
             writer.add_scalar('data/top3_validation', prec3, epoch)
             writer.add_scalar('data/classification_loss_validation', lossClassification, epoch)
-            scheduler.step(prec1)
+            scheduler.step(lossClassification)
         # remember best prec@1 and save checkpoint
         
-        is_best = prec1 > best_prec1
-        best_prec1 = max(prec1, best_prec1)
-        best_in_existing_learning_rate = max(prec1, best_in_existing_learning_rate)
+        if select_according_to_best_classsification_lost:
+            is_best = lossClassification < best_loss
+            best_loss = min(lossClassification, best_loss)
+        else:
+            is_best = prec1 > best_prec1
+            best_prec1 = max(prec1, best_prec1)
+        
+        #best_in_existing_learning_rate = max(prec1, best_in_existing_learning_rate)
         
 #        if best_in_existing_learning_rate > prec1:
 #            learning_rate_index = learning_rate_index +1
 #            best_in_existing_learning_rate = 0
             
         
-#        is_best = lossClassification < best_loss
-#        best_loss = min(lossClassification, best_loss)
+
 
         if (epoch + 1) % args.save_freq == 0:
             checkpoint_name = "%03d_%s" % (epoch + 1, "checkpoint.pth.tar")
@@ -424,6 +432,9 @@ def build_model():
     elif args.dataset=='hmdb51':
         print('model path is: %s' %(model_path))
         model = models.__dict__[args.arch](modelPath=model_path, num_classes=51, length=args.num_seg)
+    elif args.dataset=='window':
+        print('model path is: %s' %(model_path))
+        model = models.__dict__[args.arch](modelPath=model_path, num_classes=3, length=args.num_seg)
 
     if torch.cuda.device_count() > 1:
         model=torch.nn.DataParallel(model)    

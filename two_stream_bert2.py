@@ -51,13 +51,13 @@ parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51", "smtV2", "window"],
                     help='dataset: ucf101 | hmdb51 | smtV2')
 
-parser.add_argument('--arch', '-a', default='rgb_resneXt3D64f101_NLB4',
+parser.add_argument('--arch', '-a', default='rgb_resneXt3D64f101_NLB3',
                     choices=model_names,
                     help='model architecture: ' +
                         ' | '.join(model_names) +
                         ' (default: rgb_vgg16)')
 
-parser.add_argument('-s', '--split', default=1, type=int, metavar='S',
+parser.add_argument('-s', '--split', default=3, type=int, metavar='S',
                     help='which split of data to work on (default: 1)')
 parser.add_argument('-j', '--workers', default=4, type=int, metavar='N',
                     help='number of data loading workers (default: 4)')
@@ -185,9 +185,9 @@ def main():
         optimizer, 'min', patience=5, verbose=True)
     
     #scheduler = lr_scheduler.CyclicLR(optimizer, base_lr = args.lr * 0.001, max_lr = args.lr, cycle_momentum=False)
-    if args.contine:
-        scheduler.step(best_prec1)
-        print('scheduler step with best prec %f' %(best_prec1))
+    # if args.contine:
+    #     scheduler.step(best_prec1)
+    #     print('scheduler step with best prec %f' %(best_prec1))
     #optimizer = swats.SWATS(model.parameters(), args.lr)
 
     print("Saving everything to directory %s." % (saveLocation))
