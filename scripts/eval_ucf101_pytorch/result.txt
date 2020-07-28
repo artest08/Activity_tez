@@ -5232,6 +5232,13 @@ Mean Estimated Time 0.7573
 multiple clips
 10 crops
 
+Accuracy with mean calculation is 0.7471
+top3 accuracy 0.9007
+./checkpoint/hmdb51_rgb_resneXt3D64f101_split3
+Mean Estimated Time 0.9390
+multiple clips
+10 crops
+
 -------------------
 
 500 000
@@ -5275,6 +5282,30 @@ Mean Estimated Time 0.1839
 one clips
 10 crops
 
+lr 1e-5
+Accuracy with mean calculation is 0.4843
+top3 accuracy 0.7275
+./checkpoint/hmdb51_rgb_resnet18_bert10_split2
+Mean Estimated Time 0.3517
+one clips
+10 crops
+
+lr 1e-5
+Accuracy with mean calculation is 0.4974
+top3 accuracy 0.7235
+./checkpoint/hmdb51_rgb_resnet18_bert10_split2
+Mean Estimated Time 0.0787
+one clips
+single crop
+
+lr 1e-4
+Accuracy with mean calculation is 0.4863
+top3 accuracy 0.7052
+./checkpoint/hmdb51_rgb_resnet18_bert10_split2
+Mean Estimated Time 0.3395
+one clips
+10 crops
+
 -----------
 
 Full trained
@@ -5302,12 +5333,35 @@ Mean Estimated Time 0.1900
 one clips
 10 crops
 
+Accuracy with mean calculation is 0.5170
+top3 accuracy 0.7098
+./checkpoint/hmdb51_rgb_resnet18_pooling1_split2
+Mean Estimated Time 0.3700
+one clips
+10 crops
+
 ----
 
 Accuracy with mean calculation is 0.5425
 top3 accuracy 0.7399
 ./checkpoint/hmdb51_rgb_resnet18_pooling6_split1
 Mean Estimated Time 0.1923
+one clips
+10 crops
+
+---
+
+Accuracy with mean calculation is 0.4575
+top3 accuracy 0.6843
+./checkpoint/hmdb51_rgb_resnet18_convGRUType3_split1
+Mean Estimated Time 0.3223
+one clips
+10 crops
+
+Accuracy with mean calculation is 0.4993
+top3 accuracy 0.7124
+./checkpoint/hmdb51_rgb_resnet18_NLB10_split1
+Mean Estimated Time 0.3027
 one clips
 10 crops
 

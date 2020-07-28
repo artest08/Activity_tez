@@ -51,7 +51,7 @@ parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51", "smtV2", "window"],
                     help='dataset: ucf101 | hmdb51 | smtV2')
 
-parser.add_argument('--arch', '-a', default='rgb_resneXt3D64f101_NLB3',
+parser.add_argument('--arch', '-a', default='rgb_resneXt3D64f101_NLB',
                     choices=model_names,
                     help='model architecture: ' +
                         ' | '.join(model_names) +
