@@ -2465,9 +2465,8 @@ class rgb_resnet18_convGRUType3(nn.Module):
         x = x.view(x.size(0), -1)
         x=x.view(-1,self.length,512,7,7)
         output=self.ConvGRU(x)
+        input_out = self.avgpool(output)
         output= output[:,-1]
-        output = self.avgpool(output)
-        input_out = output
         output=output.view(-1,self.hidden_size)
         x = self.dp(x)
         x = self.fc_action(output)
