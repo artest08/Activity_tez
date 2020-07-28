@@ -2448,7 +2448,7 @@ class rgb_resnet18_convGRUType3(nn.Module):
         self.fc_action = nn.Linear(self.hidden_size, num_classes)
             
         for param in self.features1.parameters():
-            param.requires_grad = True
+            param.requires_grad = False
         for param in self.features2.parameters():
             param.requires_grad = True
 
