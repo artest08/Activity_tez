@@ -1203,10 +1203,11 @@ class rgb_resnet18_NLB10(nn.Module):
         x = x.permute(0, 2, 1, 3, 4)
         x = self.NLB(x)
         x = self.avgpool(x)
+        input_out = x
         x = x.view(-1,self.hidden_size)
         x = self.dp(x)
         x = self.fc_action(x)
-        return x
+        return x, input_out, input_out, input_out
     
 class rgb_resnet18_TSN(nn.Module):
     def __init__(self, num_classes , length, modelPath=''):
@@ -1240,10 +1241,11 @@ class rgb_resnet18_TSN(nn.Module):
         x = self.features2(x)
         #x = self.avgpool(x)
         x = self.avgpool(x)
+        input_out = x
         x = x.view(-1,self.hidden_size)
         x = self.dp(x)
         x = self.fc_action(x)
-        return x
+        return x, input_out, input_out, input_out
     
 class rgb_resnet18_bert10Y(nn.Module):
     def __init__(self, num_classes , length, modelPath=''):
@@ -2465,10 +2467,11 @@ class rgb_resnet18_convGRUType3(nn.Module):
         output=self.ConvGRU(x)
         output= output[:,-1]
         output = self.avgpool(output)
+        input_out = output
         output=output.view(-1,self.hidden_size)
         x = self.dp(x)
         x = self.fc_action(output)
-        return x
+        return x, input_out, input_out, input_out
 
 
         
