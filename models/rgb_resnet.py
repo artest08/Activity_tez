@@ -32,7 +32,7 @@ __all__ = ['ResNet', 'rgb_resnet18', 'rgb_resnet34', 'rgb_resnet50', 'rgb_resnet
            'rgb_resnet18_NLB10','rgb_resnet18_RankingBert10','rgb_resnet18_RankingBert8','rgb_resnet18_RankingBert8Seg3'
            ,'rgb_resnet18_unpre_bert10', 'rgb_resnet152_bert10_light',
            'rgb_tsm_resnet50', 'rgb_tsm_resnet50_64f', 'rgb_tsm_resnet50_64f_bert10','rgb_tsm_resnet50_8f', 
-           'rgb_resnet18_bert10_full']
+           'rgb_resnet18_bert10_full', 'rgb_resnet18_TSN', 'rgb_resnet18_convGRUType3']
 
 
 model_urls = {
@@ -1188,7 +1188,7 @@ class rgb_resnet18_NLB10(nn.Module):
         self.fc_action = nn.Linear(512, num_classes)
             
         for param in self.features1.parameters():
-            param.requires_grad = True
+            param.requires_grad = False
         for param in self.features2.parameters():
             param.requires_grad = True
                 
@@ -1202,6 +1202,43 @@ class rgb_resnet18_NLB10(nn.Module):
         x = x.view(-1, self.length, x.size(1), x.size(2), x.size(3))
         x = x.permute(0, 2, 1, 3, 4)
         x = self.NLB(x)
+        x = self.avgpool(x)
+        x = x.view(-1,self.hidden_size)
+        x = self.dp(x)
+        x = self.fc_action(x)
+        return x
+    
+class rgb_resnet18_TSN(nn.Module):
+    def __init__(self, num_classes , length, modelPath=''):
+        super(rgb_resnet18_TSN, self).__init__()
+        self.hidden_size=512
+        self.num_classes=num_classes
+        self.length=length
+        self.dp = nn.Dropout(p=0.8)
+        
+        if modelPath=='':
+            self.features1=nn.Sequential(*list(rgb_resnet18(pretrained=True).children())[:-5])
+            self.features2=nn.Sequential(*list(rgb_resnet18(pretrained=True).children())[-5:-3])
+        else:
+            self.features1=nn.Sequential(*list(_trained_rgb_resnet18(modelPath,num_classes=num_classes).children())[:-5])
+            self.features2=nn.Sequential(*list(_trained_rgb_resnet18(modelPath,num_classes=num_classes).children())[-5:-3])        
+        self.avgpool = nn.AvgPool3d((self.length, 7, 7), stride=1)
+        
+        
+        self.fc_action = nn.Linear(512, num_classes)
+            
+        for param in self.features1.parameters():
+            param.requires_grad = False
+        for param in self.features2.parameters():
+            param.requires_grad = True
+                
+        torch.nn.init.xavier_uniform_(self.fc_action.weight)
+        self.fc_action.bias.data.zero_()
+        
+    def forward(self, x):
+        x = self.features1(x)
+        x = self.features2(x)
+        #x = self.avgpool(x)
         x = self.avgpool(x)
         x = x.view(-1,self.hidden_size)
         x = self.dp(x)
@@ -2366,7 +2403,7 @@ class rgb_resnet18_convGRUType2(nn.Module):
         self.fc_action = nn.Linear(self.hidden_size*49, num_classes)
             
         for param in self.features1.parameters():
-            param.requires_grad = False
+            param.requires_grad = True
         for param in self.features2.parameters():
             param.requires_grad = True
 
@@ -2383,6 +2420,52 @@ class rgb_resnet18_convGRUType2(nn.Module):
         output=self.ConvGRU(x)
         output= output[:,-1]
         output=output.view(-1,self.hidden_size*49)
+        x = self.dp(x)
+        x = self.fc_action(output)
+        return x
+    
+class rgb_resnet18_convGRUType3(nn.Module):
+    def __init__(self, num_classes , length, modelPath=''):
+        super(rgb_resnet18_convGRUType3, self).__init__()
+        self.hidden_size=196
+        self.num_classes=num_classes
+        self.length=length
+        self.dp = nn.Dropout(p=0.8)
+        
+        
+        if modelPath=='':
+            self.features1=nn.Sequential(*list(rgb_resnet18(pretrained=True).children())[:-5])
+            self.features2=nn.Sequential(*list(rgb_resnet18(pretrained=True).children())[-5:-3])
+        else:
+            self.features=nn.Sequential(*list(_trained_rgb_resnet18(modelPath,num_classes=num_classes).children())[:-3])
+        
+        #self.openPose=openPoseL2Part()
+        self.avgpool = nn.AvgPool2d(7)
+        self.avgpool2 = nn.AvgPool2d(4)
+        
+        self.ConvGRU=ConvGRU(input_size=512,hidden_sizes=self.hidden_size,kernel_sizes=3,n_layers=self.length)
+        print(sum(p.numel() for p in self.ConvGRU.parameters() if p.requires_grad))
+        self.fc_action = nn.Linear(self.hidden_size, num_classes)
+            
+        for param in self.features1.parameters():
+            param.requires_grad = True
+        for param in self.features2.parameters():
+            param.requires_grad = True
+
+                
+        torch.nn.init.xavier_uniform_(self.fc_action.weight)
+        self.fc_action.bias.data.zero_()
+        
+    def forward(self, x):
+        x = self.features1(x)
+        x = self.features2(x)
+        #x = self.avgpool(x)
+        x = x.view(x.size(0), -1)
+        x=x.view(-1,self.length,512,7,7)
+        output=self.ConvGRU(x)
+        output= output[:,-1]
+        output = self.avgpool(output)
+        output=output.view(-1,self.hidden_size)
         x = self.dp(x)
         x = self.fc_action(output)
         return x
