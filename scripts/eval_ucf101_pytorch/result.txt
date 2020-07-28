@@ -5365,6 +5365,13 @@ Mean Estimated Time 0.3027
 one clips
 10 crops
 
+Accuracy with mean calculation is 0.4869
+top3 accuracy 0.7124
+./checkpoint/hmdb51_rgb_resnet18_TSN_split1
+Mean Estimated Time 0.3379
+one clips
+10 crops
+
 
 
 

@@ -1254,11 +1254,11 @@ class rgb_resnet18_NLB9(nn.Module):
         x = x.permute(0, 2, 1, 3, 4)
         x = self.NLB(x)
         x = self.avgpool(x)
-        input_out = x
+        dummy = torch.ones(1,1,1)
         x = x.view(-1,self.hidden_size * self.length)
         x = self.dp(x)
         x = self.fc_action(x)
-        return x, input_out, input_out, input_out
+        return x, dummy, dummy, dummy
     
 class rgb_resnet18_TSN(nn.Module):
     def __init__(self, num_classes , length, modelPath=''):

@@ -14,7 +14,7 @@ import numpy as np
 
 
 # os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-# os.environ["CUDA_VISIBLE_DEVICES"]="0"
+# os.environ["CUDA_VISIBLE_DEVICES"]="1"
 
 import torch
 import torch.nn as nn
@@ -49,7 +49,7 @@ parser.add_argument('--settings', metavar='DIR', default='./datasets/settings',
 parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51", "smtV2", "window"],
                     help='dataset: ucf101 | hmdb51')
-parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resnet18_lstmType4',
+parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resnet18_lstmType3',
                     choices=model_names,
                     help='model architecture: ' +
                         ' | '.join(model_names) +
@@ -70,7 +70,7 @@ parser.add_argument('--new_width', default=340, type=int,
                     metavar='N', help='resize width (default: 340)')
 parser.add_argument('--new_height', default=256, type=int,
                     metavar='N', help='resize height (default: 256)')
-parser.add_argument('--lr', '--learning-rate', default=1e-5, type=float,
+parser.add_argument('--lr', '--learning-rate', default=1e-4, type=float,
                     metavar='LR', help='initial learning rate')
 parser.add_argument('--lr_steps', default=[30], type=float, nargs="+",
                     metavar='LRSteps', help='epochs to decay learning rate by 10')
