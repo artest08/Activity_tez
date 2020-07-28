@@ -1240,6 +1240,8 @@ class rgb_resnet18_TSN(nn.Module):
         x = self.features1(x)
         x = self.features2(x)
         #x = self.avgpool(x)
+        x = x.view(-1, self.length, self.hidden_size, 7, 7)
+        x = x.permute(0, 2, 1, 3, 4)
         x = self.avgpool(x)
         input_out = x
         x = x.view(-1,self.hidden_size)
@@ -2465,11 +2467,12 @@ class rgb_resnet18_convGRUType3(nn.Module):
         x = x.view(x.size(0), -1)
         x=x.view(-1,self.length,512,7,7)
         output=self.ConvGRU(x)
-        input_out = self.avgpool(output)
+        input_out = torch.ones(1,1,1)
         output= output[:,-1]
-        output=output.view(-1,self.hidden_size)
+        output = self.avgpool(output)
+        x = output.contiguous().view(-1,self.hidden_size)
         x = self.dp(x)
-        x = self.fc_action(output)
+        x = self.fc_action(x)
         return x, input_out, input_out, input_out
 
 
