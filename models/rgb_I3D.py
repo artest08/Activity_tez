@@ -25,7 +25,7 @@ __all__ = ['rgb_I3D64f_bert10','flow_I3D64f_bert10','rgb_I3D64f', 'flow_I3D64f',
            ,'rgb_resnet50I3D32f_112','rgb_resnet50I3D64f','rgb_resnet50I3D64fNL', 'rgb_resnet50I3D64f_8x8'
            ,'rgb_resnet50I3D64f_stride2', 'rgb_resnet50I3D64fNL_stride2', 'rgb_I3D64f_bert4', 'rgb_I3D64f_bert4XX',
            'rgb_I3D64f_bert2', 'flow_I3D64f_bert2', 'rgb_I3D64f_bert2S', 'flow_I3D64f_bert2S' , 
-           'rgb_I3D64f_bert2B', 'flow_I3D64f_bert2B' ]
+           'rgb_I3D64f_bert2B', 'flow_I3D64f_bert2B' , 'pose_I3D64f']
 
 
 
@@ -34,6 +34,31 @@ class rgb_I3D64f(nn.Module):
         super(rgb_I3D64f, self).__init__()
         self.num_classes=num_classes
         self.dp = nn.Dropout(p=0.8)
+        self.avgpool = nn.AvgPool3d((8, 7, 7), stride=1)
+
+
+        self.features=nn.Sequential(*list(_inception(model_path=modelPath).children())[3:])
+        
+        self.fc_action = nn.Linear(1024, num_classes)
+        for param in self.features.parameters():
+            param.requires_grad = True
+                
+        torch.nn.init.xavier_uniform_(self.fc_action.weight)
+        self.fc_action.bias.data.zero_()
+        
+    def forward(self, x):
+        x = self.features(x)
+        x = self.avgpool(x)
+        x = x.view(x.size(0), -1)
+        x = self.dp(x)
+        x = self.fc_action(x)
+        return x
+    
+class pose_I3D64f(nn.Module):
+    def __init__(self, num_classes , length, modelPath=''):
+        super(pose_I3D64f, self).__init__()
+        self.num_classes=num_classes
+        self.dp = nn.Dropout(p=0.7)
         self.avgpool = nn.AvgPool3d((8, 7, 7), stride=1)
 
 

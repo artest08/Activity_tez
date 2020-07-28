@@ -54,7 +54,7 @@ def VideoSpatialPrediction3D(
     else:
         duration = num_frames
     
-    if 'rgb' in architecture_name:
+    if 'rgb' in architecture_name or 'pose' in architecture_name:
         if 'I3D' in architecture_name:
             
             if not 'resnet' in architecture_name:
@@ -281,7 +281,7 @@ def VideoSpatialPrediction3D(
             input_data_batched = input_data[span,:,:,:,:]
             imgDataTensor = torch.from_numpy(input_data_batched).type(torch.FloatTensor).cuda()
             if 'rgb' in architecture_name or 'pose' in architecture_name:
-                if 'tsm' in architecture_name:
+                if 'tsm' in architecture_name or not "3D" in architecture_name:
                     imgDataTensor = imgDataTensor.view(-1,length,3,imageSize,imageSize)
                 else:
                     imgDataTensor = imgDataTensor.view(-1,length,3,imageSize,imageSize).transpose(1,2)

@@ -43,14 +43,18 @@ dataset_names = sorted(name for name in datasets.__all__)
 
 parser = argparse.ArgumentParser(description='PyTorch Two-Stream Action Recognition RGB Test Case')
 
-parser.add_argument('--dataset', '-d', default='window',
-                    choices=["ucf101", "hmdb51"],
+parser.add_argument('--dataset', '-d', default='hmdb51',
+                    choices=["ucf101", "hmdb51", "window"],
                     help='dataset: ucf101 | hmdb51')
-parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_I3D64f',
+parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resnet18_bert10',
                     choices=model_names)
 
-parser.add_argument('-s', '--split', default=9, type=int, metavar='S',
+parser.add_argument('-s', '--split', default=1, type=int, metavar='S',
                     help='which split of data to work on (default: 1)')
+
+parser.add_argument('-w', '--window', default=14, type=int, metavar='V',
+                    help='validation file index (default: 3)')
+
 parser.add_argument('-t', '--tsn', dest='tsn', action='store_true',
                     help='TSN Mode')
 
@@ -60,7 +64,7 @@ parser.add_argument('-v', '--val', dest='window_val', action='store_true',
 
 multiGPUTest = False
 multiGPUTrain = False
-ten_crop_enabled = True
+ten_crop_enabled = False
 num_seg=16
 num_seg_3D=1
 
@@ -123,16 +127,30 @@ def main():
     else:
         length=16
 
+    #args.window_val = True
     if 'rgb' in args.arch:
         extension = 'img_{0:05d}.jpg'
         if args.window_val:
             val_fileName = "window%d.txt" %(args.window)
         else:
-            val_fileName = "test_rgb_split%d.txt" %(args.split)
+            if args.dataset=='window': 
+                val_fileName = "test_rgb_split%d.txt" %(args.split)
+            else:
+                val_fileName = "val_rgb_split%d.txt" %(args.split)
     elif 'pose' in args.arch:
         extension = 'pose1_{0:05d}.jpg'
+        if args.window_val:
+            val_fileName = "window%d.txt" %(args.window)
+        else:
+            if args.dataset=='window': 
+                val_fileName = "test_pose_split%d.txt" %(args.split)
+            else:
+                val_fileName = "val_pose_split%d.txt" %(args.split)
     elif 'flow' in args.arch:
-        val_fileName = "test_flow_split%d.txt" %(args.split)
+        if args.dataset=='window': 
+            val_fileName = "test_flow_split%d.txt" %(args.split)
+        else:
+            val_fileName = "val_flow_split%d.txt" %(args.split)
         if 'ucf101' in args.dataset or 'window' in args.dataset:
             extension = 'flow_{0}_{1:05d}.jpg'
         elif 'hmdb51' in args.dataset:
@@ -220,6 +238,9 @@ def main():
         print('10 crops')
     else:
         print('single crop')
+        
+    if args.window_val:
+        print("window%d.txt" %(args.window))
     
     resultDict={'y_true':y_true,'y_pred':y_pred}
     

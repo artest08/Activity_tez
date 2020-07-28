@@ -16,7 +16,7 @@ import numpy as np
 
 
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]="0"
+os.environ["CUDA_VISIBLE_DEVICES"]="1"
 
 import torch
 import torch.nn as nn
@@ -49,12 +49,12 @@ parser.add_argument('--settings', metavar='DIR', default='./datasets/settings',
 parser.add_argument('--dataset', '-d', default='window',
                     choices=["ucf101", "hmdb51", "smtV2"],
                     help='dataset: ucf101 | hmdb51')
-parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_I3D64f',
+parser.add_argument('--arch', '-a', metavar='ARCH', default='pose_I3D64f',
                     choices=model_names,
                     help='model architecture: ' +
                         ' | '.join(model_names) +
                         ' (default: rgb_vgg16)')
-parser.add_argument('-s', '--split', default=9, type=int, metavar='S',
+parser.add_argument('-s', '--split', default=2, type=int, metavar='S',
                     help='which split of data to work on (default: 1)')
 parser.add_argument('-j', '--workers', default=2, type=int, metavar='N',
                     help='number of data loading workers (default: 4)')
@@ -218,7 +218,7 @@ def main():
 
     print('length %d' %(length))
     # Data transforming
-    if modality == "rgb":
+    if modality == "rgb" or modality == "pose":
         is_color = True
         scale_ratios = [1.0, 0.875, 0.75, 0.66]
         if 'I3D' in args.arch:
@@ -415,7 +415,7 @@ def build_model():
     if modality == "rgb":
         model_path = rgb_3d_model_path_selection(args.arch)
     elif modality == "pose":
-        model_path=''        
+        model_path = rgb_3d_model_path_selection(args.arch)       
     elif modality == "flow":
         model_path=''
         if "3D" in args.arch:

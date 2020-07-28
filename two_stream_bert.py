@@ -49,28 +49,28 @@ parser.add_argument('--settings', metavar='DIR', default='./datasets/settings',
 parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51", "smtV2", "window"],
                     help='dataset: ucf101 | hmdb51')
-parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_tsm_resnet50',
+parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resnet18_pooling1',
                     choices=model_names,
                     help='model architecture: ' +
                         ' | '.join(model_names) +
                         ' (default: rgb_vgg16)')
 parser.add_argument('-s', '--split', default=1, type=int, metavar='S',
                     help='which split of data to work on (default: 1)')
-parser.add_argument('-j', '--workers', default=2, type=int, metavar='N',
+parser.add_argument('-j', '--workers', default=4, type=int, metavar='N',
                     help='number of data loading workers (default: 4)')
 parser.add_argument('--epochs', default=300, type=int, metavar='N',
                     help='number of total epochs to run')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
                     help='manual epoch number (useful on restarts)')
-parser.add_argument('-b', '--batch-size', default=2, type=int,
+parser.add_argument('-b', '--batch-size', default=42, type=int,
                     metavar='N', help='mini-batch size (default: 50)')
-parser.add_argument('--iter-size', default=32, type=int,
+parser.add_argument('--iter-size', default=3, type=int,
                     metavar='I', help='iter size as in Caffe to reduce memory usage (default: 5)')
 parser.add_argument('--new_width', default=340, type=int,
                     metavar='N', help='resize width (default: 340)')
 parser.add_argument('--new_height', default=256, type=int,
                     metavar='N', help='resize height (default: 256)')
-parser.add_argument('--lr', '--learning-rate', default=0.0001, type=float,
+parser.add_argument('--lr', '--learning-rate', default=1e-4, type=float,
                     metavar='LR', help='initial learning rate')
 parser.add_argument('--lr_steps', default=[30], type=float, nargs="+",
                     metavar='LRSteps', help='epochs to decay learning rate by 10')
@@ -82,7 +82,7 @@ parser.add_argument('--print-freq', default=64, type=int,
                     metavar='N', help='print frequency (default: 50)')
 parser.add_argument('--save-freq', default=1, type=int,
                     metavar='N', help='save frequency (default: 25)')
-parser.add_argument('--num-seg', default=8, type=int,
+parser.add_argument('--num-seg', default=16, type=int,
                     metavar='N', help='Number of segments for temporal LSTM (default: 16)')
 #parser.add_argument('--resume', default='./dene4', type=str, metavar='PATH',
 #                    help='path to latest checkpoint (default: none)')
@@ -200,7 +200,7 @@ def main():
     
 
     scheduler = lr_scheduler.ReduceLROnPlateau(
-        optimizer, 'max', patience=5,verbose=True)    
+        optimizer, 'min', patience=5, verbose=True)
     
     print("Saving everything to directory %s." % (saveLocation))
     if args.dataset=='ucf101':
@@ -350,7 +350,7 @@ def main():
             writer.add_scalar('data/top1_validation', prec1, epoch)
             writer.add_scalar('data/top3_validation', prec3, epoch)
             writer.add_scalar('data/classification_loss_validation', lossClassification, epoch)
-            scheduler.step(prec1)
+            scheduler.step(lossClassification)
         # remember best prec@1 and save checkpoint
         
         is_best = prec1 >= best_prec1

@@ -34,7 +34,8 @@ def VideoSpatialPrediction_bert(
         start_frame=0,
         num_frames=0,
         num_seg=16,
-        extension = 'img_{0:05d}.jpg'
+        extension = 'img_{0:05d}.jpg',
+        ten_crop = False
         ):
 
     if num_frames == 0:
@@ -103,11 +104,10 @@ def VideoSpatialPrediction_bert(
 #        imageList12.append(img_flip2)
 
 
-    imageList=imageList1+imageList2+imageList3+imageList4+imageList5+imageList6+imageList7+imageList8+imageList9+imageList10
-    #imageList=imageList1+imageList2+imageList3+imageList4+imageList5
-    #imageList=imageList1+imageList6
-    
-    #imageList=imageList11+imageList12
+    if ten_crop:
+        imageList=imageList1+imageList2+imageList3+imageList4+imageList5+imageList6+imageList7+imageList8+imageList9+imageList10
+    else:
+        imageList=imageList1
     
     rgb_list=[]     
 
@@ -126,5 +126,6 @@ def VideoSpatialPrediction_bert(
         result = output.data.cpu().numpy()
         mean_result=np.mean(result,0)
         prediction=np.argmax(mean_result)
+        top3 = mean_result.argsort()[::-1][:3]
         
-    return prediction, mean_result
+    return prediction, mean_result, top3

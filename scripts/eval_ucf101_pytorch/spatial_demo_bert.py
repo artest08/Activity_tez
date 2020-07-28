@@ -35,7 +35,7 @@ from VideoSpatialPrediction_bert import VideoSpatialPrediction_bert
 from VideoSpatialPrediction3D_bert import VideoSpatialPrediction3D_bert
 
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   
-os.environ["CUDA_VISIBLE_DEVICES"]="1"
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 model_names = sorted(name for name in models.__dict__
     if not name.startswith("__")
@@ -48,7 +48,7 @@ parser = argparse.ArgumentParser(description='PyTorch Two-Stream Action Recognit
 parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51"],
                     help='dataset: ucf101 | hmdb51')
-parser.add_argument('--arch', '-a', metavar='ARCH', default='flow_I3D64f_bert2B',
+parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resnet18_pooling1',
                     choices=model_names)
 
 parser.add_argument('-s', '--split', default=1, type=int, metavar='S',
@@ -167,8 +167,8 @@ def main():
     model_time = model_end_time - model_start_time
     print("Action recognition model is loaded in %4.4f seconds." % (model_time))
     
-    flops, params = get_model_complexity_info(spatial_net, (2,length, 224, 224), as_strings=True, print_per_layer_stat=False)
-    #flops, params = get_model_complexity_info(spatial_net, (3, 224, 224), as_strings=True, print_per_layer_stat=False)
+    #flops, params = get_model_complexity_info(spatial_net, (2,length, 224, 224), as_strings=True, print_per_layer_stat=False)
+    flops, params = get_model_complexity_info(spatial_net, (3, 224, 224), as_strings=True, print_per_layer_stat=False)
     print('{:<30}  {:<8}'.format('Computational complexity: ', flops))
     print('{:<30}  {:<8}'.format('Number of parameters: ', params))
     
@@ -195,7 +195,7 @@ def main():
             start = time.time()
             
             if '3D' in args.arch or 'tsm' in args.arch or 'r2plus1d' in args.arch \
-                or 'rep_flow' in args.arch or 'slowfast':
+                or 'rep_flow' in args.arch or 'slowfast' in args.arch:
                 spatial_prediction = VideoSpatialPrediction3D_bert(
                     clip_path,
                     spatial_net,
@@ -216,7 +216,8 @@ def main():
                         start_frame,
                         duration,
                         num_seg=num_seg,
-                        extension = extension)
+                        extension = extension,
+                        ten_crop = ten_crop_enabled)
                 
             end = time.time()
             estimatedTime=end-start
@@ -251,6 +252,9 @@ def main():
             print('10 crops')
         else:
             print('single crop')
+            
+        if args.window_val:
+            print("window%d.txt" %(args.window))
             
         
         resultDict={'y_true':y_true,'y_pred':y_pred}

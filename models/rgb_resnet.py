@@ -31,7 +31,8 @@ __all__ = ['ResNet', 'rgb_resnet18', 'rgb_resnet34', 'rgb_resnet50', 'rgb_resnet
            'rgb_resnet34_bert10','rgb_resnet50_bert10X','rgb_resnet152_bert10X','rgb_resnet152_bert10XX',
            'rgb_resnet18_NLB10','rgb_resnet18_RankingBert10','rgb_resnet18_RankingBert8','rgb_resnet18_RankingBert8Seg3'
            ,'rgb_resnet18_unpre_bert10', 'rgb_resnet152_bert10_light',
-           'rgb_tsm_resnet50', 'rgb_tsm_resnet50_64f', 'rgb_tsm_resnet50_64f_bert10','rgb_tsm_resnet50_8f']
+           'rgb_tsm_resnet50', 'rgb_tsm_resnet50_64f', 'rgb_tsm_resnet50_64f_bert10','rgb_tsm_resnet50_8f', 
+           'rgb_resnet18_bert10_full']
 
 
 model_urls = {
@@ -1081,6 +1082,52 @@ class rgb_resnet18_bert10(nn.Module):
         x = self.fc_action(output)
         return x, input_vectors, sequenceOut, maskSample
     
+    
+class rgb_resnet18_bert10_full(nn.Module):
+    def __init__(self, num_classes , length, modelPath=''):
+        super(rgb_resnet18_bert10_full, self).__init__()
+        self.hidden_size=512
+        self.n_layers=1
+        self.attn_heads = 8
+        self.num_classes=num_classes
+        self.length=length
+        self.dp = nn.Dropout(p=0.8)
+        
+        if modelPath=='':
+            self.features1=nn.Sequential(*list(rgb_resnet18(pretrained=True).children())[:-5])
+            self.features2=nn.Sequential(*list(rgb_resnet18(pretrained=True).children())[-5:-3])
+        else:
+            self.features1=nn.Sequential(*list(_trained_rgb_resnet18(modelPath,num_classes=num_classes).children())[:-5])
+            self.features2=nn.Sequential(*list(_trained_rgb_resnet18(modelPath,num_classes=num_classes).children())[-5:-3])        
+        self.avgpool = nn.AvgPool2d(7)
+        self.bert = BERT5(512,length, hidden=self.hidden_size, n_layers=self.n_layers, attn_heads=self.attn_heads, mask_prob = 0.75)
+        print(sum(p.numel() for p in self.bert.parameters() if p.requires_grad))
+        self.fc_action = nn.Linear(512, num_classes)
+            
+        for param in self.features1.parameters():
+            param.requires_grad = True
+        for param in self.features2.parameters():
+            param.requires_grad = True
+                
+        torch.nn.init.xavier_uniform_(self.fc_action.weight)
+        self.fc_action.bias.data.zero_()
+        
+    def forward(self, x):
+        x = self.features1(x)
+        x = self.features2(x)
+        x = self.avgpool(x)
+        x = x.view(x.size(0), -1)
+        x = x.view(-1,self.length,512)
+        input_vectors=x
+        output , maskSample = self.bert(x)
+        classificationOut = output[:,0,:]
+        sequenceOut=output[:,1:,:]
+        output=self.dp(classificationOut)
+        x = self.fc_action(output)
+        return x, input_vectors, sequenceOut, maskSample
+    
+    
+    
 class rgb_resnet18_unpre_bert10(nn.Module):
     def __init__(self, num_classes , length, modelPath=''):
         super(rgb_resnet18_unpre_bert10, self).__init__()
@@ -1946,8 +1993,7 @@ class rgb_resnet152_pooling1(nn.Module):
 class rgb_resnet18_pooling1(nn.Module):
     def __init__(self, num_classes , length, modelPath=''):
         super(rgb_resnet18_pooling1, self).__init__()
-        self.frozenFeatureWeights=True
-        self.featureReduction=128
+        self.featureReduction=512
         self.num_classes=num_classes
         self.length=length
         self.dp = nn.Dropout(p=0.8)
@@ -1955,40 +2001,34 @@ class rgb_resnet18_pooling1(nn.Module):
         self.relu = nn.ReLU(inplace=True)
         self.prelu = nn.PReLU()
         if modelPath=='':
-            self.features=nn.Sequential(*list(rgb_resnet18(pretrained=True).children())[:-3])
+            self.features1=nn.Sequential(*list(rgb_resnet18(pretrained=True).children())[:-5])
+            self.features2=nn.Sequential(*list(rgb_resnet18(pretrained=True).children())[-5:-3])
         else:
             self.features=nn.Sequential(*list(_trained_rgb_resnet18(modelPath,num_classes=num_classes).children())[:-3])
-        if self.frozenFeatureWeights:
-            for param in self.features.parameters():
-                param.requires_grad = False
-        else:
-            for param in self.features.parameters():
-                param.requires_grad = True
+
+        for param in self.features1.parameters():
+            param.requires_grad = False
+
+        for param in self.features2.parameters():
+            param.requires_grad = True
                 
-        self.fc_action = nn.Linear(512, self.featureReduction)
-        self.fc_action2 = nn.Linear(self.featureReduction*self.length, self.num_classes)
+        #self.fc_action = nn.Linear(512, self.featureReduction)
+        self.fc_action = nn.Linear(self.featureReduction*self.length, self.num_classes)
         
         
         torch.nn.init.xavier_uniform_(self.fc_action.weight)
         self.fc_action.bias.data.zero_()
     
     def forward(self, x):
-        features=self.features(x)
-        features = self.avgpool(features)
-        features=features.view(-1,self.length,512)
-        x = self.fc_action(features)
-        x = self.prelu(x)
-        xNorm = torch.norm(x,p=2,dim=2)
-        x_diff = xNorm[:,1:] - xNorm[:,:-1] - 0.2
-        x_diff = self.relu(x_diff)
+        x = self.features1(x)
+        x = self.features2(x)
+        x = self.avgpool(x)
+        input_and_output = x.view(-1, self.length, 512) 
         x=x.view(-1,self.featureReduction*self.length)
         x = self.dp(x)
-        x = self.fc_action2(x)
+        x = self.fc_action(x)
         
-        if self.training:
-            return x,x_diff     
-        else:
-            return x
+        return x, input_and_output, input_and_output, input_and_output
         
 class rgb_resnet18_pooling2(nn.Module):
     def __init__(self, num_classes , length, modelPath=''):
@@ -2166,9 +2206,8 @@ class rgb_resnet18_pooling5(nn.Module):
 class rgb_resnet18_pooling6(nn.Module):
     def __init__(self, num_classes , length, modelPath=''):
         super(rgb_resnet18_pooling6, self).__init__()
-        self.frozenFeatureWeights=True
-        self.featureReduction1=64
-        self.featureReduction2=128
+        self.featureReduction1=256
+        self.featureReduction2=512
         self.num_classes=num_classes
         self.length=length
         self.dp = nn.Dropout(p=0.8)
@@ -2176,19 +2215,21 @@ class rgb_resnet18_pooling6(nn.Module):
         self.avgpool2 = nn.AvgPool2d(7)
 
         if modelPath=='':
-            self.features1=nn.Sequential(*list(rgb_resnet18(pretrained=True).children())[:-4])
+            self.features=nn.Sequential(*list(rgb_resnet18(pretrained=True).children())[:-5])
+            self.features1=nn.Sequential(*list(rgb_resnet18(pretrained=True).children())[-5])
             self.features2=nn.Sequential(*list(rgb_resnet18(pretrained=True).children())[-4])
         else:
             self.features=nn.Sequential(*list(_trained_rgb_resnet18(modelPath,num_classes=num_classes).children())[:-3])
-        
-        if self.frozenFeatureWeights:
-            for param in self.features1.parameters():
-                param.requires_grad = False
-            for param in self.features2.parameters():
-                param.requires_grad = False
+
+        for param in self.features.parameters():
+            param.requires_grad = False        
+        for param in self.features1.parameters():
+            param.requires_grad = True
+        for param in self.features2.parameters():
+            param.requires_grad = True
                 
-        self.mapper1 = nn.Sequential(nn.Linear(256, self.featureReduction1),nn.PReLU())
-        self.mapper2 = nn.Sequential(nn.Linear(512, self.featureReduction2),nn.PReLU())
+        #self.mapper1 = nn.Sequential(nn.Linear(256, self.featureReduction1),nn.PReLU())
+        #self.mapper2 = nn.Sequential(nn.Linear(512, self.featureReduction2),nn.PReLU())
         
         self.fc_action = nn.Linear((self.featureReduction1+self.featureReduction2)*self.length, self.num_classes)
         
@@ -2197,23 +2238,23 @@ class rgb_resnet18_pooling6(nn.Module):
         self.fc_action.bias.data.zero_()
     
     def forward(self, x):
+        x = self.features(x)
         features1 = self.features1(x)
         features2 = self.features2(features1)
         features1 = self.avgpool1(features1)
         features2 = self.avgpool1(features2)
         features1 = features1.view(-1,self.length,256)
         features2 = features2.view(-1,self.length,512)
-        features1 = self.mapper1(features1)
-        features2 = self.mapper2(features2)
+        #features1 = self.mapper1(features1)
+        #features2 = self.mapper2(features2)
         x = torch.cat((features1,features2),2)
+        input_and_output = x
         x=x.view(-1,(self.featureReduction1+self.featureReduction2)*self.length)
         x = self.dp(x)
         x = self.fc_action(x)
         
-        if self.training:
-            return x,None     
-        else:
-            return x
+
+        return x, input_and_output, input_and_output, input_and_output
 
 class rgb_resnet152_convGRUType1(nn.Module):
     def __init__(self, num_classes , length, modelPath=''):
