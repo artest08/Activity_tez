@@ -49,7 +49,7 @@ parser.add_argument('--settings', metavar='DIR', default='./datasets/settings',
 parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51", "smtV2", "window"],
                     help='dataset: ucf101 | hmdb51')
-parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resnet18_lstmType3',
+parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resnet18_convGRUType3',
                     choices=model_names,
                     help='model architecture: ' +
                         ' | '.join(model_names) +

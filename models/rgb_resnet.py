@@ -919,7 +919,7 @@ class rgb_resnet18_bert8(nn.Module):
         super(rgb_resnet18_bert8, self).__init__()
         self.hidden_size=512
         self.n_layers=1
-        self.attn_heads = 8
+        self.attn_heads = 4
         self.num_classes=num_classes
         self.length=length
         self.dp = nn.Dropout(p=0.8)
@@ -931,7 +931,7 @@ class rgb_resnet18_bert8(nn.Module):
             self.features1=nn.Sequential(*list(_trained_rgb_resnet18(modelPath,num_classes=num_classes).children())[:-5])
             self.features2=nn.Sequential(*list(_trained_rgb_resnet18(modelPath,num_classes=num_classes).children())[-5:-3])        
         self.avgpool = nn.AvgPool2d(7)
-        self.bert = BERT3(512,length, hidden=self.hidden_size, n_layers=self.n_layers, attn_heads=self.attn_heads)
+        self.bert = BERT5(512,length, hidden=self.hidden_size, n_layers=self.n_layers, attn_heads=self.attn_heads, mask_prob = 0.75)
         print(sum(p.numel() for p in self.bert.parameters() if p.requires_grad))
         self.fc_action = nn.Linear(512, num_classes)
             
@@ -955,7 +955,7 @@ class rgb_resnet18_bert8(nn.Module):
         sequenceOut=output[:,1:,:]
         output=self.dp(classificationOut)
         x = self.fc_action(output)
-        return x, input_vectors, sequenceOut, maskSample   
+        return x, input_vectors, sequenceOut, maskSample 
     
     
 class rgb_resnet18_bert9(nn.Module):
@@ -963,7 +963,7 @@ class rgb_resnet18_bert9(nn.Module):
         super(rgb_resnet18_bert9, self).__init__()
         self.hidden_size=512
         self.n_layers=1
-        self.attn_heads = 8
+        self.attn_heads = 2
         self.num_classes=num_classes
         self.length=length
         self.dp = nn.Dropout(p=0.8)
@@ -975,7 +975,7 @@ class rgb_resnet18_bert9(nn.Module):
             self.features1=nn.Sequential(*list(_trained_rgb_resnet18(modelPath,num_classes=num_classes).children())[:-5])
             self.features2=nn.Sequential(*list(_trained_rgb_resnet18(modelPath,num_classes=num_classes).children())[-5:-3])        
         self.avgpool = nn.AvgPool2d(7)
-        self.bert = BERT4(512,length, hidden=self.hidden_size, n_layers=self.n_layers, attn_heads=self.attn_heads)
+        self.bert = BERT5(512,length, hidden=self.hidden_size, n_layers=self.n_layers, attn_heads=self.attn_heads, mask_prob = 0.75)
         print(sum(p.numel() for p in self.bert.parameters() if p.requires_grad))
         self.fc_action = nn.Linear(512, num_classes)
             
