@@ -5646,6 +5646,14 @@ Mean Estimated Time 0.2258
 one clips
 10 crops
 
+Accuracy with mean calculation is 0.4967
+top3 accuracy 0.7033
+./checkpoint/hmdb51_rgb_resnet18_pooling4_split3
+Mean Estimated Time 0.1941
+one clips
+10 crops
+
+top1 51.13 top3: 72.40
 -----------
 
 500 000
@@ -5668,6 +5676,14 @@ Accuracy with mean calculation is 0.7817
 top3 accuracy 0.9222
 ./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10SS_MARS_copy3_split1
 Mean Estimated Time 0.6292
+multiple clips
+10 crops
+
+25 000
+Accuracy with mean calculation is 0.7745
+top3 accuracy 0.9150
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10SS_MARS_copy_split1
+Mean Estimated Time 0.7068
 multiple clips
 10 crops
 
