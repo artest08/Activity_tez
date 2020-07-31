@@ -33,7 +33,8 @@ __all__ = ['ResNet', 'rgb_resnet18', 'rgb_resnet34', 'rgb_resnet50', 'rgb_resnet
            ,'rgb_resnet18_unpre_bert10', 'rgb_resnet152_bert10_light',
            'rgb_tsm_resnet50', 'rgb_tsm_resnet50_64f', 'rgb_tsm_resnet50_64f_bert10','rgb_tsm_resnet50_8f', 
            'rgb_resnet18_bert10_full', 'rgb_resnet18_TSN', 'rgb_resnet18_convGRUType3',
-           'rgb_resnet18_NLB9', 'rgb_resnet18_convGRUType4', 'rgb_resnet34_pooling5', 'rgb_resnet50_pooling5']
+           'rgb_resnet18_NLB9', 'rgb_resnet18_convGRUType4', 'rgb_resnet34_pooling5', 'rgb_resnet50_pooling5',
+           'rgb_resnet101_pooling5']
 
 
 model_urls = {
@@ -2458,6 +2459,61 @@ class rgb_resnet50_pooling5(nn.Module):
             self.features1=nn.Sequential(*list(rgb_resnet50(pretrained=True).children())[-6])
             self.features2=nn.Sequential(*list(rgb_resnet50(pretrained=True).children())[-5])
             self.features3=nn.Sequential(*list(rgb_resnet50(pretrained=True).children())[-4])
+        else:
+            self.features=nn.Sequential(*list(_trained_rgb_resnet18(modelPath,num_classes=num_classes).children())[:-3])
+
+        for param in self.features.parameters():
+            param.requires_grad = False        
+        for param in self.features1.parameters():
+            param.requires_grad = True
+        for param in self.features2.parameters():
+            param.requires_grad = True
+        for param in self.features3.parameters():
+            param.requires_grad = True
+
+        self.fc_action = nn.Linear((512 + 1024 + 2048)*self.length, self.num_classes)
+        
+        
+        torch.nn.init.xavier_uniform_(self.fc_action.weight)
+        self.fc_action.bias.data.zero_()
+    
+    def forward(self, x):
+        x = self.features(x)
+        features1 = self.features1(x)
+        features2 = self.features2(features1)
+        features3 = self.features3(features2)
+        features1 = self.avgpool1(features1)
+        features2 = self.avgpool2(features2)
+        features3 = self.avgpool3(features3)
+        features1 = features1.view(-1,self.length,512)
+        features2 = features2.view(-1,self.length,1024)
+        features3 = features3.view(-1,self.length,2048)
+        #features1 = self.mapper1(features1)
+        #features2 = self.mapper2(features2)
+        x = torch.cat((features1,features2,features3),2)
+        input_and_output = x
+        x=x.view(-1,(512 + 1024 + 2048)*self.length)
+        x = self.dp(x)
+        x = self.fc_action(x)
+        
+
+        return x, input_and_output, input_and_output, input_and_output
+    
+class rgb_resnet101_pooling5(nn.Module):
+    def __init__(self, num_classes , length, modelPath=''):
+        super(rgb_resnet101_pooling5, self).__init__()
+        self.num_classes=num_classes
+        self.length=length
+        self.dp = nn.Dropout(p=0.8)
+        self.avgpool1 = nn.AvgPool2d(28)
+        self.avgpool2 = nn.AvgPool2d(14)
+        self.avgpool3 = nn.AvgPool2d(7)
+
+        if modelPath=='':
+            self.features=nn.Sequential(*list(rgb_resnet101(pretrained=True).children())[:-6])
+            self.features1=nn.Sequential(*list(rgb_resnet101(pretrained=True).children())[-6])
+            self.features2=nn.Sequential(*list(rgb_resnet101(pretrained=True).children())[-5])
+            self.features3=nn.Sequential(*list(rgb_resnet101(pretrained=True).children())[-4])
         else:
             self.features=nn.Sequential(*list(_trained_rgb_resnet18(modelPath,num_classes=num_classes).children())[:-3])
 

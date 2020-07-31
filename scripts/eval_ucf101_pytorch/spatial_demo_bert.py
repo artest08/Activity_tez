@@ -51,7 +51,7 @@ parser.add_argument('--dataset', '-d', default='hmdb51',
 parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resnet34_pooling5',
                     choices=model_names)
 
-parser.add_argument('-s', '--split', default=1, type=int, metavar='S',
+parser.add_argument('-s', '--split', default=3, type=int, metavar='S',
                     help='which split of data to work on (default: 1)')
 
 parser.add_argument('-w', '--window', default=3, type=int, metavar='V',

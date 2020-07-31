@@ -26,7 +26,7 @@ __all__ = ['rgb_resneXt3D64f101','rgb_resneXt3D64f101_bert10XX','rgb_resneXt3D64
            'rgb_resneXt3D64f101_bert', 'rgb_resneXt3D64f101_bert10S_MARS', 
            'rgb_resneXt3D64f101_bert10B_MARS', 'rgb_resneXt3D64f101_bert10S_MARS2', 'rgb_resneXt3D64f101_bert10S_MARS3'
            ,'rgb_resneXt3D64f101_bert10S_MARS4', 'rgb_resneXt3D64f101_bert10S_MARS5', 'rgb_resneXt3D64f101_bert10S_MARS6',
-           'rgb_resneXt3D64f101_bert10S_MARS7', 
+           'rgb_resneXt3D64f101_bert10S_MARS7', 'rgb_resneXt3D64f101_pooling3', 
            'rgb_resneXt3D64f101_pooling', 'rgb_resneXt3D64f101_NLB', 'rgb_resneXt3D64f101_lstm', 'rgb_resneXt3D64f101_adamw'
            , 'rgb_resneXt3D64f101_adamw_modified', 'rgb_resneXt3D64f101_lstm2', 'rgb_resneXt3D64f101_NLB2'
            , 'rgb_resneXt3D64f101_pooling2', 'rgb_resneXt3D64f101_NLB3', 'rgb_resneXt3D64f101_NLB4'
@@ -1851,6 +1851,59 @@ class rgb_resneXt3D64f101_pooling2(nn.Module):
         maskSample = x
         x = self.linear(x)
         x = self.relu(x)
+        x = self.dp(x)
+        x = self.fc_action(x)
+        return x, input_vectors, sequenceOut, maskSample
+    
+    
+class rgb_resneXt3D64f101_pooling3(nn.Module):
+    def __init__(self, num_classes , length, modelPath=''):
+        super(rgb_resneXt3D64f101_pooling3, self).__init__()
+        self.hidden_size=512
+        self.n_layers=1
+        self.attn_heads=8
+        self.num_classes=num_classes
+        self.length=length
+        self.dp = nn.Dropout(p=0.8)
+        
+        self.avgpool = nn.AvgPool3d((1, 4, 4), stride=1)
+        self.features=nn.Sequential(*list(_trained_resnext101(model_path=modelPath, sample_size=112, sample_duration=64).children())[:-2])
+        
+        downsample = nn.Sequential(
+            nn.Conv3d(
+                2048,
+                512,
+                kernel_size=1,
+                stride=1,
+                bias=False), nn.BatchNorm3d(512))
+
+        mapper = ResNeXtBottleneck(2048, 256, cardinality = 32, stride = 1, downsample = downsample)
+
+        for m in mapper.modules():
+            if isinstance(m, nn.Conv3d):
+                nn.init.kaiming_normal_(m.weight)
+                #m.weight = nn.init.kaiming_normal(m.weight, mode='fan_out')
+            elif isinstance(m, nn.BatchNorm3d):
+                m.weight.data.fill_(1)
+                m.bias.data.zero_()   
+                
+        self.features[7][2] = mapper
+           
+        self.fc_action = nn.Linear(2048, num_classes)
+      
+        for param in self.features.parameters():
+            param.requires_grad = True
+  
+        torch.nn.init.xavier_uniform_(self.fc_action.weight)
+        self.fc_action.bias.data.zero_()
+        
+    def forward(self, x):
+        x = self.features(x)
+        x = self.avgpool(x)
+        x = x.view(x.size(0), self.hidden_size * 4)
+        input_vectors = x
+        sequenceOut = x
+        maskSample = x
         x = self.dp(x)
         x = self.fc_action(x)
         return x, input_vectors, sequenceOut, maskSample
