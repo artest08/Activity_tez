@@ -7,7 +7,7 @@ import torch.utils.model_zoo as model_zoo
 
 __all__ = ['ResNet', 'flow_resnet18', 'flow_resnet34', 'flow_resnet50', 'flow_resnet101',
            'flow_resnet152','flow_resnet18_bert3','flow_resnet18_bert4','flow_resnet18_bertX','flow_resnet18_bertX2',
-           'flow_resnet18_bert10','flow_resnet18_bert10X','flow_resnet152_bert10']
+           'flow_resnet18_bert10','flow_resnet18_bert10X','flow_resnet152_bert10', 'flow_resnet101_pooling5']
 
 
 model_urls = {
@@ -182,7 +182,7 @@ def change_key_names(old_params, in_channels):
     
     return new_params
 
-def _load_state_dict(model, model_url,input_frame=20):
+def _load_state_dict(model, model_url,input_frame=2):
     pretrained_dict = model_zoo.load_url(model_url)
 
     model_dict = model.state_dict()
@@ -417,6 +417,60 @@ class flow_resnet18_bert10X(nn.Module):
         output=self.dp(classificationOut)
         x = self.fc_action(output)
         return x, input_vectors, sequenceOut, maskSample
+    
+    
+class flow_resnet101_pooling5(nn.Module):
+    def __init__(self, num_classes , length, modelPath=''):
+        super(flow_resnet101_pooling5, self).__init__()
+        self.num_classes=num_classes
+        self.length=length
+        self.dp = nn.Dropout(p=0.8)
+        self.avgpool1 = nn.AvgPool2d(28)
+        self.avgpool2 = nn.AvgPool2d(14)
+        self.avgpool3 = nn.AvgPool2d(7)
+
+        if modelPath=='':
+            self.features=nn.Sequential(*list(flow_resnet101(pretrained=True, input_frame = 2).children())[:-6])
+            self.features1=nn.Sequential(*list(flow_resnet101(pretrained=True, input_frame = 2).children())[-6])
+            self.features2=nn.Sequential(*list(flow_resnet101(pretrained=True, input_frame = 2).children())[-5])
+            self.features3=nn.Sequential(*list(flow_resnet101(pretrained=True, input_frame = 2).children())[-4])
+
+        for param in self.features.parameters():
+            param.requires_grad = False        
+        for param in self.features1.parameters():
+            param.requires_grad = True
+        for param in self.features2.parameters():
+            param.requires_grad = True
+        for param in self.features3.parameters():
+            param.requires_grad = True
+
+        self.fc_action = nn.Linear((512 + 1024 + 2048)*self.length, self.num_classes)
+        
+        
+        torch.nn.init.xavier_uniform_(self.fc_action.weight)
+        self.fc_action.bias.data.zero_()
+    
+    def forward(self, x):
+        x = self.features(x)
+        features1 = self.features1(x)
+        features2 = self.features2(features1)
+        features3 = self.features3(features2)
+        features1 = self.avgpool1(features1)
+        features2 = self.avgpool2(features2)
+        features3 = self.avgpool3(features3)
+        features1 = features1.view(-1,self.length,512)
+        features2 = features2.view(-1,self.length,1024)
+        features3 = features3.view(-1,self.length,2048)
+        #features1 = self.mapper1(features1)
+        #features2 = self.mapper2(features2)
+        x = torch.cat((features1,features2,features3),2)
+        input_and_output = x
+        x=x.view(-1,(512 + 1024 + 2048)*self.length)
+        x = self.dp(x)
+        x = self.fc_action(x)
+        
+
+        return x, input_and_output, input_and_output, input_and_output
     
     
 class flow_resnet18_bertX(nn.Module):
