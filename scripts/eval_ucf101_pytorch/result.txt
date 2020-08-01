@@ -5706,6 +5706,37 @@ top1: 55.44 top3 76.65
 
 -----------
 
+Accuracy with mean calculation is 0.5954
+top3 accuracy 0.8131
+./checkpoint/hmdb51_rgb_resnet101_pooling5_split1
+Mean Estimated Time 0.5858
+one clips
+10 crops
+
+Accuracy with mean calculation is 0.5928
+top3 accuracy 0.7784
+./checkpoint/hmdb51_rgb_resnet101_pooling5_split2
+Mean Estimated Time 0.5886
+one clips
+10 crops
+
+Accuracy with mean calculation is 0.5758
+top3 accuracy 0.7804
+./checkpoint/hmdb51_rgb_resnet101_pooling5_split3
+Mean Estimated Time 0.5816
+one clips
+10 crops
+
+top1: 58.80 top3: 79.06
+------------
+500k
+Accuracy with mean calculation is 0.7954
+top3 accuracy 0.9039
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10SS_MARS_copy2_split1
+Mean Estimated Time 0.1504
+multiple clips
+single crop
+
 500 000
 Accuracy with mean calculation is 0.7863
 top3 accuracy 0.9118
@@ -5714,12 +5745,6 @@ Mean Estimated Time 0.6661
 multiple clips
 10 crops
 
-Accuracy with mean calculation is 0.7954
-top3 accuracy 0.9039
-./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10SS_MARS_copy2_split1
-Mean Estimated Time 0.1504
-multiple clips
-single crop
 
 100 000
 Accuracy with mean calculation is 0.7817
@@ -5729,11 +5754,27 @@ Mean Estimated Time 0.6292
 multiple clips
 10 crops
 
+50k
+Accuracy with mean calculation is 0.7869
+top3 accuracy 0.9111
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10SS_MARS_copy2_split1
+Mean Estimated Time 0.6879
+multiple clips
+10 crops
+
 25 000
 Accuracy with mean calculation is 0.7745
 top3 accuracy 0.9150
 ./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10SS_MARS_copy_split1
 Mean Estimated Time 0.7068
+multiple clips
+10 crops
+
+250k
+Accuracy with mean calculation is 0.7837
+top3 accuracy 0.9144
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10SS_MARS_split1
+Mean Estimated Time 0.6837
 multiple clips
 10 crops
 
@@ -5750,6 +5791,13 @@ Accuracy with mean calculation is 0.7745
 top3 accuracy 0.9196
 ./checkpoint/hmdb51_rgb_resneXt3D64f101_pooling3_split1
 Mean Estimated Time 0.6561
+multiple clips
+10 crops
+
+Accuracy with mean calculation is 0.7647
+top3 accuracy 0.9105
+./checkpoint/hmdb51_rgb_resneXt3D64f101_pooling3_split2
+Mean Estimated Time 0.6442
 multiple clips
 10 crops
 

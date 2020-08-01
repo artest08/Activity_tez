@@ -37,7 +37,7 @@ class pose_resnet101_pooling5(nn.Module):
             self.features3=nn.Sequential(*list(rgb_resnet101(pretrained=True).children())[-4])
 
         for param in self.features.parameters():
-            param.requires_grad = False        
+            param.requires_grad = True        
         for param in self.features1.parameters():
             param.requires_grad = True
         for param in self.features2.parameters():

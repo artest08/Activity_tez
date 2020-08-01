@@ -2408,7 +2408,7 @@ class rgb_resnet34_pooling5(nn.Module):
             self.features=nn.Sequential(*list(_trained_rgb_resnet18(modelPath,num_classes=num_classes).children())[:-3])
 
         for param in self.features.parameters():
-            param.requires_grad = False        
+            param.requires_grad = True        
         for param in self.features1.parameters():
             param.requires_grad = True
         for param in self.features2.parameters():
