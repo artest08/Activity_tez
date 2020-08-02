@@ -96,10 +96,7 @@ warmUpEpoch=5
 smt_pretrained = False
 
 HALF = False
-training_continue = False
-
-
-
+training_continue = args.contine
 
 def main():
     global args, best_prec1,model,writer,best_loss, length, width, height, input_size, scheduler
@@ -140,10 +137,9 @@ def main():
     elif training_continue:
         model, startEpoch, optimizer, best_prec1 = build_model_continue()
         args.start_epoch = startEpoch
-        lr = args.lr
         for param_group in optimizer.param_groups:
-            #lr = param_group['lr']
-            param_group['lr'] = lr
+            lr = param_group['lr']
+            #param_group['lr'] = lr
         print("Continuing with best precision: %.3f and start epoch %d and lr: %f" %(best_prec1,startEpoch,lr))
     else:
         print("Building model ... ")
@@ -155,13 +151,8 @@ def main():
             weights['fc_action.bias'] = model.state_dict()['fc_action.bias']
             model.load_state_dict(weights)
             print('smtV2 pretrained is loaded')
-        #optimizer = torch.optim.Adam(model.parameters(), args.lr)
         optimizer = AdamW(model.parameters(), lr= args.lr, weight_decay=args.weight_decay)
-        # optimizer = torch.optim.SGD(model.parameters(), args.lr,
-        #                             momentum=args.momentum,
-        #                             weight_decay=args.weight_decay)
-        #optimizer = swats.SWATS(model.parameters(), args.lr)
-        #model = build_model_validate()
+
         startEpoch = 0
     
     if HALF:
@@ -176,19 +167,10 @@ def main():
     criterion = nn.CrossEntropyLoss().cuda()
     criterion2 = nn.MSELoss().cuda()
     
-
-
-    
-    #optimizer = torch.optim.Adam(model.parameters(), args.lr)
     
     scheduler = lr_scheduler.ReduceLROnPlateau(
         optimizer, 'min', patience=5, verbose=True)
     
-    #scheduler = lr_scheduler.CyclicLR(optimizer, base_lr = args.lr * 0.001, max_lr = args.lr, cycle_momentum=False)
-    # if args.contine:
-    #     scheduler.step(best_prec1)
-    #     print('scheduler step with best prec %f' %(best_prec1))
-    #optimizer = swats.SWATS(model.parameters(), args.lr)
 
     print("Saving everything to directory %s." % (saveLocation))
     if args.dataset=='ucf101':

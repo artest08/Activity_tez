@@ -5801,6 +5801,15 @@ Mean Estimated Time 0.6442
 multiple clips
 10 crops
 
+Accuracy with mean calculation is 0.7556
+top3 accuracy 0.9098
+./checkpoint/hmdb51_rgb_resneXt3D64f101_pooling3_split3
+Mean Estimated Time 0.6179
+multiple clips
+10 crops
+
+top1: 76.49
+
 
 
 

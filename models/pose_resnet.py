@@ -16,7 +16,7 @@ from .rgb_resnet import rgb_resnet18, rgb_resnet101
 
 __all__ = ['pose_resnet18_bert10', 'poseRaw_bert10', 'poseRaw_bert10X', 'poseRaw_bert10_newExtractedPoses',
            'poseRaw_bert10_twoPeople','poseRaw2_bert7','poseRaw_bert10_twoPeople_withoutAngle'
-           ,'pose_resnet101_pooling5']
+           ,'pose_resnet101_pooling5', 'pose_resnet18_pooling5']
 
 
 
@@ -67,6 +67,59 @@ class pose_resnet101_pooling5(nn.Module):
         x = torch.cat((features1,features2,features3),2)
         input_and_output = x
         x=x.view(-1,(512 + 1024 + 2048)*self.length)
+        x = self.dp(x)
+        x = self.fc_action(x)
+        
+
+        return x, input_and_output, input_and_output, input_and_output
+    
+class pose_resnet18_pooling5(nn.Module):
+    def __init__(self, num_classes , length, modelPath=''):
+        super(pose_resnet18_pooling5, self).__init__()
+        self.num_classes=num_classes
+        self.length=length
+        self.dp = nn.Dropout(p=0.8)
+        self.avgpool1 = nn.AvgPool2d(28)
+        self.avgpool2 = nn.AvgPool2d(14)
+        self.avgpool3 = nn.AvgPool2d(7)
+
+        if modelPath=='':
+            self.features=nn.Sequential(*list(rgb_resnet18(pretrained=True).children())[:-6])
+            self.features1=nn.Sequential(*list(rgb_resnet18(pretrained=True).children())[-6])
+            self.features2=nn.Sequential(*list(rgb_resnet18(pretrained=True).children())[-5])
+            self.features3=nn.Sequential(*list(rgb_resnet18(pretrained=True).children())[-4])
+
+        for param in self.features.parameters():
+            param.requires_grad = True        
+        for param in self.features1.parameters():
+            param.requires_grad = True
+        for param in self.features2.parameters():
+            param.requires_grad = True
+        for param in self.features3.parameters():
+            param.requires_grad = True
+
+        self.fc_action = nn.Linear((128 + 256 + 512)*self.length, self.num_classes)
+        
+        
+        torch.nn.init.xavier_uniform_(self.fc_action.weight)
+        self.fc_action.bias.data.zero_()
+    
+    def forward(self, x):
+        x = self.features(x)
+        features1 = self.features1(x)
+        features2 = self.features2(features1)
+        features3 = self.features3(features2)
+        features1 = self.avgpool1(features1)
+        features2 = self.avgpool2(features2)
+        features3 = self.avgpool3(features3)
+        features1 = features1.view(-1,self.length,128)
+        features2 = features2.view(-1,self.length,256)
+        features3 = features3.view(-1,self.length,512)
+        #features1 = self.mapper1(features1)
+        #features2 = self.mapper2(features2)
+        x = torch.cat((features1,features2,features3),2)
+        input_and_output = x
+        x=x.view(-1,(128 + 256 + 512)*self.length)
         x = self.dp(x)
         x = self.fc_action(x)
         

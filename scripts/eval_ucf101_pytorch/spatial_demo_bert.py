@@ -48,7 +48,7 @@ parser = argparse.ArgumentParser(description='PyTorch Two-Stream Action Recognit
 parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51"],
                     help='dataset: ucf101 | hmdb51')
-parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resnet101_pooling5',
+parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resneXt3D64f101_pooling3',
                     choices=model_names)
 
 parser.add_argument('-s', '--split', default=3, type=int, metavar='S',
@@ -167,8 +167,8 @@ def main():
     model_time = model_end_time - model_start_time
     print("Action recognition model is loaded in %4.4f seconds." % (model_time))
     
-    #flops, params = get_model_complexity_info(spatial_net, (2,length, 224, 224), as_strings=True, print_per_layer_stat=False)
-    flops, params = get_model_complexity_info(spatial_net, (3, 224, 224), as_strings=True, print_per_layer_stat=False)
+    flops, params = get_model_complexity_info(spatial_net, (3,length, 112, 112), as_strings=True, print_per_layer_stat=False)
+    #flops, params = get_model_complexity_info(spatial_net, (3, 224, 224), as_strings=True, print_per_layer_stat=False)
     print('{:<30}  {:<8}'.format('Computational complexity: ', flops))
     print('{:<30}  {:<8}'.format('Number of parameters: ', params))
     

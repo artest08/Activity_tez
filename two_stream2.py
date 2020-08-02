@@ -16,7 +16,7 @@ import numpy as np
 
 
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]="1"
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 import torch
 import torch.nn as nn
@@ -91,7 +91,7 @@ max_learning_rate_decay_count = 3
 best_in_existing_learning_rate = 0
 HALF = False
 
-select_according_to_best_classsification_lost = True #Otherwise select according to top1 default: False
+select_according_to_best_classsification_lost = False #Otherwise select according to top1 default: False
 
 training_continue = False
 def main():
