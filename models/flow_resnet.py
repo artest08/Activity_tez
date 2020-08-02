@@ -251,8 +251,8 @@ class flow_resnet18_pooling1(nn.Module):
         self.relu = nn.ReLU(inplace=True)
         self.prelu = nn.PReLU()
 
-        self.features1=nn.Sequential(*list(flow_resnet18(pretrained=True).children())[:-5])
-        self.features2=nn.Sequential(*list(flow_resnet18(pretrained=True).children())[-5:-3])
+        self.features1=nn.Sequential(*list(flow_resnet18(pretrained=True, input_frame=2).children())[:-5])
+        self.features2=nn.Sequential(*list(flow_resnet18(pretrained=True, input_frame=2).children())[-5:-3])
 
         for param in self.features1.parameters():
             param.requires_grad = True
