@@ -35,7 +35,7 @@ from VideoSpatialPrediction_bert import VideoSpatialPrediction_bert
 from VideoSpatialPrediction3D_bert import VideoSpatialPrediction3D_bert
 
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   
-os.environ["CUDA_VISIBLE_DEVICES"]="1"
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 model_names = sorted(name for name in models.__dict__
     if not name.startswith("__")
@@ -48,10 +48,10 @@ parser = argparse.ArgumentParser(description='PyTorch Two-Stream Action Recognit
 parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51"],
                     help='dataset: ucf101 | hmdb51')
-parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resneXt3D64f101_pooling3',
+parser.add_argument('--arch', '-a', metavar='ARCH', default='pose_resnet101_pooling5',
                     choices=model_names)
 
-parser.add_argument('-s', '--split', default=3, type=int, metavar='S',
+parser.add_argument('-s', '--split', default=1, type=int, metavar='S',
                     help='which split of data to work on (default: 1)')
 
 parser.add_argument('-w', '--window', default=3, type=int, metavar='V',
@@ -141,6 +141,8 @@ def main():
             val_fileName = "val_rgb_split%d.txt" %(args.split)
     elif 'pose' in args.arch:
         extension = 'pose1_{0:05d}.jpg'
+        val_fileName = "val_pose_split%d.txt" %(args.split)
+
     elif 'flow' in args.arch:
         val_fileName = "val_flow_split%d.txt" %(args.split)
         if 'ucf101' in args.dataset or 'window' in args.dataset:
@@ -167,10 +169,10 @@ def main():
     model_time = model_end_time - model_start_time
     print("Action recognition model is loaded in %4.4f seconds." % (model_time))
     
-    flops, params = get_model_complexity_info(spatial_net, (3,length, 112, 112), as_strings=True, print_per_layer_stat=False)
-    #flops, params = get_model_complexity_info(spatial_net, (3, 224, 224), as_strings=True, print_per_layer_stat=False)
-    print('{:<30}  {:<8}'.format('Computational complexity: ', flops))
-    print('{:<30}  {:<8}'.format('Number of parameters: ', params))
+    # flops, params = get_model_complexity_info(spatial_net, (3,length, 112, 112), as_strings=True, print_per_layer_stat=False)
+    # #flops, params = get_model_complexity_info(spatial_net, (3, 224, 224), as_strings=True, print_per_layer_stat=False)
+    # print('{:<30}  {:<8}'.format('Computational complexity: ', flops))
+    # print('{:<30}  {:<8}'.format('Number of parameters: ', params))
     
     f_val = open(val_file, "r")
     val_list = f_val.readlines()
@@ -213,6 +215,7 @@ def main():
                         clip_path,
                         spatial_net,
                         num_categories,
+                        args.arch,
                         start_frame,
                         duration,
                         num_seg=num_seg,

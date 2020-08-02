@@ -137,8 +137,8 @@ class pose_resnet18_bert10(nn.Module):
         self.dp = nn.Dropout(p=0.8)
         
 
-        self.features1=nn.Sequential(*list(rgb_resnet18(pretrained=False).children())[:-5])
-        self.features2=nn.Sequential(*list(rgb_resnet18(pretrained=False).children())[-5:-3])
+        self.features1=nn.Sequential(*list(rgb_resnet18(pretrained=True).children())[:-5])
+        self.features2=nn.Sequential(*list(rgb_resnet18(pretrained=True).children())[-5:-3])
         
         self.avgpool = nn.AvgPool2d(7)
         self.bert = BERT5(512,length, hidden=self.hidden_size, n_layers=self.n_layers, attn_heads=self.attn_heads)

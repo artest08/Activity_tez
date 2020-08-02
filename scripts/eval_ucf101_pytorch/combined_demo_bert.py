@@ -39,7 +39,7 @@ from VideoTemporalPrediction3D import VideoTemporalPrediction3D
 from VideoSpatialPrediction3D_bert import VideoSpatialPrediction3D_bert
 
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   
-os.environ["CUDA_VISIBLE_DEVICES"]="1"
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 model_names = sorted(name for name in models.__dict__
     if not name.startswith("__")
@@ -52,13 +52,13 @@ parser = argparse.ArgumentParser(description='PyTorch Two-Stream Action Recognit
 parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51"],
                     help='dataset: ucf101 | hmdb51')
-parser.add_argument('--arch_flow', '-a', metavar='ARCH', default='flow_resnet18_bert10',
+parser.add_argument('--arch_flow', '-a', metavar='ARCH', default='flow_resnet101_pooling5',
                     choices=model_names)
-parser.add_argument('--arch_rgb', '-b', metavar='ARCH', default='rgb_resnet18_bert10',
+parser.add_argument('--arch_rgb', '-b', metavar='ARCH', default='rgb_resnet101_pooling5',
                     choices=model_names)
-parser.add_argument('--arch_pose', '-c', metavar='ARCH', default='pose_resnet18_bert10',
+parser.add_argument('--arch_pose', '-c', metavar='ARCH', default='pose_resnet101_pooling5',
                     choices=model_names)
-parser.add_argument('-s', '--split', default=1, type=int, metavar='S',
+parser.add_argument('-s', '--split', default=3, type=int, metavar='S',
                     help='which split of data to work on (default: 1)')
 
 parser.add_argument('-w', '--window', default=3, type=int, metavar='V',
@@ -72,12 +72,13 @@ parser.add_argument('-v', '--val', dest='window_val', action='store_true',
 
 multiGPUTest=False
 multiGPUTrain=False
+ten_crop_enabled = True
 
 num_seg_rgb=16
 num_seg_pose=16
 num_seg_flow=16
 len_flow=1
-poseEnabled = True
+poseEnabled = False
 num_seg_3D=1
 length_3D = 64
 
@@ -88,7 +89,6 @@ def buildModel(model_path,arch,num_categories):
     elif 'flow' in arch:
         model=models.__dict__[arch](modelPath='', num_classes=num_categories,length=num_seg_flow)
     elif 'pose' in arch:
-        multiGPUTrain = True
         model=models.__dict__[arch](modelPath='', num_classes=num_categories,length=num_seg_pose)
     params = torch.load(model_path)
         
@@ -136,11 +136,18 @@ def main():
         frameFolderName = "window_frames"
     data_dir=os.path.join(datasetFolder,frameFolderName)
     
+    rgb_extension = 'img_{0:05d}.jpg'
+    pose_extension = 'pose1_{0:05d}.jpg'
+    if 'ucf101' in args.dataset or 'window' in args.dataset:
+        flow_extension = 'flow_{0}_{1:05d}.jpg'
+    elif 'hmdb51' in args.dataset:
+        flow_extension = 'flow_{0}_{1:05d}'
+    
 
     if args.window_val:
         val_fileName = "window%d.txt" %(args.window)
     else:
-        val_fileName = "val_flow_split%d.txt" %(args.split)
+        val_fileName = "val_rgb_split%d.txt" %(args.split)
 
 
     val_file=os.path.join(datasetFolder,'settings',args.dataset,val_fileName)
@@ -169,6 +176,7 @@ def main():
 
     line_id = 1
     match_count = 0
+    match_count_top3 = 0
 
     y_true=[]
     y_pred=[]
@@ -182,63 +190,45 @@ def main():
         
         start = time.time()
         
-        if not '3D' in args.arch_rgb:
-            _ , spatial_result = VideoSpatialPrediction_bert(
-                    clip_path,
-                    spatial_net,
-                    num_categories,
-                    start_frame,
-                    duration,
-                    num_seg=num_seg_rgb)
-    
-            _ , temporal_result = VideoTemporalPrediction_bert(
-                    clip_path,
-                    temporal_net,
-                    num_categories,
-                    start_frame,
-                    0,
-                    num_seg=num_seg_flow,
-                    length = len_flow)
+
             
-            if poseEnabled:
-                _ , pose_result = VideoSpatialPrediction_bert(
-                        clip_path,
-                        pose_net,
-                        num_categories,
-                        start_frame,
-                        duration,
-                        num_seg=num_seg_flow,
-                        extension = 'pose1_{0:05d}.jpg')
-        else:
-            _ , spatial_result = VideoSpatialPrediction3D_bert(
+        _, spatial_result, _ = VideoSpatialPrediction_bert(
                 clip_path,
                 spatial_net,
                 num_categories,
+                args.arch_rgb,
                 start_frame,
                 duration,
-                num_seg=num_seg_3D ,
-                length = length_3D)
-            
-            
-            _ , temporal_result = VideoTemporalPrediction3D(
+                num_seg = num_seg_rgb,
+                extension = rgb_extension,
+                ten_crop = ten_crop_enabled)
+        
+        _, temporal_result, _ = VideoSpatialPrediction_bert(
                 clip_path,
                 temporal_net,
                 num_categories,
+                args.arch_flow,
                 start_frame,
-                duration,
-                num_seg = num_seg_3D,
-                length = length_3D)   
+                0,
+                num_seg = num_seg_flow,
+                extension = flow_extension,
+                ten_crop = ten_crop_enabled)
+        
+        
+        if poseEnabled:
             
-            if poseEnabled:
-                
-                _ , pose_result = VideoSpatialPrediction3D(
+            _, pose_result, _ = VideoSpatialPrediction_bert(
                     clip_path,
                     pose_net,
                     num_categories,
+                    args.arch_pose,
                     start_frame,
                     duration,
-                    length = 64,
-                    extension = 'pose1_{0:05d}.jpg')                
+                    num_seg = num_seg_pose,
+                    extension = pose_extension,
+                    ten_crop = ten_crop_enabled)
+                
+              
             
         end = time.time()
         estimatedTime=end-start
@@ -252,12 +242,15 @@ def main():
             pose_result = np.zeros_like(temporal_result)
         combined_result = spatial_result + temporal_result +  pose_result
         pred_index = np.argmax(combined_result)
+        top3 = combined_result.argsort()[::-1][:3]
         
         print("Sample %d/%d: GT: %d, Prediction: %d" % (line_id, len(val_list), input_video_label, pred_index))
         print("Estimated Time  %0.4f" % estimatedTime)
         print("------------------")
         if pred_index == input_video_label:
             match_count += 1
+        if input_video_label in top3:
+            match_count_top3 += 1
 
         line_id += 1
         y_true.append(input_video_label)
@@ -267,15 +260,21 @@ def main():
     print(confusion_matrix(y_true,y_pred))
 
     print("Accuracy with mean calculation is %4.4f" % (float(match_count)/len(val_list)))
+    print("top3 accuracy %4.4f" % (float(match_count_top3)/len(val_list)))
     print(modelLocationRGB)
     print(modelLocationFlow)
-    if poseEnabled:
+    if poseEnabled: 
         print(modelLocationPose)
     print("Mean Estimated Time %0.4f" % (np.mean(timeList)))  
+
+    if ten_crop_enabled:
+        print('10 crops')
+    else:
+        print('single crop')
     
-    resultDict={'y_true':y_true,'y_pred':y_pred}
+    #resultDict={'y_true':y_true,'y_pred':y_pred}
     
-    np.save('results/%s.npy' %(args.dataset+'_'+args.arch_rgb+'_'+ args.arch_flow +"_split"+str(args.split)), resultDict) 
+    #np.save('results/%s.npy' %(args.dataset+'_'+args.arch_rgb+'_'+ args.arch_flow +"_split"+str(args.split)), resultDict) 
 
 if __name__ == "__main__":
     main()

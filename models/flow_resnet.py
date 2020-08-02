@@ -8,7 +8,7 @@ import torch.utils.model_zoo as model_zoo
 __all__ = ['ResNet', 'flow_resnet18', 'flow_resnet34', 'flow_resnet50', 'flow_resnet101',
            'flow_resnet152','flow_resnet18_bert3','flow_resnet18_bert4','flow_resnet18_bertX','flow_resnet18_bertX2',
            'flow_resnet18_bert10','flow_resnet18_bert10X','flow_resnet152_bert10', 
-           'flow_resnet101_pooling5', 'flow_resnet18_pooling5']
+           'flow_resnet101_pooling5', 'flow_resnet18_pooling5', 'flow_resnet18_pooling1']
 
 
 model_urls = {
@@ -239,6 +239,45 @@ class flow_resnet18_bert3(nn.Module):
         x = self.fc_action(output)
         return x, input_vectors, sequenceOut, maskSample
     
+    
+class flow_resnet18_pooling1(nn.Module):
+    def __init__(self, num_classes , length, modelPath=''):
+        super(flow_resnet18_pooling1, self).__init__()
+        self.featureReduction=512
+        self.num_classes=num_classes
+        self.length=length
+        self.dp = nn.Dropout(p=0.7)
+        self.avgpool = nn.AvgPool2d(7)
+        self.relu = nn.ReLU(inplace=True)
+        self.prelu = nn.PReLU()
+
+        self.features1=nn.Sequential(*list(flow_resnet18(pretrained=True).children())[:-5])
+        self.features2=nn.Sequential(*list(flow_resnet18(pretrained=True).children())[-5:-3])
+
+        for param in self.features1.parameters():
+            param.requires_grad = True
+
+        for param in self.features2.parameters():
+            param.requires_grad = True
+                
+        #self.fc_action = nn.Linear(512, self.featureReduction)
+        self.fc_action = nn.Linear(self.featureReduction*self.length, self.num_classes)
+        
+        
+        torch.nn.init.xavier_uniform_(self.fc_action.weight)
+        self.fc_action.bias.data.zero_()
+    
+    def forward(self, x):
+        x = self.features1(x)
+        x = self.features2(x)
+        x = self.avgpool(x)
+        input_and_output = x.view(-1, self.length, 512) 
+        x=x.view(-1,self.featureReduction*self.length)
+        x = self.dp(x)
+        x = self.fc_action(x)
+        
+        return x, input_and_output, input_and_output, input_and_output
+    
 class flow_resnet18_bert4(nn.Module):
     def __init__(self, num_classes , length, modelPath=''):
         super(flow_resnet18_bert4, self).__init__()
@@ -298,13 +337,10 @@ class flow_resnet18_bert10(nn.Module):
         self.num_classes=num_classes
         self.length=length
         self.dp = nn.Dropout(p=0.7)
-        
-        if modelPath=='':
-            self.features1=nn.Sequential(*list(flow_resnet18(pretrained=True,input_frame=2).children())[:-5])
-            self.features2=nn.Sequential(*list(flow_resnet18(pretrained=True,input_frame=2).children())[-5:-3])
-        else:
-            self.features1=nn.Sequential(*list(_trained_flow_resnet18(modelPath,num_classes=num_classes).children())[:-5])
-            self.features2=nn.Sequential(*list(_trained_flow_resnet18(modelPath,num_classes=num_classes).children())[-5:-3])        
+
+        self.features1=nn.Sequential(*list(flow_resnet18(pretrained=True,input_frame=2).children())[:-5])
+        self.features2=nn.Sequential(*list(flow_resnet18(pretrained=True,input_frame=2).children())[-5:-3])
+       
         
         self.avgpool = nn.AvgPool2d(7)
         self.bert = BERT5(512,length, hidden=self.hidden_size, n_layers=self.n_layers, attn_heads=self.attn_heads)

@@ -238,7 +238,7 @@ def main():
     elif modality == "flow":
         #length=10
         is_color = False
-        scale_ratios = [1.0, 0.875, 0.75]
+        scale_ratios = [1.0, 0.875, 0.75, 0.66]
         clip_mean = [0.5, 0.5] * args.num_seg * length
         clip_std = [0.226, 0.226] * args.num_seg * length
     elif modality == "both":
