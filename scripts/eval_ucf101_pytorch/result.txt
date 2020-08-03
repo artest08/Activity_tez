@@ -5992,6 +5992,31 @@ one clips
 top1: 54.73 
 -------
 
+Accuracy with mean calculation is 0.5105
+top3 accuracy 0.7131
+./checkpoint/hmdb51_flow_resnet18_TSN_split1
+Mean Estimated Time 0.1444
+one clips
+10 crops
+
+Accuracy with mean calculation is 0.5144
+top3 accuracy 0.7176
+./checkpoint/hmdb51_flow_resnet18_TSN_split2
+Mean Estimated Time 0.1732
+one clips
+10 crops
+
+Accuracy with mean calculation is 0.5255
+top3 accuracy 0.7359
+./checkpoint/hmdb51_flow_resnet18_TSN_split3
+Mean Estimated Time 0.1614
+one clips
+10 crops
+
+top1: 51.68
+
+----------
+
 Accuracy with mean calculation is 0.4523
 top3 accuracy 0.6810
 ./checkpoint/hmdb51_pose_resnet18_pooling5_split1
@@ -6017,6 +6042,83 @@ one clips
 top1: 45.82
 
 ------------
+
+Accuracy with mean calculation is 0.4523
+top3 accuracy 0.6765
+./checkpoint/hmdb51_pose_resnet18_bert10_split1
+Mean Estimated Time 0.1968
+one clips
+10 crops
+
+Accuracy with mean calculation is 0.4771
+top3 accuracy 0.6935
+./checkpoint/hmdb51_pose_resnet18_bert10_split2
+Mean Estimated Time 0.1854
+one clips
+10 crops
+
+Accuracy with mean calculation is 0.4641
+top3 accuracy 0.6765
+./checkpoint/hmdb51_pose_resnet18_bert10_split3
+Mean Estimated Time 0.1873
+one clips
+10 crops
+
+top1: 46.45
+
+---------------
+
+
+Accuracy with mean calculation is 0.4235
+top3 accuracy 0.6595
+./checkpoint/hmdb51_pose_resnet18_pooling1_split1
+Mean Estimated Time 0.1942
+one clips
+10 crops
+
+Accuracy with mean calculation is 0.4765
+top3 accuracy 0.6869
+./checkpoint/hmdb51_pose_resnet18_pooling1_split2
+Mean Estimated Time 0.1949
+one clips
+10 crops
+
+Accuracy with mean calculation is 0.4425
+top3 accuracy 0.6608
+./checkpoint/hmdb51_pose_resnet18_pooling1_split3
+Mean Estimated Time 0.1872
+one clips
+10 crops
+
+top1: 44.75
+
+----------------
+
+Accuracy with mean calculation is 0.4255
+top3 accuracy 0.6484
+./checkpoint/hmdb51_pose_resnet18_TSN_split1
+Mean Estimated Time 0.1910
+one clips
+10 crops
+
+Accuracy with mean calculation is 0.4641
+top3 accuracy 0.6556
+./checkpoint/hmdb51_pose_resnet18_TSN_split2
+Mean Estimated Time 0.1890
+one clips
+10 crops
+
+Accuracy with mean calculation is 0.4346
+top3 accuracy 0.6516
+./checkpoint/hmdb51_pose_resnet18_TSN_split3
+Mean Estimated Time 0.1919
+one clips
+10 crops
+
+top1 44.14
+
+
+
 
 
 

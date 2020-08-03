@@ -8,7 +8,8 @@ import torch.utils.model_zoo as model_zoo
 __all__ = ['ResNet', 'flow_resnet18', 'flow_resnet34', 'flow_resnet50', 'flow_resnet101',
            'flow_resnet152','flow_resnet18_bert3','flow_resnet18_bert4','flow_resnet18_bertX','flow_resnet18_bertX2',
            'flow_resnet18_bert10','flow_resnet18_bert10X','flow_resnet152_bert10', 
-           'flow_resnet101_pooling5', 'flow_resnet18_pooling5', 'flow_resnet18_pooling1', 'flow_resnet18_TSN']
+           'flow_resnet101_pooling5', 'flow_resnet18_pooling5', 'flow_resnet18_pooling1', 'flow_resnet18_TSN',
+           'flow_resnet101_bert10']
 
 
 model_urls = {
@@ -399,6 +400,47 @@ class flow_resnet18_bert10(nn.Module):
         x = self.avgpool(x)
         x = x.view(x.size(0), -1)
         x = x.view(-1,self.length,512)
+        input_vectors=x
+        output , maskSample = self.bert(x)
+        classificationOut = output[:,0,:]
+        sequenceOut=output[:,1:,:]
+        output=self.dp(classificationOut)
+        x = self.fc_action(output)
+        return x, input_vectors, sequenceOut, maskSample
+    
+class flow_resnet101_bert10(nn.Module):
+    def __init__(self, num_classes , length, modelPath=''):
+        super(flow_resnet101_bert10, self).__init__()
+        self.hidden_size=2048
+        self.n_layers=1
+        self.attn_heads=8
+        self.num_classes=num_classes
+        self.length=length
+        self.dp = nn.Dropout(p=0.7)
+
+        self.features1=nn.Sequential(*list(flow_resnet101(pretrained=True,input_frame=2).children())[:-5])
+        self.features2=nn.Sequential(*list(flow_resnet101(pretrained=True,input_frame=2).children())[-5:-3])
+       
+        
+        self.avgpool = nn.AvgPool2d(7)
+        self.bert = BERT5(2048,length, hidden=self.hidden_size, n_layers=self.n_layers, attn_heads=self.attn_heads)
+        print(sum(p.numel() for p in self.bert.parameters() if p.requires_grad))
+        self.fc_action = nn.Linear(2048, num_classes)
+            
+        for param in self.features1.parameters():
+            param.requires_grad = True
+        for param in self.features2.parameters():
+            param.requires_grad = True
+                
+        torch.nn.init.xavier_uniform_(self.fc_action.weight)
+        self.fc_action.bias.data.zero_()
+        
+    def forward(self, x):
+        x = self.features1(x)
+        x = self.features2(x)
+        x = self.avgpool(x)
+        x = x.view(x.size(0), -1)
+        x = x.view(-1,self.length,2048)
         input_vectors=x
         output , maskSample = self.bert(x)
         classificationOut = output[:,0,:]
