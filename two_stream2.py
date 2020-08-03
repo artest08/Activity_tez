@@ -80,6 +80,8 @@ parser.add_argument('--num-seg', default=1, type=int,
                     metavar='N', help='Number of segments for temporal LSTM (default: 16)')
 parser.add_argument('-e', '--evaluate', dest='evaluate', action='store_true',
                     help='evaluate model on validation set')
+parser.add_argument('-c', '--continue', dest='contine', action='store_true',
+                    help='evaluate model on validation set')
 
 
 
@@ -98,7 +100,7 @@ def main():
     global args, best_prec1,model,writer,best_loss, length, width, height
     global max_learning_rate_decay_count, best_in_existing_learning_rate, learning_rate_index, input_size
     args = parser.parse_args()
-    
+    training_continue = args.contine
     if '3D' in args.arch:
         if 'I3D' in args.arch or 'MFNET3D' in args.arch:
             if '112' in args.arch:
@@ -176,10 +178,10 @@ def main():
     if training_continue:
         model, startEpoch, optimizer, best_prec1 = build_model_continue()
         args.start_epoch = startEpoch
-        lr = args.lr
+        #lr = args.lr
         for param_group in optimizer.param_groups:
-            #lr = param_group['lr']
-            param_group['lr'] = lr
+            lr = param_group['lr']
+            #param_group['lr'] = lr
         print("Continuing with best precision: %.3f and start epoch %d and lr: %f" %(best_prec1,startEpoch,lr))
         
     # optimizer = AdamW(model.parameters(),
@@ -347,7 +349,7 @@ def main():
         num_workers=args.workers, pin_memory=True)
 
     if args.evaluate:
-        prec1,prec3=validate(val_loader, model, criterion)
+        prec1,prec3,lossClassification = validate(val_loader, model, criterion,modality)
         return
 
     for epoch in range(args.start_epoch, args.epochs):
@@ -454,8 +456,12 @@ def build_model_validate():
     elif args.dataset=='hmdb51':
         model=models.__dict__[args.arch](modelPath='', num_classes=51,length=args.num_seg)
    
+    if torch.cuda.device_count() > 1:
+        model=torch.nn.DataParallel(model) 
+
     model.load_state_dict(params['state_dict'])
-    model = model.cuda()
+    model.cuda()
+    model.eval() 
     return model
 
 def build_model_continue():
@@ -468,6 +474,9 @@ def build_model_continue():
     elif args.dataset=='hmdb51':
         model=models.__dict__[args.arch](modelPath='', num_classes=51,length=args.num_seg)
    
+    if torch.cuda.device_count() > 1:
+        model=torch.nn.DataParallel(model) 
+    
     model.load_state_dict(params['state_dict'])
     model = model.cuda()
     optimizer = torch.optim.SGD(

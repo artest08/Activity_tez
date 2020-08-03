@@ -14,7 +14,7 @@ import numpy as np
 
 
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]="0"
+os.environ["CUDA_VISIBLE_DEVICES"]="1"
 
 import torch
 import torch.nn as nn
@@ -96,12 +96,12 @@ warmUpEpoch=5
 smt_pretrained = False
 
 HALF = False
-training_continue = args.contine
 
+training_continue = False
 def main():
     global args, best_prec1,model,writer,best_loss, length, width, height, input_size, scheduler
     args = parser.parse_args()
-    
+    training_continue = args.contine
     if '3D' in args.arch:
         if 'I3D' in args.arch or 'MFNET3D' in args.arch:
             if '112' in args.arch:
@@ -134,6 +134,7 @@ def main():
     if args.evaluate:
         print("Building validation model ... ")
         model = build_model_validate()
+        optimizer = AdamW(model.parameters(), lr= args.lr, weight_decay=args.weight_decay)
     elif training_continue:
         model, startEpoch, optimizer, best_prec1 = build_model_continue()
         args.start_epoch = startEpoch
@@ -152,7 +153,6 @@ def main():
             model.load_state_dict(weights)
             print('smtV2 pretrained is loaded')
         optimizer = AdamW(model.parameters(), lr= args.lr, weight_decay=args.weight_decay)
-
         startEpoch = 0
     
     if HALF:
@@ -421,18 +421,13 @@ def build_model_validate():
     params = torch.load(model_path)
     print(modelLocation)
     if args.dataset=='ucf101':
-        print('model path is: %s' %(model_path))
-        model = models.__dict__[args.arch](modelPath=model_path, num_classes=101,length=args.num_seg)
+        model=models.__dict__[args.arch](modelPath='', num_classes=101,length=args.num_seg)
     elif args.dataset=='hmdb51':
-        print('model path is: %s' %(model_path))
-        model = models.__dict__[args.arch](modelPath=model_path, num_classes=51, length=args.num_seg)
-    elif args.dataset=='smtV2':
-        print('model path is: %s' %(model_path))
-        model = models.__dict__[args.arch](modelPath=model_path, num_classes=174, length=args.num_seg)
-    elif args.dataset=='window':
-        print('model path is: %s' %(model_path))
-        model = models.__dict__[args.arch](modelPath=model_path, num_classes=3, length=args.num_seg)
+        model=models.__dict__[args.arch](modelPath='', num_classes=51,length=args.num_seg)
    
+    if torch.cuda.device_count() > 1:
+        model=torch.nn.DataParallel(model) 
+
     model.load_state_dict(params['state_dict'])
     model.cuda()
     model.eval() 

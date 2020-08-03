@@ -5941,6 +5941,57 @@ one clips
 top1 47.03
 --------
 
+Accuracy with mean calculation is 0.4922
+top3 accuracy 0.6948
+./checkpoint/hmdb51_flow_resnet18_pooling1_split1
+Mean Estimated Time 0.1590
+one clips
+10 crops
+
+
+Accuracy with mean calculation is 0.4614
+top3 accuracy 0.6765
+./checkpoint/hmdb51_flow_resnet18_pooling1_split2
+Mean Estimated Time 0.1581
+one clips
+10 crops
+
+Accuracy with mean calculation is 0.5039
+top3 accuracy 0.7026
+./checkpoint/hmdb51_flow_resnet18_pooling1_split3
+Mean Estimated Time 0.1569
+one clips
+10 crops
+
+top1 48.58
+
+---------
+
+Accuracy with mean calculation is 0.5497
+top3 accuracy 0.7523
+./checkpoint/hmdb51_flow_resnet18_bert10_split1
+Mean Estimated Time 0.1552
+one clips
+10 crops
+
+Accuracy with mean calculation is 0.5366
+top3 accuracy 0.7373
+./checkpoint/hmdb51_flow_resnet18_bert10_split2
+Mean Estimated Time 0.1582
+one clips
+10 crops
+
+
+Accuracy with mean calculation is 0.5556
+top3 accuracy 0.7503
+./checkpoint/hmdb51_flow_resnet18_bert10_split3
+Mean Estimated Time 0.1548
+one clips
+10 crops
+
+top1: 54.73 
+-------
+
 Accuracy with mean calculation is 0.4523
 top3 accuracy 0.6810
 ./checkpoint/hmdb51_pose_resnet18_pooling5_split1
@@ -5964,6 +6015,10 @@ one clips
 10 crops
 
 top1: 45.82
+
+------------
+
+
 
 
 
