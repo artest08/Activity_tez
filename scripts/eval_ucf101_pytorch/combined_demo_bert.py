@@ -39,7 +39,7 @@ from VideoTemporalPrediction3D import VideoTemporalPrediction3D
 from VideoSpatialPrediction3D_bert import VideoSpatialPrediction3D_bert
 
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   
-os.environ["CUDA_VISIBLE_DEVICES"]="0"
+os.environ["CUDA_VISIBLE_DEVICES"]="1"
 
 model_names = sorted(name for name in models.__dict__
     if not name.startswith("__")
@@ -78,7 +78,7 @@ num_seg_rgb=16
 num_seg_pose=16
 num_seg_flow=16
 len_flow=1
-poseEnabled = False
+poseEnabled = True
 num_seg_3D=1
 length_3D = 64
 
