@@ -242,7 +242,7 @@ class rgb_r2plus1d_64f_34_bert10(nn.Module):
         x = self.features(x)
         x = self.avgpool(x)
         
-        x = x.view(x.size(0), self.hidden_size, 4)
+        x = x.view(x.size(0), self.hidden_size, 8)
         x = x.transpose(1,2)
         input_vectors=x
         norm = input_vectors.norm(p=2, dim = -1, keepdim=True)
