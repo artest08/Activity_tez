@@ -242,12 +242,16 @@ class rgb_r2plus1d_64f_34_bert10(nn.Module):
         x = self.features(x)
         x = self.avgpool(x)
         
-        x = x.view(x.size(0), self.hidden_size, 8)
+        x = x.view(x.size(0), self.hidden_size, 4)
         x = x.transpose(1,2)
         input_vectors=x
+        norm = input_vectors.norm(p=2, dim = -1, keepdim=True)
+        input_vectors = input_vectors.div(norm)
         output , maskSample = self.bert(x)
         classificationOut = output[:,0,:]
         sequenceOut=output[:,1:,:]
+        norm = sequenceOut.norm(p=2, dim = -1, keepdim=True)
+        sequenceOut = sequenceOut.div(norm)
         output=self.dp(classificationOut)
         x = self.fc_action(output)
         return x, input_vectors, sequenceOut, maskSample

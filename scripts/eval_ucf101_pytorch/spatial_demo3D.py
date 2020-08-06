@@ -33,7 +33,7 @@ import models
 from VideoSpatialPrediction3D import VideoSpatialPrediction3D
 
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   
-os.environ["CUDA_VISIBLE_DEVICES"]="0"
+os.environ["CUDA_VISIBLE_DEVICES"]="1"
 
 model_names = sorted(name for name in models.__dict__
     if name.islower() and not name.startswith("__")
@@ -46,10 +46,10 @@ parser = argparse.ArgumentParser(description='PyTorch Two-Stream Action Recognit
 parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51", "window"],
                     help='dataset: ucf101 | hmdb51')
-parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resneXt3D64f101_pooling3',
+parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_r2plus1d_64f_34_bert10',
                     choices=model_names)
 
-parser.add_argument('-s', '--split', default=3, type=int, metavar='S',
+parser.add_argument('-s', '--split', default=1, type=int, metavar='S',
                     help='which split of data to work on (default: 1)')
 
 parser.add_argument('-w', '--window', default=14, type=int, metavar='V',

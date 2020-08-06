@@ -52,11 +52,11 @@ parser = argparse.ArgumentParser(description='PyTorch Two-Stream Action Recognit
 parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51"],
                     help='dataset: ucf101 | hmdb51')
-parser.add_argument('--arch_flow', '-a', metavar='ARCH', default='flow_resnet101_bert10',
+parser.add_argument('--arch_flow', '-a', metavar='ARCH', default='flow_resnet101_bert10S',
                     choices=model_names)
 parser.add_argument('--arch_rgb', '-b', metavar='ARCH', default='rgb_resnet101_pooling5',
                     choices=model_names)
-parser.add_argument('--arch_pose', '-c', metavar='ARCH', default='pose_resnet101_bert10',
+parser.add_argument('--arch_pose', '-c', metavar='ARCH', default='pose_resnet101_bert10S',
                     choices=model_names)
 parser.add_argument('-s', '--split', default=3, type=int, metavar='S',
                     help='which split of data to work on (default: 1)')
@@ -78,7 +78,7 @@ num_seg_rgb=16
 num_seg_pose=16
 num_seg_flow=16
 len_flow=1
-poseEnabled = True
+poseEnabled = False
 num_seg_3D=1
 length_3D = 64
 
