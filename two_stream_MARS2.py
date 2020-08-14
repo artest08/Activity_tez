@@ -84,12 +84,16 @@ parser.add_argument('--print-freq', default=200, type=int,
                     metavar='N', help='print frequency (default: 50)')
 parser.add_argument('--save-freq', default=1, type=int,
                     metavar='N', help='save frequency (default: 25)')
+parser.add_argument('--msecoeff', default=250000, type=int,
+                    metavar='N', help='save frequency (default: 250000)')
 parser.add_argument('--num-seg', default=1, type=int,
                     metavar='N', help='Number of segments for temporal LSTM (default: 16)')
 parser.add_argument('-e', '--evaluate', dest='evaluate', action='store_true',
                     help='evaluate model on validation set')
 parser.add_argument('-c', '--continue', dest='contine', action='store_true',
                     help='continue training')
+parser.add_argument('--bert_teacher', dest='bert', action='store_true',
+                    help='Bert Teacher Enabled')
 
 
 best_prec1 = 0
@@ -104,14 +108,14 @@ lrPlateuPrec1 = False
 save_everything = True
 
 cosine_similarity_enabled = False
-bert_teacher_enabled = False
 
-training_continue = False
-msecoeff = 250000
 def main():
     global args, best_prec1,model ,writer, best_loss, length, width, height, model_teacher1, model_teacher2,msecoeff
     global best_in_existing_learning_rate, learning_rate_index, input_size, teacher_rgb1, teacher_rgb2
     args = parser.parse_args()
+    msecoeff = args.msecoeff
+    training_continue = args.contine
+    bert_teacher_enabled = args.bert
     
     print('mse coefficient: %d' %(msecoeff))
     input_size = 224
