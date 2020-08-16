@@ -47,9 +47,9 @@ parser = argparse.ArgumentParser(description='PyTorch Two-Stream Action Recognit
 parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51"],
                     help='dataset: ucf101 | hmdb51')
-parser.add_argument('--arch_flow', '-a', metavar='ARCH', default='flow_I3D64f',
+parser.add_argument('--arch_flow', '-a', metavar='ARCH', default='flow_resneXt3D64f101',
                     choices=model_names)
-parser.add_argument('--arch_rgb', '-b', metavar='ARCH', default='rgb_I3D64f',
+parser.add_argument('--arch_rgb', '-b', metavar='ARCH', default='rgb_resneXt3D64f101',
                     choices=model_names)
 parser.add_argument('--arch_pose', '-c', metavar='ARCH', default='pose_resnet18_bert10',
                     choices=model_names)
@@ -68,8 +68,8 @@ parser.add_argument('-v', '--val', dest='window_val', action='store_true',
 multiGPUTest=False
 multiGPUTrain=False
 
-ten_crop_enabled = False
-multiple_clips_enabled = False
+ten_crop_enabled = True
+multiple_clips_enabled = True
 
 num_seg_rgb=16
 num_seg_pose=16
@@ -111,6 +111,7 @@ def buildModel(model_path,arch,num_categories):
     return model
 
 def main():
+    global multiGPUTrain
     global args
     args = parser.parse_args()
     

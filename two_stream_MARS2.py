@@ -111,7 +111,7 @@ cosine_similarity_enabled = False
 
 def main():
     global args, best_prec1,model ,writer, best_loss, length, width, height, model_teacher1, model_teacher2,msecoeff
-    global best_in_existing_learning_rate, learning_rate_index, input_size, teacher_rgb1, teacher_rgb2
+    global best_in_existing_learning_rate, learning_rate_index, input_size, teacher_rgb1, teacher_rgb2, bert_teacher_enabled
     args = parser.parse_args()
     msecoeff = args.msecoeff
     training_continue = args.contine
