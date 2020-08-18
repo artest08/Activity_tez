@@ -6686,7 +6686,7 @@ multiple clips
 77.24
 
 ----------------------------
-
+Flow Distil
 Accuracy with mean calculation is 0.7863
 top3 accuracy 0.9196
 ./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10S_MARS_split1
@@ -6875,6 +6875,49 @@ top3 accuracy 0.9176
 Mean Estimated Time 0.5446
 multiple clips
 10 crops
+
+------------------------------------
+R2plus1d
+Accuracy with mean calculation is 0.7876
+top3 accuracy 0.9327
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10S_MARS_split1
+Mean Estimated Time 0.6312
+multiple clips
+10 crops
+
+Accuracy with mean calculation is 0.7686
+top3 accuracy 0.9065
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10S_MARS_split2
+Mean Estimated Time 0.6938
+multiple clips
+10 crops
+
+Accuracy with mean calculation is 0.7882
+top3 accuracy 0.9105
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10S_MARS_split3
+Mean Estimated Time 0.6079
+multiple clips
+10 crops
+
+78.15
+
+----------------------------
+
+Accuracy with mean calculation is 0.7843
+top3 accuracy 0.9242
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10S_MARS6_split1
+Mean Estimated Time 0.7123
+multiple clips
+10 crops
+
+Accuracy with mean calculation is 0.7830
+top3 accuracy 0.9275
+./checkpoint/hmdb51_rgb_resneXt3D64f101_bert10S_MARS6_split2
+Mean Estimated Time 0.7636
+multiple clips
+10 crops
+
+
 
 
 
