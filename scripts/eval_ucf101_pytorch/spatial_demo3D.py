@@ -33,7 +33,7 @@ import models
 from VideoSpatialPrediction3D import VideoSpatialPrediction3D
 
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   
-os.environ["CUDA_VISIBLE_DEVICES"]="1"
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 model_names = sorted(name for name in models.__dict__
     if name.islower() and not name.startswith("__")
@@ -46,10 +46,10 @@ parser = argparse.ArgumentParser(description='PyTorch Two-Stream Action Recognit
 parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51", "window"],
                     help='dataset: ucf101 | hmdb51')
-parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resneXt3D64f101_bert10S_MARS6',
+parser.add_argument('--arch', '-a', metavar='ARCH', default='hmdb51_rgb_resneXt3D64f101_adamw_split2',
                     choices=model_names)
 
-parser.add_argument('-s', '--split', default=2, type=int, metavar='S',
+parser.add_argument('-s', '--split', default=3, type=int, metavar='S',
                     help='which split of data to work on (default: 1)')
 
 parser.add_argument('-w', '--window', default=14, type=int, metavar='V',
@@ -63,8 +63,8 @@ parser.add_argument('-v', '--val', dest='window_val', action='store_true',
 
 
 multiGPUTest = False
-multiGPUTrain = False
-ten_crop_enabled = True
+multiGPUTrain = True
+ten_crop_enabled = False
 num_seg=16
 num_seg_3D=1
 
@@ -194,7 +194,7 @@ def main():
         input_video_label = int(line_info[2]) 
         
         start = time.time()
-
+        print(clip_path)
         spatial_prediction = VideoSpatialPrediction3D(
             clip_path,
             spatial_net,

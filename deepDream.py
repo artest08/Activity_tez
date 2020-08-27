@@ -12,12 +12,13 @@ import argparse
 import shutil
 import numpy as np
 import sys
+import cv2
 
 from PIL import Image
 
 
-os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]="1"
+# os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
+# os.environ["CUDA_VISIBLE_DEVICES"]="1"
 
 import torch
 import torch.nn as nn
@@ -69,7 +70,7 @@ parser.add_argument('-s', '--split', default=4, type=int, metavar='S',
                     help='which split of data to work on (default: 1)')
 parser.add_argument('-j', '--workers', default=0, type=int, metavar='N',
                     help='number of data loading workers (default: 4)')
-parser.add_argument('--epochs', default=50, type=int, metavar='N',
+parser.add_argument('--epochs', default=100, type=int, metavar='N',
                     help='number of total epochs to run')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
                     help='manual epoch number (useful on restarts)')
@@ -123,23 +124,11 @@ def build_model():
         print('model path is: %s' %(model_path))
         model = models.__dict__[args.arch](modelPath=model_path, num_classes=51, length=args.num_seg)
 
-    if torch.cuda.device_count() > 1:
-        model=torch.nn.DataParallel(model)    
-    model = model.cuda()
+    # if torch.cuda.device_count() > 1:
+    #     model=torch.nn.DataParallel(model)    
+    #model = model.cuda()
     
     return model
-class Denormalize:
-    def __init__(self, mean, std):
-        self.mean = mean
-        self.std = std
-
-    def __call__(self, video):
-        shape = (-1,) + (1,) * (video.dim() - 1)
-
-        mean = torch.as_tensor(self.mean, device=video.device).reshape(shape)
-        std = torch.as_tensor(self.std, device=video.device).reshape(shape)
-
-        return (video * std) + mean
 
 modality=args.arch.split('_')[0]
 
@@ -170,7 +159,7 @@ elif 'r2plus1d' in args.arch:
 else:
     scale = 1
     
-scale = 1.2
+scale = 1.5
 print('scale: %.1f' %(scale))
 
 input_size = int(224 * scale)
@@ -216,6 +205,9 @@ if modality == "rgb":
         clip_mean = [0.485, 0.456, 0.406] * args.num_seg * length
         clip_std = [0.229, 0.224, 0.225] * args.num_seg * length
 
+
+# clip_mean = [0, 0, 0] * args.num_seg * length
+# clip_std = [1, 1, 1] * args.num_seg * length
 
 dataset='./datasets/hmdb51_frames'
 normalize = video_transforms.Normalize(mean=clip_mean,
@@ -278,7 +270,30 @@ for i, (inputs, targets) in enumerate(val_loader):
     
 
 # Put video data into grapg leaf node with grads and on device
-video = torch.tensor(video, requires_grad=True, device=device)
+original = video.clone().detach()
+
+original=original.view(-1,length,3,input_size,input_size).transpose(1,2)
+
+original = original.squeeze(0)
+original = original.transpose(0,1).contiguous()
+original = original.view(length * 3,input_size,input_size)
+original = denormalize(original)
+original=original.view(length,3,input_size,input_size).transpose(0,1)
+original = original.permute([1,2,3,0])
+
+
+
+#original.clamp_(0, 1)
+original = original.data.cpu().numpy()
+original = (original * 255).astype(np.uint8)
+images_original = [Image.fromarray(v, mode="RGB") for v in original]
+
+images_original[0].save('original', format="GIF", append_images=images_original[1:],
+                save_all=True, duration=(1000 / 30), loop=0)
+
+video.requires_grad_(True)
+#video = video.cuda()
+
 video=video.view(-1,length,3,input_size,input_size).transpose(1,2)
 
 
@@ -300,20 +315,25 @@ for epoch in progress:
 
     # Which channel to maximize normed activations in layer i
     # Channel 6 in layer2 activates on moving eye-like visuals
-    channels = [6]
-    channels = torch.tensor(channels, device=device, dtype=torch.int64)
-    gamma = torch.tensor(1e-7, device=device, dtype=torch.float)
+    channels = [43]
+    channels = torch.tensor(channels, dtype=torch.int64)
+    channels = channels.to('cuda:1')
+    gamma = torch.tensor(1e-7, dtype=torch.float)
+    gamma = gamma.to('cuda:1')
+    coeff = torch.tensor(-1, dtype=torch.float)
+    coeff = gamma.to('cuda:1')
+    
 
     for act, chn in zip(acts, channels):
-        #loss += act.norm()
-        loss += act[chn, :, :, :].norm()
+        loss += act.norm()
+        #loss += act[chn, :, :, :].norm()
         # Instead of maximizing all channels, another option is
         # to maximize specific channel activations; see c above:
         #
         # loss += w * act[:, c, :, :, :].norm()
 
     # Minimize the total variation regularization term
-    tv = -1 * variation(video) * gamma
+    tv = coeff * variation(video).to('cuda:1') * gamma
     loss += tv
     video.retain_grad() 
     loss.backward()
@@ -337,18 +357,16 @@ for epoch in progress:
 # Once we have our dream, denormalize it,
 # and turn it into sequence of PIL images.
 
-video = video.squeeze(0).transpose(0,1)
+video = video.squeeze(0)
+video = video.transpose(0,1).contiguous()
 video = video.view(length * 3,input_size,input_size)
 video = video.cpu()
 video = denormalize(video)
-video = video.view(3, length, input_size,input_size)
+video = video.view(length,3,input_size,input_size).transpose(0,1)
 video = video.permute([1,2,3,0])
+
 video.clamp_(0, 1)
 video = video.data.cpu().numpy()
-
-
-assert video.shape[0] == 32
-assert video.shape[3] == 3
 
 assert video.dtype == np.float32
 assert (video >= 0).all()
@@ -360,6 +378,7 @@ images = [Image.fromarray(v, mode="RGB") for v in video]
 
 images[0].save('deneme', format="GIF", append_images=images[1:],
                 save_all=True, duration=(1000 / 30), loop=0)
+
 
 print("💤 Done", file=sys.stderr)
 

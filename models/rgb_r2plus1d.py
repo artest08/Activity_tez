@@ -130,6 +130,9 @@ class rgb_r2plus1d_32f_34_bert10(nn.Module):
         output=self.dp(classificationOut)
         x = self.fc_action(output)
         return x, input_vectors, sequenceOut, maskSample
+    def deep_forward(self, x):
+        x = self.features(x)
+        return x
     
     
 class rgb_r2plus1d_64f_34_bert10_thirtytwof(nn.Module):
@@ -300,6 +303,9 @@ class rgb_r2plus1d_64f_34_bert10(nn.Module):
         output=self.dp(classificationOut)
         x = self.fc_action(output)
         return x, input_vectors, sequenceOut, maskSample
+    def deep_forward(self, x):
+        x = self.features(x)
+        return x
     
     
 class rgb_r2plus1d_32f_34_bert10_head2(nn.Module):
@@ -605,22 +611,18 @@ class rgb_r2plus1d_32f_34_bert6(nn.Module):
 class rgb_r2plus1d_32f_34_deep(nn.Module):
     def __init__(self, num_classes , length, modelPath=''):
         super(rgb_r2plus1d_32f_34_deep, self).__init__()
-        self.num_classes=num_classes
-        self.dp = nn.Dropout(p=0.8)
-        self.avgpool = nn.AdaptiveAvgPool3d(output_size=(1, 1, 1))
-        self.features=nn.Sequential(*list(
-            r2plus1d_34_32_ig65m(359, pretrained=True, progress=True).children())[:-4])
+        start_pos = 2
+        #For final index :5
+        self.features1=nn.Sequential(*list(
+            r2plus1d_34_32_ig65m(359, pretrained=True, progress=True).children())[:start_pos]).to('cuda:0')
         
-        #self.avgpool = nn.AvgPool3d((1, 7, 7), stride=1)
-        self.fc_action = nn.Linear(512, num_classes)
-        for param in self.features.parameters():
-            param.requires_grad = False
-                
-        torch.nn.init.xavier_uniform_(self.fc_action.weight)
-        self.fc_action.bias.data.zero_()
+        self.features2=nn.Sequential(*list(
+            r2plus1d_34_32_ig65m(359, pretrained=True, progress=True).children())[start_pos:3]).to('cuda:1')
+        
         
     def forward(self, x):
-        x = self.features(x)
+        x = self.features1(x.to('cuda:0'))
+        x = self.features2(x.to('cuda:1'))
         return x
     
 class rgb_r2plus1d_kinetics_32f_34(nn.Module):

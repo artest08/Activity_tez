@@ -51,13 +51,13 @@ parser.add_argument('--dataset', '-d', default='hmdb51',
                     choices=["ucf101", "hmdb51", "smtV2", "window"],
                     help='dataset: ucf101 | hmdb51 | smtV2')
 
-parser.add_argument('--arch', '-a', default='rgb_r2plus1d_64f_34_bert10',
+parser.add_argument('--arch', '-a', default='rgb_resneXt3D64f101_bertS',
                     choices=model_names,
                     help='model architecture: ' +
                         ' | '.join(model_names) +
                         ' (default: rgb_vgg16)')
 
-parser.add_argument('-s', '--split', default=3, type=int, metavar='S',
+parser.add_argument('-s', '--split', default=1, type=int, metavar='S',
                     help='which split of data to work on (default: 1)')
 parser.add_argument('-j', '--workers', default=4, type=int, metavar='N',
                     help='number of data loading workers (default: 4)')

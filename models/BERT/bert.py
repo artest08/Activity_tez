@@ -30,43 +30,29 @@ class BERT(nn.Module):
         self.mask_prob=mask_prob
         
         
-        clsToken = torch.zeros(1,1,self.input_dim).float().cuda()
-        clsToken.require_grad = True
-        self.clsToken= nn.Parameter(clsToken)
-        torch.nn.init.normal_(self.clsToken, std = hidden ** -0.5)
-        self.a_2 = nn.Parameter(torch.ones_like(self.clsToken))
-        self.b_2 = nn.Parameter(torch.zeros_like(self.clsToken))
-        
-        
 
         # paper noted they used 4*hidden_size for ff_network_hidden_size
         self.feed_forward_hidden = hidden * 4
 
         # embedding for BERT, sum of positional, segment, token embeddings
-        self.embedding = BERTEmbedding4(input_dim=input_dim, max_len=max_len+1)
+        self.embedding = BERTEmbedding2(input_dim=input_dim, max_len=max_len+1)
 
         # multi-layers transformer blocks, deep network
         self.transformer_blocks = nn.ModuleList(
             [TransformerBlock(hidden, attn_heads, self.feed_forward_hidden, dropout) for _ in range(n_layers)])
-        
-        for module in self.modules():
-            if isinstance(module, nn.Linear):
-                #nn.init.xavier_normal_(module.weight)
-                nn.init.normal_(module.weight, mean=0, std = 0.02)
-                if hasattr(module, "bias") and module.bias is not None:
-                    nn.init.constant_(module.bias, 0.0)
-         
-        # nn.init.xavier_normal_(self.transformer_blocks[0].feed_forward.w_2.weight, gain = 1/(0.425) ** 0.5)
-        # nn.init.xavier_normal_(self.transformer_blocks[0].feed_forward.w_1.weight, gain = 1)
 
-     
+    
+    
     def forward(self, input_vectors):
         # attention masking for padded token
         # torch.ByteTensor([batch_size, 1, seq_len, seq_len)
         batch_size=input_vectors.shape[0]
         sample=None
         if self.training:
-            bernolliMatrix=torch.cat((torch.tensor([1]).float().cuda(), (torch.tensor([self.mask_prob]).float().cuda()).repeat(self.max_len)), 0).unsqueeze(0).repeat([batch_size,1])
+            bernolliMatrix=torch.cat((
+                torch.tensor([1]).float().cuda(),
+                (torch.tensor([self.mask_prob]).float().cuda()).
+                repeat(self.max_len)), 0).unsqueeze(0).repeat([batch_size,1])
             self.bernolliDistributor=torch.distributions.Bernoulli(bernolliMatrix)
             sample=self.bernolliDistributor.sample()
             mask = (sample > 0).unsqueeze(1).repeat(1, sample.size(1), 1).unsqueeze(1)
@@ -74,15 +60,15 @@ class BERT(nn.Module):
             mask=torch.ones(batch_size,1,self.max_len+1,self.max_len+1).cuda()
 
         # embedding the indexed sequence to sequence of vectors
-        clstoken_scales = self.clsToken * self.a_2 + self.b_2
-        x = torch.cat((clstoken_scales.repeat(batch_size,1,1),input_vectors),1)
+        context_vector = torch.mean(input_vectors, 1, True)
+        x = torch.cat((context_vector,input_vectors),1)
         x = self.embedding(x)
         
         # running over multiple transformer blocks
         for transformer in self.transformer_blocks:
             x = transformer.forward(x, mask)
         
-        return x, sample  
+        return x, sample   
 
 class BERT2(nn.Module):
     """
@@ -346,7 +332,10 @@ class BERT5(nn.Module):
         batch_size=input_vectors.shape[0]
         sample=None
         if self.training:
-            bernolliMatrix=torch.cat((torch.tensor([1]).float().cuda(), (torch.tensor([self.mask_prob]).float().cuda()).repeat(self.max_len)), 0).unsqueeze(0).repeat([batch_size,1])
+            bernolliMatrix=torch.cat((
+                torch.tensor([1]).float().cuda(),
+                (torch.tensor([self.mask_prob]).float().cuda()).
+                repeat(self.max_len)), 0).unsqueeze(0).repeat([batch_size,1])
             self.bernolliDistributor=torch.distributions.Bernoulli(bernolliMatrix)
             sample=self.bernolliDistributor.sample()
             mask = (sample > 0).unsqueeze(1).repeat(1, sample.size(1), 1).unsqueeze(1)

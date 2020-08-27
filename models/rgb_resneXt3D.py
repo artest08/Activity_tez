@@ -32,7 +32,7 @@ __all__ = ['rgb_resneXt3D64f101','rgb_resneXt3D64f101_bert10XX','rgb_resneXt3D64
            , 'rgb_resneXt3D64f101_pooling2', 'rgb_resneXt3D64f101_NLB3', 'rgb_resneXt3D64f101_NLB4'
            , 'rgb_resneXt3D64f101_bert10SS_MARS', 'rgb_resneXt3D64f101_bert10SS_MARS_copy', 'rgb_resneXt3D64f101_bert10SS_MARS5'
            , 'rgb_resneXt3D64f101_bert10SS_MARS6', 'rgb_resneXt3D64f101_bert10SS_MARS_copy2', 'rgb_resneXt3D64f101_bert10SS_MARS_copy3'
-           ,'rgb_resneXt3D64f101_bert10S2', 'rgb_resneXt3D64f101_bert10S_single_head'
+           ,'rgb_resneXt3D64f101_bert10S2', 'rgb_resneXt3D64f101_bert10S_single_head', 'rgb_resneXt3D64f101_bertS'
            ]
 
 
@@ -564,6 +564,67 @@ class rgb_resneXt3D64f101_bert10S(nn.Module):
         self.features[7][2] = mapper
                 
         self.bert = BERT5(self.hidden_size, 4 , hidden=self.hidden_size, n_layers=self.n_layers, attn_heads=self.attn_heads)
+        print(sum(p.numel() for p in self.bert.parameters() if p.requires_grad))
+        
+        self.fc_action = nn.Linear(self.hidden_size, num_classes)
+      
+        for param in self.features.parameters():
+            param.requires_grad = True
+  
+        torch.nn.init.xavier_uniform_(self.fc_action.weight)
+        self.fc_action.bias.data.zero_()
+        
+    def forward(self, x):
+        x = self.features(x)
+        x = self.avgpool(x)
+        x = x.view(x.size(0), self.hidden_size, 4)
+        x = x.transpose(1,2)
+        input_vectors=x
+        norm = input_vectors.norm(p=2, dim = -1, keepdim=True)
+        input_vectors = input_vectors.div(norm)
+        output , maskSample = self.bert(x)
+        classificationOut = output[:,0,:]
+        sequenceOut=output[:,1:,:]
+        norm = sequenceOut.norm(p=2, dim = -1, keepdim=True)
+        sequenceOut = sequenceOut.div(norm)
+        output=self.dp(classificationOut)
+        x = self.fc_action(output)
+        return x, input_vectors, sequenceOut, maskSample
+    
+class rgb_resneXt3D64f101_bertS(nn.Module):
+    def __init__(self, num_classes , length, modelPath=''):
+        super(rgb_resneXt3D64f101_bertS, self).__init__()
+        self.hidden_size=512
+        self.n_layers=1
+        self.attn_heads=8
+        self.num_classes=num_classes
+        self.length=length
+        self.dp = nn.Dropout(p=0.8)
+        
+        self.avgpool = nn.AvgPool3d((1, 4, 4), stride=1)
+        self.features=nn.Sequential(*list(_trained_resnext101(model_path=modelPath, sample_size=112, sample_duration=64).children())[:-2])
+        
+        downsample = nn.Sequential(
+            nn.Conv3d(
+                2048,
+                512,
+                kernel_size=1,
+                stride=1,
+                bias=False), nn.BatchNorm3d(512))
+
+        mapper = ResNeXtBottleneck(2048, 256, cardinality = 32, stride = 1, downsample = downsample)
+
+        for m in mapper.modules():
+            if isinstance(m, nn.Conv3d):
+                nn.init.kaiming_normal_(m.weight)
+                #m.weight = nn.init.kaiming_normal(m.weight, mode='fan_out')
+            elif isinstance(m, nn.BatchNorm3d):
+                m.weight.data.fill_(1)
+                m.bias.data.zero_()   
+                
+        self.features[7][2] = mapper
+                
+        self.bert = BERT(self.hidden_size, 4 , hidden=self.hidden_size, n_layers=self.n_layers, attn_heads=self.attn_heads)
         print(sum(p.numel() for p in self.bert.parameters() if p.requires_grad))
         
         self.fc_action = nn.Linear(self.hidden_size, num_classes)
